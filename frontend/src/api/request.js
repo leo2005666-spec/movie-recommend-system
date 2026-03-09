@@ -15,11 +15,14 @@ async function request(url, options = {}) {
   const token = getToken();
   if (token) headers.Authorization = `Bearer ${token}`;
 
+  const timeout = 60000; // 60 秒，适配 Render 冷启动（约 30-50 秒）
   let res;
   try {
-    res = await fetch(BASE + url, { ...options, headers, signal: AbortSignal.timeout(30000) });
+    res = await fetch(BASE + url, { ...options, headers, signal: AbortSignal.timeout(timeout) });
   } catch (e) {
-    const msg = e.name === 'AbortError' ? '请求超时，请稍后重试' : '网络连接失败，请检查后端是否启动';
+    const msg = e.name === 'AbortError'
+      ? '请求超时。若首次访问或长时间未用，后端约需 30-50 秒唤醒，请稍后再试'
+      : '网络连接失败，请检查网络';
     throw new Error(msg);
   }
   const data = await res.json().catch(() => ({}));

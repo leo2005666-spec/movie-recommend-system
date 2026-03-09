@@ -129,13 +129,13 @@ npx vercel --prod --env VITE_API_BASE=https://xxx.onrender.com/api --yes
 - 若使用 Netlify，在 `frontend/public` 创建 `_redirects`，内容：`/* /index.html 200`
 - 重新部署前端
 
-### 2. 登录/注册无反应、一直加载
+### 2. 登录/注册无反应、一直加载、或显示超时
 
-**原因**：后端未启动或地址错误。
+**原因**：Render 免费版休眠后冷启动约需 **30–50 秒**，原前端超时 30 秒会提前断开。
 
 **解决**：
-- 检查 Render 服务是否运行：打开 `https://你的后端.onrender.com/api/health`，应返回 `{"ok":true}`
-- 若后端刚休眠，等待约 30 秒后再试
+- **先等待 30–60 秒**，再点登录/注册（前端已改为 60 秒超时）
+- 首次访问或长时间未用后，建议先打开 `https://你的后端.onrender.com/api/health` 预热，看到 `{"ok":true}` 后再操作
 - 确认 `VITE_API_BASE` 正确：应为 `https://xxx.onrender.com/api`（含 `/api`）
 - 修改环境变量后必须 **Redeploy** 才能生效
 

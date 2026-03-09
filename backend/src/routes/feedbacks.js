@@ -1,0 +1,65 @@
+/**
+ * 用户反馈：意见反馈渠道，收集对系统和推荐效果的评价
+ */
+const express = require('express');
+const { body, validationResult } = require('express-validator');
+const db = require('../db/db');
+const { authMiddleware, requireAdmin, optionalAuth } = require('../middleware/auth');
+const { logActivity } = require('../middleware/log');
+
+const router = express.Router();
+
+// 提交反馈（可匿名，建议登录；登录用户会关联 userId）
+router.post('/', optionalAuth, [
+  body('content').trim().isLength({ min: 5, max: 1000 }).withMessage('反馈内容 5-1000 字'),
+  body('type').optional().trim(),
+], (req, res) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    const msg = errors.array()[0]?.msg || '反馈内容需 5-1000 字';
+    return res.status(400).json({ code: 400, message: msg });
+  }
+  const { content, type } = req.body;
+  const userId = req.user?.id || null;
+  try {
+    db.prepare('INSERT INTO feedbacks (user_id, content, type) VALUES (?, ?, ?)')
+      .run(userId, (content || '').trim(), (type || 'general').trim());
+    const row = db.prepare('SELECT last_insert_rowid() as id').get();
+    if (userId) logActivity(req, 'FEEDBACK', 'feedback', row.id, '提交反馈');
+    res.json({ code: 0, data: { id: row.id }, message: '感谢您的反馈' });
+  } catch (e) {
+    console.error('[Feedback] 提交失败:', e.message);
+    res.status(500).json({ code: 500, message: '提交失败，请稍后重试' });
+  }
+});
+
+// 用户查看自己的反馈（需登录）
+router.get('/me', authMiddleware, (req, res) => {
+  const list = db.prepare(`
+    SELECT id, content, type, status, created_at
+    FROM feedbacks WHERE user_id = ? ORDER BY id DESC
+  `).all(req.user.id);
+  res.json({ code: 0, data: list });
+});
+
+// 管理员：查看所有反馈
+router.get('/', authMiddleware, requireAdmin, (req, res) => {
+  const list = db.prepare(`
+    SELECT f.id, f.user_id, u.username, f.content, f.type, f.status, f.created_at
+    FROM feedbacks f LEFT JOIN users u ON f.user_id = u.id
+    ORDER BY f.id DESC
+  `).all();
+  res.json({ code: 0, data: list });
+});
+
+// 管理员：更新反馈状态
+router.patch('/:id', authMiddleware, requireAdmin, [
+  body('status').isIn(['pending', 'processed', 'rejected']),
+], (req, res) => {
+  const id = parseInt(req.params.id);
+  const { status } = req.body;
+  db.prepare('UPDATE feedbacks SET status = ? WHERE id = ?').run(status, id);
+  res.json({ code: 0, message: '已更新' });
+});
+
+module.exports = router;

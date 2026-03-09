@@ -1,0 +1,26 @@
+{
+  "name": "movie-recommend-backend",
+  "version": "1.0.0",
+  "description": "影视推荐平台后端API",
+  "main": "src/index.js",
+  "scripts": {
+    "dev": "node src/index.js",
+    "init-db": "node src/db/init.js",
+    "reset-db": "node scripts/reset-db.js",
+    "fetch-movies": "node scripts/fetch-tmdb.js",
+    "fetch-movies-omdb": "node scripts/fetch-omdb.js",
+    "translate-chinese": "node scripts/translate-to-chinese.js",
+    "fill-covers": "node scripts/fill-missing-covers.js",
+    "remove-no-cover": "node scripts/remove-no-cover.js"
+  },
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "cors": "^2.8.5",
+    "express": "^4.18.2",
+    "express-validator": "^7.0.1",
+    "google-translate-api-x": "^10.7.2",
+    "jsonwebtoken": "^9.0.2",
+    "nodemailer": "^6.10.1",
+    "sql.js": "^1.10.0"
+  }
+}

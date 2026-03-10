@@ -6,9 +6,13 @@
  */
 const BASE = import.meta.env.VITE_API_BASE || '/api';
 
-/** 封面图片完整 URL（部署到 Vercel 时必须用后端地址，不能用相对路径 /api） */
+/** 封面图片 URL：优先用 wsrv.nl 代理直链，绕过后端拉取失败问题 */
 export function getCoverUrl(movie) {
   if (!movie?.cover || !movie?.id) return '';
+  const raw = String(movie.cover).trim();
+  if (raw.startsWith('http://') || raw.startsWith('https://')) {
+    return 'https://wsrv.nl/?url=' + encodeURIComponent(raw) + '&w=300';
+  }
   return BASE + '/movies/' + movie.id + '/cover';
 }
 

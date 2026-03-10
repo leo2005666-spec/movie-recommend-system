@@ -6,6 +6,12 @@
  */
 const BASE = import.meta.env.VITE_API_BASE || '/api';
 
+/** 封面图片完整 URL（部署到 Vercel 时必须用后端地址，不能用相对路径 /api） */
+export function getCoverUrl(movie) {
+  if (!movie?.cover || !movie?.id) return '';
+  return BASE + '/movies/' + movie.id + '/cover';
+}
+
 function getToken() {
   return localStorage.getItem('token');
 }

@@ -2,6 +2,7 @@
  * 电影卡片 - 带火龙果主题图标装饰
  */
 import { Link } from 'react-router-dom';
+import { getCoverUrl } from '../api/request';
 
 /** 火龙果风格角标 SVG */
 function DragonFruitBadge() {
@@ -39,7 +40,7 @@ function YearIcon() {
 }
 
 export default function MovieCard({ movie, onClick, showBadge = true, topRight, className }) {
-  const coverUrl = movie.cover && movie.id ? `/api/movies/${movie.id}/cover` : '';
+  const coverUrl = getCoverUrl(movie);
   const fallbackSvg = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="150" fill="%232a2a35"><rect width="100" height="150"/><text x="50" y="75" dominant-baseline="middle" text-anchor="middle" fill="%238a8a9a" font-size="12">暂无封面</text></svg>';
 
   return (

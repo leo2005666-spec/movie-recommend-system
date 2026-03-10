@@ -4,7 +4,7 @@
  */
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { api } from '../api/request';
+import { api, getCoverUrl } from '../api/request';
 
 const BANNER_INTERVAL = 5000;
 
@@ -42,7 +42,7 @@ export default function MovieBanner() {
           >
             <div className="movie-banner__bg">
               <img
-                src={movie.cover && movie.id ? `/api/movies/${movie.id}/cover` : ''}
+                src={getCoverUrl(movie)}
                 alt=""
                 onError={(e) => { e.target.style.display = 'none'; }}
               />

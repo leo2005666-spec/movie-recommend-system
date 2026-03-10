@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { api } from '../api/request';
+import { api, getCoverUrl } from '../api/request';
 import MovieBanner from '../components/MovieBanner';
 import MovieCard from '../components/MovieCard';
 
@@ -147,7 +147,7 @@ export default function Home() {
                     </td>
                     <td style={{ padding: 'var(--space-sm) var(--space-md)' }}>
                       <Link to={`/movies/${m.id}`} className="chart-movie">
-                        <img src={m.cover && m.id ? `/api/movies/${m.id}/cover` : ''} alt="" className="chart-poster" onError={(e) => { e.target.src = ''; e.target.style.display = 'none'; }} />
+                        <img src={getCoverUrl(m)} alt="" className="chart-poster" onError={(e) => { e.target.src = ''; e.target.style.display = 'none'; }} />
                         <div>
                           <span className="chart-title">{m.title}</span>
                           {m.release_year && <span className="chart-year">{m.release_year}</span>}

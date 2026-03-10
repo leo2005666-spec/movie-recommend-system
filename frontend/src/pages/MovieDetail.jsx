@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import MovieCard from '../components/MovieCard';
 import { useAuth } from '../context/AuthContext';
-import { api } from '../api/request';
+import { api, getCoverUrl } from '../api/request';
 
 const SCENE_SIMILAR = 'similar';
 
@@ -102,7 +102,7 @@ export default function MovieDetail() {
     <div>
       <div className="detail-layout">
         <img
-          src={movie.cover && movie.id ? `/api/movies/${movie.id}/cover` : ''}
+          src={getCoverUrl(movie)}
           alt=""
           className="detail-poster"
           onError={(e) => e.target.src = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="240" height="360" fill="%232a2a35"><rect width="240" height="360"/></svg>'}

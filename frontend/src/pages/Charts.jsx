@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ChartBarIcon } from '@phosphor-icons/react';
-import { api } from '../api/request';
+import { api, getCoverUrl } from '../api/request';
 
 export default function Charts() {
   const [data, setData] = useState({ weekly: [], top: [], hot: [] });
@@ -69,7 +69,7 @@ export default function Charts() {
                   <td>
                     <Link to={`/movies/${m.id}`} className="chart-movie">
                       <img
-                        src={m.cover && m.id ? `/api/movies/${m.id}/cover` : ''}
+                        src={getCoverUrl(m)}
                         alt=""
                         className="chart-poster"
                         onError={(e) => { e.target.src = ''; e.target.style.display = 'none'; }}

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import AdminNav from '../../components/AdminNav';
-import { api } from '../../api/request';
+import { api, getCoverUrl } from '../../api/request';
 
 export default function AdminMovies() {
   const [list, setList] = useState([]);
@@ -150,7 +150,7 @@ export default function AdminMovies() {
       <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-sm)' }}>
         {list.map((m) => (
           <div key={m.id} className="card" style={{ padding: '1rem', display: 'flex', alignItems: 'center', gap: '1rem' }}>
-            <img src={m.cover && m.id ? `/api/movies/${m.id}/cover` : ''} alt="" style={{ width: 60, height: 90, objectFit: 'cover', background: 'var(--border)' }} onError={(e) => { e.target.src = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="60" height="90" fill="%232a2a35"><rect width="60" height="90"/><text x="30" y="45" dominant-baseline="middle" text-anchor="middle" fill="%238a8a9a" font-size="10">暂无</text></svg>'; }} />
+            <img src={getCoverUrl(m)} alt="" style={{ width: 60, height: 90, objectFit: 'cover', background: 'var(--border)' }} onError={(e) => { e.target.src = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="60" height="90" fill="%232a2a35"><rect width="60" height="90"/><text x="30" y="45" dominant-baseline="middle" text-anchor="middle" fill="%238a8a9a" font-size="10">暂无</text></svg>'; }} />
             <div style={{ flex: 1 }}>
               <Link to={`/movies/${m.id}`}>{m.title}</Link>
               <span style={{ color: 'var(--text-muted)', marginLeft: '0.5rem' }}>

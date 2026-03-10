@@ -13,6 +13,8 @@
 
 **链接有效期**：不删项目则长期有效；Render 休眠后首次访问需等待冷启动。
 
+**数据持久化**：默认使用 sql.js 文件数据库，Render 重启后数据会清空。可改用 **Turso 云数据库** 实现持久化，见 [十、使用 Turso 云数据库](#十使用-turso-云数据库数据持久化)。
+
 ---
 
 ## 二、前置准备
@@ -129,15 +131,25 @@ npx vercel --prod --env VITE_API_BASE=https://xxx.onrender.com/api --yes
 - 若使用 Netlify，在 `frontend/public` 创建 `_redirects`，内容：`/* /index.html 200`
 - 重新部署前端
 
-### 2. 登录/注册无反应、一直加载、或显示超时
+### 2. 网页没有反应、登录/注册无反应、一直加载、或显示超时
 
-**原因**：Render 免费版休眠后冷启动约需 **30–50 秒**，原前端超时 30 秒会提前断开。
+**可能原因 A：Vercel 未配置 `VITE_API_BASE`（最常见）**
+
+若 Vercel 从 GitHub 自动部署时未添加该环境变量，前端会请求 `/api`（即前端域名本身），导致 404，页面表现为空白或「没有反应」。
 
 **解决**：
-- **先等待 30–60 秒**，再点登录/注册（前端已改为 60 秒超时）
-- 首次访问或长时间未用后，建议先打开 `https://你的后端.onrender.com/api/health` 预热，看到 `{"ok":true}` 后再操作
-- 确认 `VITE_API_BASE` 正确：应为 `https://xxx.onrender.com/api`（含 `/api`）
-- 修改环境变量后必须 **Redeploy** 才能生效
+1. 打开 Vercel 项目 → **Settings** → **Environment Variables**
+2. 添加：名称 `VITE_API_BASE`，值 `https://你的后端.onrender.com/api`（如 `https://movie-recommend-system-aiea.onrender.com/api`）
+3. 进入 **Deployments** → 最新部署右侧 **⋮** → **Redeploy**
+
+**可能原因 B：Render 冷启动**
+
+Render 免费版休眠后冷启动约需 **30–50 秒**。
+
+**解决**：
+- **先等待 30–60 秒**，再操作（前端已改为 60 秒超时）
+- 首次访问建议先打开 `https://你的后端.onrender.com/api/health` 预热，看到 `{"ok":true}` 后再用前端
+- 若页面顶部出现红色提示条「无法连接后端服务」，说明 API 不可达，优先检查原因 A
 
 ### 3. 跨域错误（CORS）
 
@@ -235,3 +247,44 @@ location / {
 - 前端：https://frontend-henna-omega-96.vercel.app
 - 后端：https://movie-recommend-system-aiea.onrender.com
 - 默认账号：admin / admin123
+
+---
+
+## 十、使用 Turso 云数据库（数据持久化）
+
+Turso 是 SQLite 兼容的云数据库，免费额度：5GB 存储、5 亿行/月读取、1000 万行/月写入，**数据持久化**，Render 重启后数据不丢失。
+
+### 1. 创建 Turso 数据库
+
+1. 安装 Turso CLI：https://docs.turso.tech/cli/install
+2. 登录：`turso auth login`
+3. 创建数据库：`turso db create movie-recommend --region nrt`（nrt 为东京，可选 sin/hkg 等）
+4. 获取连接信息：
+   ```bash
+   turso db show movie-recommend --url
+   turso db tokens create movie-recommend
+   ```
+
+### 2. 配置环境变量
+
+在 **Render** 的 Web Service 中，**Environment** 添加：
+
+| Key | Value |
+|-----|-------|
+| `TURSO_DATABASE_URL` | `libsql://movie-recommend-你的组织.turso.io` |
+| `TURSO_AUTH_TOKEN` | 上一步创建的 token |
+
+### 3. 重新部署
+
+保存环境变量后，Render 会自动重新部署。启动时会连接 Turso 并自动建表、插入默认数据。
+
+### 4. 本地开发使用 Turso
+
+```bash
+cd backend
+set TURSO_DATABASE_URL=libsql://movie-recommend-xxx.turso.io
+set TURSO_AUTH_TOKEN=你的token
+npm run dev
+```
+
+不设置上述变量时，默认使用 sql.js 本地文件数据库。

@@ -11,11 +11,11 @@ function getDemographicRecommendations(userId, limit = 12) {
   return null;
 }
 
-function getPersonalizedRecommendations(userId, limit = 12) {
+async function getPersonalizedRecommendations(userId, limit = 12) {
   const seen = new Set();
   const result = [];
 
-  const likedCategories = db.prepare(`
+  const likedCategories = await db.prepare(`
     SELECT mc.category_id, AVG(r.score) as avg_score
     FROM ratings r
     INNER JOIN movie_categories mc ON r.movie_id = mc.movie_id
@@ -23,7 +23,7 @@ function getPersonalizedRecommendations(userId, limit = 12) {
     GROUP BY mc.category_id ORDER BY avg_score DESC LIMIT 3
   `).all(userId);
 
-  const likedTags = db.prepare(`
+  const likedTags = await db.prepare(`
     SELECT mt.tag_id, AVG(r.score) as avg_score
     FROM ratings r
     INNER JOIN movie_tags mt ON r.movie_id = mt.movie_id
@@ -31,12 +31,12 @@ function getPersonalizedRecommendations(userId, limit = 12) {
     GROUP BY mt.tag_id ORDER BY avg_score DESC LIMIT 3
   `).all(userId);
 
-  const favMovieIds = db.prepare('SELECT movie_id FROM favorites WHERE user_id = ?').all(userId).map(r => r.movie_id);
+  const favMovieIds = (await db.prepare('SELECT movie_id FROM favorites WHERE user_id = ?').all(userId)).map(r => r.movie_id);
   favMovieIds.forEach(id => seen.add(id));
 
   const perSource = Math.ceil(limit / 3);
   for (const { category_id } of likedCategories) {
-    const movies = db.prepare(`
+    const movies = await db.prepare(`
       SELECT m.id, m.title, m.cover, m.description, m.release_year
       FROM movies m
       INNER JOIN movie_categories mc ON m.id = mc.movie_id AND mc.category_id = ?
@@ -53,7 +53,7 @@ function getPersonalizedRecommendations(userId, limit = 12) {
   }
 
   for (const { tag_id } of likedTags) {
-    const movies = db.prepare(`
+    const movies = await db.prepare(`
       SELECT m.id, m.title, m.cover, m.description, m.release_year
       FROM movies m
       INNER JOIN movie_tags mt ON m.id = mt.movie_id AND mt.tag_id = ?
@@ -69,7 +69,7 @@ function getPersonalizedRecommendations(userId, limit = 12) {
     }
   }
 
-  const popular = db.prepare(`
+  const popular = await db.prepare(`
     SELECT m.id, m.title, m.cover, m.description, m.release_year
     FROM movies m
     LEFT JOIN (SELECT movie_id, AVG(score) as avg_score, COUNT(*) as cnt FROM ratings GROUP BY movie_id) r ON m.id = r.movie_id
@@ -87,14 +87,14 @@ function getPersonalizedRecommendations(userId, limit = 12) {
 /**
  * 冷启动推荐：优先画像推荐，再个性化，最后热门
  */
-function getColdStartRecommendations(userId, limit = 12) {
+async function getColdStartRecommendations(userId, limit = 12) {
   const demographic = getDemographicRecommendations(userId, limit);
   if (demographic && demographic.length > 0) return demographic;
   return getPersonalizedRecommendations(userId, limit);
 }
 
-function getPopularRecommendations(limit = 12) {
-  return db.prepare(`
+async function getPopularRecommendations(limit = 12) {
+  return await db.prepare(`
     SELECT m.id, m.title, m.cover, m.description, m.release_year
     FROM movies m
     LEFT JOIN (SELECT movie_id, AVG(score) as avg_score, COUNT(*) as cnt FROM ratings GROUP BY movie_id) r ON m.id = r.movie_id

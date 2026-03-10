@@ -13,10 +13,10 @@ const TOP_K_SIMILAR = 10;
 /**
  * 获取统一格式的交互数据 { userId, movieId, actionType, value, timestamp }
  */
-function getInteractions() {
+async function getInteractions() {
   const interactions = [];
 
-  const ratings = db.prepare(`
+  const ratings = await db.prepare(`
     SELECT user_id as userId, movie_id as movieId, score as value, created_at as timestamp
     FROM ratings
   `).all();
@@ -24,7 +24,7 @@ function getInteractions() {
     interactions.push({ ...r, actionType: 'rating', timestamp: r.timestamp });
   });
 
-  const favorites = db.prepare(`
+  const favorites = await db.prepare(`
     SELECT user_id as userId, movie_id as movieId, created_at as timestamp
     FROM favorites
   `).all();
@@ -32,7 +32,7 @@ function getInteractions() {
     interactions.push({ ...r, actionType: 'favorite', value: 5, timestamp: r.timestamp });
   });
 
-  const comments = db.prepare(`
+  const comments = await db.prepare(`
     SELECT user_id as userId, movie_id as movieId, created_at as timestamp
     FROM comments
   `).all();
@@ -94,8 +94,8 @@ function findSimilarUsers(matrix, userId, excludeMovieIds = []) {
 /**
  * home_personalized：基于协同过滤的个性化推荐
  */
-function getCFPersonalized(userId, limit = 12) {
-  const interactions = getInteractions();
+async function getCFPersonalized(userId, limit = 12) {
+  const interactions = await getInteractions();
   const matrix = buildUserItemMatrix(interactions);
 
   const userInteracted = new Set(
@@ -130,8 +130,8 @@ function getCFPersonalized(userId, limit = 12) {
 /**
  * similar：喜欢 movieId 的人也喜欢
  */
-function getSimilarMovies(movieId, userId, limit = 12) {
-  const interactions = getInteractions();
+async function getSimilarMovies(movieId, userId, limit = 12) {
+  const interactions = await getInteractions();
   const matrix = buildUserItemMatrix(interactions);
 
   const usersWhoLiked = [];
@@ -166,23 +166,23 @@ function getSimilarMovies(movieId, userId, limit = 12) {
 /**
  * 内容相似：同分类/同标签
  */
-function getContentSimilar(movieId, limit = 12) {
-  const movie = db.prepare('SELECT id FROM movies WHERE id = ?').get(movieId);
+async function getContentSimilar(movieId, limit = 12) {
+  const movie = await db.prepare('SELECT id FROM movies WHERE id = ?').get(movieId);
   if (!movie) return [];
 
-  const categoryIds = db.prepare(`
+  const categoryIds = (await db.prepare(`
     SELECT category_id FROM movie_categories WHERE movie_id = ?
-  `).all(movieId).map((r) => r.category_id);
+  `).all(movieId)).map((r) => r.category_id);
 
-  const tagIds = db.prepare(`
+  const tagIds = (await db.prepare(`
     SELECT tag_id FROM movie_tags WHERE movie_id = ?
-  `).all(movieId).map((r) => r.tag_id);
+  `).all(movieId)).map((r) => r.tag_id);
 
   const seen = new Set([movieId]);
   const result = [];
 
   for (const cid of categoryIds) {
-    const rows = db.prepare(`
+    const rows = await db.prepare(`
       SELECT m.id FROM movies m
       INNER JOIN movie_categories mc ON m.id = mc.movie_id AND mc.category_id = ?
       WHERE m.id != ?
@@ -198,7 +198,7 @@ function getContentSimilar(movieId, limit = 12) {
   }
 
   for (const tid of tagIds) {
-    const rows = db.prepare(`
+    const rows = await db.prepare(`
       SELECT m.id FROM movies m
       INNER JOIN movie_tags mt ON m.id = mt.movie_id AND mt.tag_id = ?
       WHERE m.id != ?
@@ -218,8 +218,8 @@ function getContentSimilar(movieId, limit = 12) {
 /**
  * 热门推荐（与原有 recommend 一致）
  */
-function getPopularMovies(limit = 12) {
-  return db.prepare(`
+async function getPopularMovies(limit = 12) {
+  return await db.prepare(`
     SELECT m.id, m.title, m.cover, m.description, m.release_year
     FROM movies m
     LEFT JOIN (SELECT movie_id, AVG(score) as avg_score, COUNT(*) as cnt FROM ratings GROUP BY movie_id) r ON m.id = r.movie_id

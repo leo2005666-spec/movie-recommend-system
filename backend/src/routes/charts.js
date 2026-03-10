@@ -5,14 +5,15 @@
 const express = require('express');
 const db = require('../db/db');
 const { optionalAuth } = require('../middleware/auth');
+const { asyncHandler } = require('../utils/asyncHandler');
 
 const router = express.Router();
 
 /**
  * 一周口碑榜：过去 7 天内有评分的电影，按 (平均分 × 评分人数^0.5) 排序
  */
-function getWeeklyTop(limit = 10) {
-  const rows = db.prepare(`
+async function getWeeklyTop(limit = 10) {
+  const rows = await db.prepare(`
     SELECT m.id, m.title, m.cover, m.release_year,
            AVG(r.score) as avg_score,
            COUNT(*) as cnt
@@ -30,8 +31,8 @@ function getWeeklyTop(limit = 10) {
 /**
  * 高分榜：历史总评最高，评分人数不少于 1
  */
-function getTopRated(limit = 10) {
-  const rows = db.prepare(`
+async function getTopRated(limit = 10) {
+  const rows = await db.prepare(`
     SELECT m.id, m.title, m.cover, m.release_year,
            AVG(r.score) as avg_score,
            COUNT(*) as cnt
@@ -48,8 +49,8 @@ function getTopRated(limit = 10) {
 /**
  * 热门榜：评分人数最多
  */
-function getHotList(limit = 10) {
-  const rows = db.prepare(`
+async function getHotList(limit = 10) {
+  const rows = await db.prepare(`
     SELECT m.id, m.title, m.cover, m.release_year,
            AVG(r.score) as avg_score,
            COUNT(*) as cnt
@@ -63,32 +64,32 @@ function getHotList(limit = 10) {
 }
 
 /** 获取榜单 */
-router.get('/', optionalAuth, (req, res) => {
+router.get('/', optionalAuth, asyncHandler(async (req, res) => {
   const type = (req.query.type || 'weekly').toLowerCase();
   const limit = Math.min(50, Math.max(5, parseInt(req.query.limit) || 10));
 
   let data;
   if (type === 'top') {
-    data = getTopRated(limit);
+    data = await getTopRated(limit);
   } else if (type === 'hot') {
-    data = getHotList(limit);
+    data = await getHotList(limit);
   } else {
-    data = getWeeklyTop(limit);
+    data = await getWeeklyTop(limit);
   }
   res.json({ code: 0, data: { type, list: data } });
-});
+}));
 
 /** 获取全部榜单（供首页/榜单页一次拉取） */
-router.get('/all', optionalAuth, (req, res) => {
+router.get('/all', optionalAuth, asyncHandler(async (req, res) => {
   const limit = Math.min(20, Math.max(5, parseInt(req.query.limit) || 10));
   res.json({
     code: 0,
     data: {
-      weekly: getWeeklyTop(limit),
-      top: getTopRated(limit),
-      hot: getHotList(limit),
+      weekly: await getWeeklyTop(limit),
+      top: await getTopRated(limit),
+      hot: await getHotList(limit),
     },
   });
-});
+}));
 
 module.exports = router;

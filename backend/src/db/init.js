@@ -5,11 +5,11 @@ const path = require('path');
 const fs = require('fs');
 
 async function run() {
-  const { init, getDb, save } = require('./db.js');
+  const { init, getDb, save } = require('./db');
   await init();
   const db = getDb();
 
-  db.exec(`
+  await db.exec(`
     CREATE TABLE IF NOT EXISTS users (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       username TEXT UNIQUE NOT NULL,
@@ -24,7 +24,7 @@ async function run() {
       updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )
   `);
-  db.exec(`
+  await db.exec(`
     CREATE TABLE IF NOT EXISTS activity_logs (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       user_id INTEGER,
@@ -37,7 +37,7 @@ async function run() {
       FOREIGN KEY (user_id) REFERENCES users(id)
     )
   `);
-  db.exec(`
+  await db.exec(`
     CREATE TABLE IF NOT EXISTS movies (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       title TEXT NOT NULL,
@@ -51,7 +51,7 @@ async function run() {
       updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )
   `);
-  db.exec(`
+  await db.exec(`
     CREATE TABLE IF NOT EXISTS categories (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       name TEXT UNIQUE NOT NULL,
@@ -59,14 +59,14 @@ async function run() {
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )
   `);
-  db.exec(`
+  await db.exec(`
     CREATE TABLE IF NOT EXISTS tags (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       name TEXT UNIQUE NOT NULL,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )
   `);
-  db.exec(`
+  await db.exec(`
     CREATE TABLE IF NOT EXISTS movie_categories (
       movie_id INTEGER,
       category_id INTEGER,
@@ -75,7 +75,7 @@ async function run() {
       FOREIGN KEY (category_id) REFERENCES categories(id)
     )
   `);
-  db.exec(`
+  await db.exec(`
     CREATE TABLE IF NOT EXISTS movie_tags (
       movie_id INTEGER,
       tag_id INTEGER,
@@ -84,7 +84,7 @@ async function run() {
       FOREIGN KEY (tag_id) REFERENCES tags(id)
     )
   `);
-  db.exec(`
+  await db.exec(`
     CREATE TABLE IF NOT EXISTS ratings (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       user_id INTEGER NOT NULL,
@@ -96,7 +96,7 @@ async function run() {
       FOREIGN KEY (movie_id) REFERENCES movies(id)
     )
   `);
-  db.exec(`
+  await db.exec(`
     CREATE TABLE IF NOT EXISTS favorites (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       user_id INTEGER NOT NULL,
@@ -107,7 +107,7 @@ async function run() {
       FOREIGN KEY (movie_id) REFERENCES movies(id)
     )
   `);
-  db.exec(`
+  await db.exec(`
     CREATE TABLE IF NOT EXISTS comments (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       user_id INTEGER NOT NULL,
@@ -118,7 +118,7 @@ async function run() {
       FOREIGN KEY (movie_id) REFERENCES movies(id)
     )
   `);
-  db.exec(`
+  await db.exec(`
     CREATE TABLE IF NOT EXISTS qa_posts (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       user_id INTEGER NOT NULL,
@@ -131,7 +131,7 @@ async function run() {
       FOREIGN KEY (parent_id) REFERENCES qa_posts(id)
     )
   `);
-  db.exec(`
+  await db.exec(`
     CREATE TABLE IF NOT EXISTS recommend_events (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       user_id INTEGER,
@@ -143,7 +143,7 @@ async function run() {
       FOREIGN KEY (movie_id) REFERENCES movies(id)
     )
   `);
-  db.exec(`
+  await db.exec(`
     CREATE TABLE IF NOT EXISTS feedbacks (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       user_id INTEGER,
@@ -158,22 +158,22 @@ async function run() {
   const bcrypt = require('bcryptjs');
   const adminPass = bcrypt.hashSync('admin123', 10);
   const userPass = bcrypt.hashSync('user123', 10);
-  db.prepare(`
+  await db.prepare(`
     INSERT OR IGNORE INTO users (username, password, nickname, role)
     VALUES ('admin', ?, '管理员', 'admin'), ('user', ?, '普通用户', 'user')
   `).run(adminPass, userPass);
 
-  db.exec(`
+  await db.exec(`
     INSERT OR IGNORE INTO categories (name, description) VALUES
     ('动作', '动作片'), ('喜剧', '喜剧片'), ('爱情', '爱情片'),
     ('科幻', '科幻片'), ('悬疑', '悬疑片'), ('动画', '动画片')
   `);
-  db.exec(`
+  await db.exec(`
     INSERT OR IGNORE INTO tags (name) VALUES
     ('高分'), ('经典'), ('热门'), ('新片'), ('治愈'), ('烧脑')
   `);
 
-  const movieCount = db.prepare('SELECT COUNT(*) as n FROM movies').get().n;
+  const movieCount = (await db.prepare('SELECT COUNT(*) as n FROM movies').get()).n;
   if (movieCount === 0) {
     const examples = [
       { title: '肖申克的救赎', cover: 'https://img1.doubanio.com/view/photo/s_ratio_poster/public/p480747492.jpg', description: '20世纪40年代末，小有成就的青年银行家安迪因涉嫌杀害妻子及她的情人而锒铛入狱。在肖申克监狱，他结识了瑞德，学会了在体制内生存，并利用自己的金融知识为狱警处理税务。十九年来，安迪始终心怀希望，默默筹划着逃狱计划，用一把小锤子挖通地道，最终在一个雷雨之夜成功越狱，重获自由。影片探讨了希望、自由与体制化的人性主题。', release_year: 1994, director: '弗兰克·德拉邦特', actors: '蒂姆·罗宾斯,摩根·弗里曼', duration: 142, cats: [2, 5], tags: [1, 2] },
@@ -204,14 +204,14 @@ async function run() {
       { title: '心灵奇旅', cover: 'https://img1.doubanio.com/view/photo/s_ratio_poster/public/p2624323117.jpg', description: '爵士乐教师乔伊终于获得梦寐以求的登台机会，却意外跌入井中灵魂出窍，来到"生之来处"。为回到地球，他必须帮助厌世灵魂22找到"火花"。22在乔伊的身体里体验了纽约的生活——披萨、落叶、地铁的风——发现了活着的意义。乔伊则领悟到，目标固然重要，但珍惜当下的每一刻才是人生的真谛。皮克斯的哲学小品。', release_year: 2020, director: '彼特·道格特', actors: '杰米·福克斯,蒂娜·菲', duration: 100, cats: [6], tags: [3, 5] },
     ];
     for (const m of examples) {
-      db.prepare('INSERT INTO movies (title, cover, description, release_year, director, actors, duration) VALUES (?, ?, ?, ?, ?, ?, ?)')
+      await db.prepare('INSERT INTO movies (title, cover, description, release_year, director, actors, duration) VALUES (?, ?, ?, ?, ?, ?, ?)')
         .run(m.title, m.cover, m.description, m.release_year, m.director, m.actors || null, m.duration);
-      const mid = db.prepare('SELECT last_insert_rowid() as id').get().id;
+      const mid = (await db.prepare('SELECT last_insert_rowid() as id').get()).id;
       for (const cid of m.cats || []) {
-        db.prepare('INSERT OR IGNORE INTO movie_categories (movie_id, category_id) VALUES (?, ?)').run(mid, cid);
+        await db.prepare('INSERT OR IGNORE INTO movie_categories (movie_id, category_id) VALUES (?, ?)').run(mid, cid);
       }
       for (const tid of m.tags || []) {
-        db.prepare('INSERT OR IGNORE INTO movie_tags (movie_id, tag_id) VALUES (?, ?)').run(mid, tid);
+        await db.prepare('INSERT OR IGNORE INTO movie_tags (movie_id, tag_id) VALUES (?, ?)').run(mid, tid);
       }
     }
     console.log('已插入示例影视数据');

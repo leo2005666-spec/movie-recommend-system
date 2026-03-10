@@ -75,7 +75,9 @@ npm run dev
 
 ### 部署到互联网（生成可分享链接）
 
-详见 [DEPLOY.md](./DEPLOY.md)，包含：完整部署步骤、代码更新后重新部署、404/登录失败等故障排查、换平台配置。一次配置，后续可自助完成。
+详见 [DEPLOY.md](./DEPLOY.md)，包含：完整部署步骤、代码更新后重新部署、404/登录失败等故障排查、换平台配置。支持 **Turso 云数据库** 实现数据持久化（Render 重启后数据不丢失）。
+
+**若线上网页没有反应**：多为 Vercel 未配置 `VITE_API_BASE`。在 Vercel 项目 Settings → Environment Variables 添加 `VITE_API_BASE` = `https://你的后端.onrender.com/api`，然后 Redeploy。若页面顶部出现红色提示条，说明后端不可达，按提示检查。
 
 ### 默认账号
 - 管理员：admin / admin123

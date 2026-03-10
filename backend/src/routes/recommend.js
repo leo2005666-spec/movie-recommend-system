@@ -9,29 +9,30 @@ const db = require('../db/db');
 const { optionalAuth } = require('../middleware/auth');
 const { TASTE_PRESETS, getIdsByNames } = require('../utils/taste-presets');
 const { getColdStartRecommendations, getPopularRecommendations: getPop } = require('../services/recommendFallback');
+const { asyncHandler } = require('../utils/asyncHandler');
 
 const router = express.Router();
 
-function getIds(table, names) {
+async function getIds(table, names) {
   return getIdsByNames(db, table, names);
 }
 
 /**
  * 按人群口味推荐：匹配预设分类/标签的电影，按热门度排序
  */
-function getTasteRecommendations(tasteType, limit = 24) {
+async function getTasteRecommendations(tasteType, limit = 24) {
   const preset = TASTE_PRESETS[tasteType];
   if (!preset) return getPop(limit);
 
-  const categoryIds = getIds('categories', preset.categoryNames);
-  const tagIds = getIds('tags', preset.tagNames);
+  const categoryIds = await getIds('categories', preset.categoryNames);
+  const tagIds = await getIds('tags', preset.tagNames);
 
   const seen = new Set();
   const result = [];
 
   // 按分类推荐
   for (const cid of categoryIds) {
-    const movies = db.prepare(`
+    const movies = await db.prepare(`
       SELECT m.id, m.title, m.cover, m.description, m.release_year
       FROM movies m
       INNER JOIN movie_categories mc ON m.id = mc.movie_id AND mc.category_id = ?
@@ -48,7 +49,7 @@ function getTasteRecommendations(tasteType, limit = 24) {
 
   // 按标签推荐
   for (const tid of tagIds) {
-    const movies = db.prepare(`
+    const movies = await db.prepare(`
       SELECT m.id, m.title, m.cover, m.description, m.release_year
       FROM movies m
       INNER JOIN movie_tags mt ON m.id = mt.movie_id AND mt.tag_id = ?
@@ -64,7 +65,7 @@ function getTasteRecommendations(tasteType, limit = 24) {
   }
 
   // 不足时用热门补足
-  const popular = getPop(limit);
+  const popular = await getPop(limit);
   for (const m of popular) {
     if (!seen.has(m.id) && result.length < limit) result.push(m);
   }
@@ -72,7 +73,7 @@ function getTasteRecommendations(tasteType, limit = 24) {
 }
 
 /** 埋点：曝光/点击/收藏 (scene, movieId, eventType) */
-router.post('/events', optionalAuth, (req, res) => {
+router.post('/events', optionalAuth, asyncHandler(async (req, res) => {
   const { scene, movieId, eventType } = req.body || {};
   if (!scene || !movieId || !eventType) {
     return res.status(400).json({ code: 400, message: '缺少 scene/movieId/eventType' });
@@ -83,7 +84,7 @@ router.post('/events', optionalAuth, (req, res) => {
   }
   try {
     const db = require('../db/db');
-    db.prepare(`
+    await db.prepare(`
       INSERT INTO recommend_events (user_id, scene, movie_id, event_type)
       VALUES (?, ?, ?, ?)
     `).run(req.user?.id ?? null, String(scene), parseInt(movieId), eventType);
@@ -95,28 +96,28 @@ router.post('/events', optionalAuth, (req, res) => {
       res.status(500).json({ code: 500, message: e.message });
     }
   }
-});
+}));
 
 /** 获取人群口味预设列表（供前端展示快捷标签） */
-router.get('/tastes', (req, res) => {
+router.get('/tastes', asyncHandler(async (req, res) => {
   const list = Object.entries(TASTE_PRESETS).map(([key, v]) => ({ key, label: v.label, desc: v.desc }));
   res.json({ code: 0, data: list });
-});
+}));
 
 /** 获取推荐列表：支持 tasteType 人群口味、limit 控制数量 */
-router.get('/', optionalAuth, (req, res) => {
+router.get('/', optionalAuth, asyncHandler(async (req, res) => {
   const limit = Math.min(80, Math.max(6, parseInt(req.query.limit) || 36));
   const tasteType = (req.query.tasteType || '').trim();
   let list;
 
   if (tasteType && TASTE_PRESETS[tasteType]) {
-    list = getTasteRecommendations(tasteType, limit);
+    list = await getTasteRecommendations(tasteType, limit);
   } else if (req.user) {
-    list = getColdStartRecommendations(req.user.id, limit);
+    list = await getColdStartRecommendations(req.user.id, limit);
   } else {
-    list = getPop(limit);
+    list = await getPop(limit);
   }
   res.json({ code: 0, data: list });
-});
+}));
 
 module.exports = router;

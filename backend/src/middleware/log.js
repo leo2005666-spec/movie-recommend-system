@@ -16,11 +16,11 @@ function getClientIP(req) {
  * @param {number} targetId - 目标ID
  * @param {string} detail - 补充说明
  */
-function logActivity(req, action, targetType = null, targetId = null, detail = null) {
+async function logActivity(req, action, targetType = null, targetId = null, detail = null) {
   try {
     const userId = req.user?.id || null;
     const ip = getClientIP(req);
-    db.prepare(`
+    await db.prepare(`
       INSERT INTO activity_logs (user_id, action, target_type, target_id, detail, ip)
       VALUES (?, ?, ?, ?, ?, ?)
     `).run(userId, action, targetType, targetId, detail, ip);

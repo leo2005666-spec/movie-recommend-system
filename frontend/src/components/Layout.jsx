@@ -16,6 +16,7 @@ import {
 } from '@phosphor-icons/react';
 import { useAuth } from '../context/AuthContext';
 import BackgroundFX from './BackgroundFX';
+import ApiStatus from './ApiStatus';
 
 const navItems = [
   { to: '/', label: '首页', Icon: HouseIcon },
@@ -36,6 +37,7 @@ export default function Layout() {
   return (
     <div className="layout">
       <BackgroundFX />
+      <ApiStatus />
       <header className="header">
         <Link to="/" className="logo">火龙果影院</Link>
         <nav className="nav">

@@ -14,6 +14,7 @@
     "remove-no-cover": "node scripts/remove-no-cover.js"
   },
   "dependencies": {
+    "@libsql/client": "^0.17.0",
     "bcryptjs": "^2.4.3",
     "cors": "^2.8.5",
     "express": "^4.18.2",

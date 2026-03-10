@@ -9,23 +9,24 @@ const TASTE_PRESETS = {
   buff: { label: '资深影迷', desc: '烧脑悬疑、科幻经典', categoryNames: ['科幻', '悬疑'], tagNames: ['烧脑', '经典'] },
 };
 
-function getIdsByNames(db, table, names) {
+async function getIdsByNames(db, table, names) {
   if (!names || names.length === 0) return [];
   const placeholders = names.map(() => '?').join(',');
-  const rows = db.prepare(`SELECT id FROM ${table} WHERE name IN (${placeholders})`).all(...names);
+  const rows = await db.prepare(`SELECT id FROM ${table} WHERE name IN (${placeholders})`).all(...names);
   return rows.map((r) => r.id);
 }
 
 /**
  * 根据 tasteType 获取筛选用的分类 ID、标签 ID
  */
-function getTasteFilterIds(db, tasteType) {
+async function getTasteFilterIds(db, tasteType) {
   const preset = TASTE_PRESETS[tasteType];
   if (!preset) return { categoryIds: [], tagIds: [] };
-  return {
-    categoryIds: getIdsByNames(db, 'categories', preset.categoryNames),
-    tagIds: getIdsByNames(db, 'tags', preset.tagNames),
-  };
+  const [categoryIds, tagIds] = await Promise.all([
+    getIdsByNames(db, 'categories', preset.categoryNames),
+    getIdsByNames(db, 'tags', preset.tagNames),
+  ]);
+  return { categoryIds, tagIds };
 }
 
 module.exports = { TASTE_PRESETS, getIdsByNames, getTasteFilterIds };

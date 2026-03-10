@@ -45,6 +45,17 @@ async function request(url, options = {}) {
   return data;
 }
 
+/** 检测后端是否可达，用于页面顶部提示 */
+export async function checkApiHealth() {
+  const url = BASE + '/health';
+  try {
+    const res = await fetch(url, { method: 'GET', signal: AbortSignal.timeout(10000) });
+    return res.ok;
+  } catch {
+    return false;
+  }
+}
+
 export const api = {
   get: (url, params) => {
     const q = params ? '?' + new URLSearchParams(params).toString() : '';

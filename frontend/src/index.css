@@ -136,6 +136,22 @@ button { cursor: pointer; }
   z-index: 0;
 }
 
+/* API 连接失败提示条 */
+.api-status-banner {
+  background: linear-gradient(135deg, #FEE2E2 0%, #FECACA 100%);
+  color: #991B1B;
+  padding: var(--space-sm) var(--space-xl);
+  text-align: center;
+  font-size: 0.875rem;
+  border-bottom: 1px solid rgba(220, 38, 38, 0.2);
+  position: sticky;
+  top: 0;
+  z-index: 101;
+}
+.api-status-banner strong { display: block; margin-bottom: 0.25rem; }
+.api-status-banner p { margin: 0; opacity: 0.9; }
+.api-status-banner code { background: rgba(0,0,0,0.08); padding: 0.1em 0.4em; border-radius: 4px; font-size: 0.85em; }
+
 /* 顶部导航 · 玻璃拟态 */
 .header {
   display: flex;

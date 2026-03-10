@@ -175,6 +175,27 @@ Render 免费版休眠后冷启动约需 **30–50 秒**。
 
 **解决**：在 Vercel 修改 `VITE_API_BASE` 后，进入 **Deployments** → **Redeploy**。
 
+### 7. 部署失败：`vite: command not found` 或 `Command "vite build" exited with 127`
+
+**原因**：Vercel 直接执行 `vite build`，但 vite 在 node_modules 里，需通过 `npm run build` 调用。
+
+**解决**：
+1. 项目已添加 `vercel.json` 中的 `buildCommand: "npm run build"`
+2. 若仍失败，在 Vercel → **Settings** → **General** 检查：
+   - **Root Directory** 必须是 `frontend`（点 Edit 填 `frontend`，保存）
+3. **Settings** → **Build & Development Settings**：
+   - **Build Command**：勾选 Override，填 `npm run build`
+   - **Output Directory**：填 `dist`
+4. **Deployments** → 最新部署右侧 **⋮** → **Redeploy**
+
+### 8. 电影封面不显示
+
+**原因**：封面需从外部图床拉取，可能被拦截或超时。
+
+**解决**：
+- 已改用 wsrv.nl 图片代理。若国内网络访问 wsrv.nl 较慢或被拦截，可刷新多试几次
+- 确认电影在数据库中有 `cover` 字段（通过 OMDb/TMDB 拉取的电影会有）
+
 ---
 
 ## 六、项目内关键文件说明

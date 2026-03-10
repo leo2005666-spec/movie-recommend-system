@@ -6,13 +6,9 @@
  */
 const BASE = import.meta.env.VITE_API_BASE || '/api';
 
-/** 封面图片 URL：优先用 wsrv.nl 代理直链，绕过后端拉取失败问题 */
+/** 封面图片 URL：走后端代理（后端会尝试直连 + wsrv.nl 兜底） */
 export function getCoverUrl(movie) {
   if (!movie?.cover || !movie?.id) return '';
-  const raw = String(movie.cover).trim();
-  if (raw.startsWith('http://') || raw.startsWith('https://')) {
-    return 'https://wsrv.nl/?url=' + encodeURIComponent(raw) + '&w=300';
-  }
   return BASE + '/movies/' + movie.id + '/cover';
 }
 

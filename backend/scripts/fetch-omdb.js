@@ -78,7 +78,7 @@ async function main() {
 
   let added = 0;
   for (const m of allMovies) {
-    const existing = db.prepare('SELECT id FROM movies WHERE title = ? AND release_year = ?').get(m.title, parseInt(m.year) || null);
+    const existing = await db.prepare('SELECT id FROM movies WHERE title = ? AND release_year = ?').get(m.title, parseInt(m.year) || null);
     if (existing) continue;
 
     try {
@@ -99,22 +99,23 @@ async function main() {
       const duration = durationMatch ? parseInt(durationMatch[1]) : null;
       if (duration !== null && duration < 40) continue; // 排除短片
 
-      db.prepare(
+      await db.prepare(
         'INSERT INTO movies (title, cover, description, release_year, director, actors, duration) VALUES (?, ?, ?, ?, ?, ?, ?)'
       ).run(title, cover, description, releaseYear, director, actors, duration);
 
-      const mid = db.prepare('SELECT last_insert_rowid() as id').get().id;
+      const lastRow = await db.prepare('SELECT last_insert_rowid() as id').get();
+      const mid = lastRow?.id;
 
       // 简单映射 OMDb Genre 到分类
       const genreStr = (detail.Genre || '').toLowerCase();
-      if (genreStr.includes('action') || genreStr.includes('adventure')) db.prepare('INSERT OR IGNORE INTO movie_categories (movie_id, category_id) VALUES (?, 1)').run(mid);
-      if (genreStr.includes('comedy')) db.prepare('INSERT OR IGNORE INTO movie_categories (movie_id, category_id) VALUES (?, 2)').run(mid);
-      if (genreStr.includes('romance') || genreStr.includes('drama')) db.prepare('INSERT OR IGNORE INTO movie_categories (movie_id, category_id) VALUES (?, 3)').run(mid);
-      if (genreStr.includes('sci-fi') || genreStr.includes('science')) db.prepare('INSERT OR IGNORE INTO movie_categories (movie_id, category_id) VALUES (?, 4)').run(mid);
-      if (genreStr.includes('thriller') || genreStr.includes('mystery')) db.prepare('INSERT OR IGNORE INTO movie_categories (movie_id, category_id) VALUES (?, 5)').run(mid);
-      if (genreStr.includes('animation')) db.prepare('INSERT OR IGNORE INTO movie_categories (movie_id, category_id) VALUES (?, 6)').run(mid);
+      if (genreStr.includes('action') || genreStr.includes('adventure')) await db.prepare('INSERT OR IGNORE INTO movie_categories (movie_id, category_id) VALUES (?, 1)').run(mid);
+      if (genreStr.includes('comedy')) await db.prepare('INSERT OR IGNORE INTO movie_categories (movie_id, category_id) VALUES (?, 2)').run(mid);
+      if (genreStr.includes('romance') || genreStr.includes('drama')) await db.prepare('INSERT OR IGNORE INTO movie_categories (movie_id, category_id) VALUES (?, 3)').run(mid);
+      if (genreStr.includes('sci-fi') || genreStr.includes('science')) await db.prepare('INSERT OR IGNORE INTO movie_categories (movie_id, category_id) VALUES (?, 4)').run(mid);
+      if (genreStr.includes('thriller') || genreStr.includes('mystery')) await db.prepare('INSERT OR IGNORE INTO movie_categories (movie_id, category_id) VALUES (?, 5)').run(mid);
+      if (genreStr.includes('animation')) await db.prepare('INSERT OR IGNORE INTO movie_categories (movie_id, category_id) VALUES (?, 6)').run(mid);
 
-      db.prepare('INSERT OR IGNORE INTO movie_tags (movie_id, tag_id) VALUES (?, 3)').run(mid);
+      await db.prepare('INSERT OR IGNORE INTO movie_tags (movie_id, tag_id) VALUES (?, 3)').run(mid);
       added++;
       console.log(`  + ${title} (${releaseYear}) ${cover ? '✓' : ''}`);
     } catch (e) {

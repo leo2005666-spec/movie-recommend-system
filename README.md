@@ -116,6 +116,8 @@ npm run fetch-movies
 
 **注意**：运行前请先停止后端服务，完成后重启
 
+**往线上导入**：若使用 Turso 云数据库，在本地同时设置 `TURSO_DATABASE_URL`、`TURSO_AUTH_TOKEN`（与 Render 相同）和 `OMDB_API_KEY`，再运行上述命令，电影会写入线上数据库。
+
 ### 删除无封面电影
 
 ```bash

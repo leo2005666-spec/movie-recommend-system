@@ -288,3 +288,20 @@ npm run dev
 ```
 
 不设置上述变量时，默认使用 sql.js 本地文件数据库。
+
+### 5. 往线上 Turso 导入更多电影
+
+线上只有约 25 部默认电影。要让线上也有几百部电影，在**本地**用 Turso 凭证跑拉取脚本（会写入线上数据库）：
+
+```bash
+cd backend
+# 设置 Turso 凭证（与 Render 环境变量相同）
+set TURSO_DATABASE_URL=libsql://movie-recommend-你的组织.turso.io
+set TURSO_AUTH_TOKEN=你的token
+# 设置 OMDb Key（https://www.omdbapi.com/apikey.aspx，免费 1000 次/天）
+set OMDB_API_KEY=你的key
+
+npm run fetch-movies-omdb
+```
+
+**注意**：运行前请停止本地后端。完成后刷新线上网页即可看到新电影。

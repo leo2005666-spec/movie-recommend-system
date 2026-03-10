@@ -51,7 +51,7 @@ async function main() {
   let added = 0;
   for (const m of allMovies) {
     const title = m.title || m.original_title || '未知';
-    const existing = db.prepare('SELECT id FROM movies WHERE title = ?').get(title);
+    const existing = await db.prepare('SELECT id FROM movies WHERE title = ?').get(title);
     if (existing) continue;
 
     const cover = m.poster_path ? `${POSTER_BASE}${m.poster_path}` : null;
@@ -80,22 +80,23 @@ async function main() {
       console.warn(`  获取 ${title} 详情失败:`, e.message);
     }
 
-    db.prepare(
+    await db.prepare(
       `INSERT INTO movies (title, cover, description, release_year, director, actors, duration) VALUES (?, ?, ?, ?, ?, ?, ?)`
     ).run(title, cover, description, releaseYear, director, actors, null);
 
-    const mid = db.prepare('SELECT last_insert_rowid() as id').get().id;
+    const lastRow = await db.prepare('SELECT last_insert_rowid() as id').get();
+    const mid = lastRow?.id;
 
     // 简单映射 TMDB 类型到我们的分类: 1动作 2喜剧 3爱情 4科幻 5悬疑 6动画
     const genreMap = { 28: 1, 35: 2, 10749: 3, 878: 4, 9648: 5, 16: 6 };
     const genreIds = (m.genre_ids || []).slice(0, 2);
     for (const gid of genreIds) {
       const cid = genreMap[gid];
-      if (cid) db.prepare('INSERT OR IGNORE INTO movie_categories (movie_id, category_id) VALUES (?, ?)').run(mid, cid);
+      if (cid) await db.prepare('INSERT OR IGNORE INTO movie_categories (movie_id, category_id) VALUES (?, ?)').run(mid, cid);
     }
 
     // 默认加热门标签
-    db.prepare('INSERT OR IGNORE INTO movie_tags (movie_id, tag_id) VALUES (?, ?)').run(mid, 3); // 热门
+    await db.prepare('INSERT OR IGNORE INTO movie_tags (movie_id, tag_id) VALUES (?, ?)').run(mid, 3); // 热门
     added++;
     console.log(`  + ${title} ${cover ? '✓有封面' : ''}`);
   }

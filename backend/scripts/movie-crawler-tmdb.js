@@ -8,7 +8,8 @@
  *
  * 使用方法：
  *   set TMDB_API_KEY=你的key
- *   node scripts/movie-crawler-tmdb.js          # 单次运行
+ *   node scripts/movie-crawler-tmdb.js          # 单次运行（与现有 OMDb 数据合并）
+ *   node scripts/movie-crawler-tmdb.js --replace # 清空旧数据，仅保留 TMDB
  *   node scripts/movie-crawler-tmdb.js --cron  # 启动定时任务（每6小时）
  *
  * API Key: https://www.themoviedb.org/settings/api
@@ -64,15 +65,23 @@ async function fetchJson(url) {
 }
 
 async function ensureSchema(db) {
-  try {
-    await db.exec(`ALTER TABLE movies ADD COLUMN tmdb_id INTEGER UNIQUE`);
-  } catch (_) {}
-  try {
-    await db.exec(`ALTER TABLE movies ADD COLUMN tmdb_rating REAL`);
-  } catch (_) {}
+  // SQLite 不支持 ADD COLUMN 时直接加 UNIQUE
+  for (const col of [
+    'ALTER TABLE movies ADD COLUMN tmdb_id INTEGER',
+    'ALTER TABLE movies ADD COLUMN tmdb_rating REAL',
+  ]) {
+    try {
+      await db.exec(col);
+      console.log('  已添加列:', col.split(' ')[5]);
+    } catch (e) {
+      if (!/duplicate column name/i.test(e.message)) console.warn('  列可能已存在:', e.message);
+    }
+  }
 }
 
 async function runCrawler() {
+  const replaceMode = process.argv.includes('--replace');
+
   if (!API_KEY) {
     console.error('\n请设置 TMDB_API_KEY：');
     console.error('  set TMDB_API_KEY=你的key');
@@ -83,7 +92,23 @@ async function runCrawler() {
   const { init, getDb, save } = require('../src/db/db');
   await init();
   const db = getDb();
+
+  // 运行 init 的建表与迁移（crawler 独立运行时不经过 index.js）
+  const { run: runInit } = require('../src/db/init');
+  await runInit();
   await ensureSchema(db);
+
+  if (replaceMode) {
+    console.log('--replace 模式：清空旧电影数据（保留用户、分类等）...');
+    await db.prepare('DELETE FROM movie_categories').run();
+    await db.prepare('DELETE FROM movie_tags').run();
+    await db.prepare('DELETE FROM ratings').run();
+    await db.prepare('DELETE FROM favorites').run();
+    await db.prepare('DELETE FROM comments').run();
+    await db.prepare('DELETE FROM recommend_events').run();
+    await db.prepare('DELETE FROM movies').run();
+    console.log('  已清空\n');
+  }
 
   const seenTmdbIds = new Set();
   const allMovies = [];

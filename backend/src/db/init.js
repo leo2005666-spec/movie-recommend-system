@@ -175,9 +175,9 @@ async function run() {
     ('高分'), ('经典'), ('热门'), ('新片'), ('治愈'), ('烧脑')
   `);
 
-  // 确保 tmdb_id、tmdb_rating 列存在（兼容旧库）
+  // 确保 tmdb_id、tmdb_rating 列存在（兼容旧库，SQLite 不支持 ADD COLUMN 时加 UNIQUE）
   try {
-    await db.exec('ALTER TABLE movies ADD COLUMN tmdb_id INTEGER UNIQUE');
+    await db.exec('ALTER TABLE movies ADD COLUMN tmdb_id INTEGER');
   } catch (_) {}
   try {
     await db.exec('ALTER TABLE movies ADD COLUMN tmdb_rating REAL');

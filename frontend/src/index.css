@@ -933,6 +933,133 @@ button { cursor: pointer; }
   font-size: 0.9rem;
 }
 
+/* ========== 影视库 · TMDB 风格筛选布局 ========== */
+.movie-list-layout {
+  display: flex;
+  gap: var(--space-xl);
+  align-items: flex-start;
+  margin-top: var(--space-lg);
+}
+
+.filter-sidebar {
+  width: 260px;
+  flex-shrink: 0;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  position: sticky;
+  top: calc(64px + var(--space-md));
+}
+.filter-sidebar:not(.open) { width: auto; min-width: 120px; }
+
+.filter-sidebar__toggle {
+  width: 100%;
+  padding: var(--space-md) var(--space-lg);
+  background: var(--bg-elevated);
+  border: none;
+  color: var(--text-primary);
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  transition: background var(--duration-fast);
+}
+.filter-sidebar__toggle:hover { background: var(--bg-muted); }
+
+.filter-sidebar__content {
+  padding: var(--space-md);
+  max-height: 70vh;
+  overflow-y: auto;
+}
+
+.filter-section {
+  margin-bottom: var(--space-lg);
+}
+.filter-section:last-of-type { margin-bottom: var(--space-md); }
+
+.filter-section__title {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: var(--space-sm);
+}
+
+.filter-radio-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+.filter-radio {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  cursor: pointer;
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+}
+.filter-radio input { accent-color: var(--accent); }
+.filter-radio:hover { color: var(--text-primary); }
+
+.filter-year-range {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+.filter-year-range input { flex: 1; min-width: 0; }
+.filter-year-range span { color: var(--text-tertiary); font-size: 0.85rem; }
+
+.filter-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xs);
+}
+
+.filter-chip {
+  padding: var(--space-xs) var(--space-sm);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+  background: var(--bg-elevated);
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all var(--duration-fast);
+}
+.filter-chip:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.filter-chip.active {
+  border-color: var(--accent);
+  background: var(--accent-muted);
+  color: var(--accent);
+}
+
+.filter-clear {
+  width: 100%;
+  margin-top: var(--space-md);
+}
+
+.movie-list-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.list-count {
+  font-size: 0.9rem;
+  color: var(--text-tertiary);
+  margin-bottom: var(--space-md);
+}
+
+@media (max-width: 900px) {
+  .movie-list-layout { flex-direction: column; }
+  .filter-sidebar { width: 100%; position: static; }
+  .filter-sidebar__content { max-height: 400px; }
+}
+
 /* ========== 搜索/筛选区 ========== */
 .search-bar {
   display: flex;
@@ -1323,15 +1450,49 @@ button { cursor: pointer; }
   color: var(--text-tertiary);
 }
 
-/* ========== 详情页 ========== */
+/* ========== 详情页 · TMDB 风格 ========== */
+.detail-page {
+  margin: calc(-1 * var(--space-xl)) calc(-1 * var(--space-xl)) 0;
+}
+
+.detail-hero {
+  position: relative;
+  min-height: 480px;
+  display: flex;
+  align-items: flex-end;
+  padding-bottom: var(--space-2xl);
+}
+
+.detail-hero__bg {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+  background-color: var(--bg-canvas);
+}
+
+.detail-hero__overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, rgba(13, 37, 63, 0.98) 0%, rgba(13, 37, 63, 0.7) 40%, rgba(13, 37, 63, 0.4) 100%);
+}
+
+.detail-hero__content {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  padding: 0 var(--space-xl);
+}
+
 .detail-layout {
   display: flex;
   gap: var(--space-xl);
   flex-wrap: wrap;
+  align-items: flex-start;
 }
 
 .detail-poster {
-  width: 240px;
+  width: 300px;
   flex-shrink: 0;
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-md);
@@ -1342,23 +1503,140 @@ button { cursor: pointer; }
   min-width: 0;
 }
 
-.detail-info h1 {
-  font-size: 1.5rem;
+.detail-title {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: var(--space-sm);
+  line-height: 1.2;
+}
+
+.detail-year {
+  font-weight: 400;
+  opacity: 0.9;
+}
+
+.detail-meta {
+  color: var(--text-secondary);
+  font-size: 0.95rem;
+  margin-bottom: var(--space-md);
+}
+
+.detail-score-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  margin-bottom: var(--space-lg);
+}
+
+.detail-score-circle {
+  width: 68px;
+  height: 68px;
+  position: relative;
+  flex-shrink: 0;
+}
+
+.detail-score-circle svg {
+  width: 100%;
+  height: 100%;
+  transform: rotate(-90deg);
+}
+
+.detail-score-bg {
+  fill: none;
+  stroke: rgba(255, 255, 255, 0.2);
+  stroke-width: 3;
+}
+
+.detail-score-fill {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-dasharray: 0 100;
+  transition: stroke-dasharray 0.5s ease;
+}
+
+.detail-score-value {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.detail-score-label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.detail-score-label span { font-size: 0.9rem; color: var(--text-secondary); }
+.detail-score-hint { font-size: 0.8rem; color: var(--text-tertiary); }
+
+.detail-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-md);
+  margin-bottom: var(--space-md);
+}
+
+.detail-tagline {
+  font-size: 1rem;
+  font-style: italic;
+  color: var(--text-tertiary);
+  margin-bottom: var(--space-md);
+}
+
+.detail-synopsis-title {
+  font-size: 1rem;
   font-weight: 600;
   color: var(--text-primary);
   margin-bottom: var(--space-sm);
 }
 
-.detail-meta {
+.detail-synopsis {
   color: var(--text-secondary);
+  font-size: 0.95rem;
+  line-height: 1.7;
+  margin-bottom: var(--space-md);
+}
+
+.detail-crew {
   font-size: 0.9rem;
-  margin-bottom: var(--space-sm);
+  color: var(--text-secondary);
+  line-height: 1.6;
+}
+
+.detail-crew strong { color: var(--text-primary); margin-right: 0.25rem; }
+
+.detail-my-score {
+  color: var(--accent);
+  font-size: 0.9rem;
+  margin-top: var(--space-xs);
+}
+
+.detail-section {
+  margin-top: var(--space-xl);
+  padding: 0 var(--space-xl);
 }
 
 .detail-info p {
   color: var(--text-secondary);
   font-size: 0.95rem;
   margin-bottom: var(--space-sm);
+}
+
+@media (max-width: 768px) {
+  .detail-page { margin: calc(-1 * var(--space-md)) calc(-1 * var(--space-md)) 0; }
+  .detail-hero { min-height: 360px; padding-bottom: var(--space-lg); }
+  .detail-hero__content { padding: 0 var(--space-md); }
+  .detail-poster { width: 180px; }
+  .detail-title { font-size: 1.5rem; }
+  .detail-section { padding: 0 var(--space-md); }
 }
 
 .score-btns {

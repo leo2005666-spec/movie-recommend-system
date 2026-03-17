@@ -20,15 +20,17 @@ router.get('/:id/credits', asyncHandler(async (req, res) => {
   const id = parseInt(req.params.id);
   const row = await db.prepare('SELECT tmdb_id FROM movies WHERE id = ?').get(id);
   if (!row?.tmdb_id || !TMDB_API_KEY) {
-    return res.json({ code: 0, data: { cast: [], recommendations: [] } });
+    return res.json({ code: 0, data: { cast: [], recommendations: [], backdrop_path: null, tagline: null } });
   }
   try {
-    const [creditsRes, recRes] = await Promise.all([
+    const [creditsRes, recRes, detailsRes] = await Promise.all([
       fetch(`https://api.themoviedb.org/3/movie/${row.tmdb_id}/credits?api_key=${TMDB_API_KEY}&language=zh-CN`),
       fetch(`https://api.themoviedb.org/3/movie/${row.tmdb_id}/recommendations?api_key=${TMDB_API_KEY}&language=zh-CN&page=1`),
+      fetch(`https://api.themoviedb.org/3/movie/${row.tmdb_id}?api_key=${TMDB_API_KEY}&language=zh-CN`),
     ]);
     const credits = creditsRes.ok ? await creditsRes.json() : {};
     const rec = recRes.ok ? await recRes.json() : {};
+    const details = detailsRes.ok ? await detailsRes.json() : {};
     const cast = (credits.cast || []).slice(0, 12).map((c) => ({
       name: c.name,
       character: c.character,
@@ -48,11 +50,14 @@ router.get('/:id/credits', asyncHandler(async (req, res) => {
         vote_average: m.vote_average,
       });
     }
-    res.json({ code: 0, data: { cast, recommendations } });
+    const backdrop_path = details.backdrop_path ? `${TMDB_IMG}/w1280${details.backdrop_path}` : null;
+    const tagline = details.tagline || null;
+    res.json({ code: 0, data: { cast, recommendations, backdrop_path, tagline } });
   } catch (e) {
-    res.json({ code: 0, data: { cast: [], recommendations: [] } });
+    res.json({ code: 0, data: { cast: [], recommendations: [], backdrop_path: null, tagline: null } });
   }
 }));
+
 
 // 封面代理：解决外部图床防盗链/CORS/网络加载失败
 // 先直连，失败则通过 wsrv.nl 全球 CDN 代理拉取
@@ -94,6 +99,9 @@ router.get('/', optionalAuth, asyncHandler(async (req, res) => {
   const tagId = req.query.tagId ? parseInt(req.query.tagId) : null;
   const keyword = req.query.keyword ? req.query.keyword.trim() : null;
   const tasteType = (req.query.tasteType || '').trim();
+  const yearFrom = req.query.yearFrom ? parseInt(req.query.yearFrom) : null;
+  const yearTo = req.query.yearTo ? parseInt(req.query.yearTo) : null;
+  const watched = (req.query.watched || '').trim(); // 'watched' | 'unwatched' | ''
   const offset = (page - 1) * limit;
 
   let sql = `
@@ -135,6 +143,22 @@ router.get('/', optionalAuth, asyncHandler(async (req, res) => {
     conditions.push('(m.title LIKE ? OR m.description LIKE ? OR m.director LIKE ?)');
     const kw = `%${keyword}%`;
     params.push(kw, kw, kw);
+  }
+  if (yearFrom != null && !isNaN(yearFrom)) {
+    conditions.push('m.release_year >= ?');
+    params.push(yearFrom);
+  }
+  if (yearTo != null && !isNaN(yearTo)) {
+    conditions.push('m.release_year <= ?');
+    params.push(yearTo);
+  }
+  if (watched === 'watched' && req.user) {
+    conditions.push('m.id IN (SELECT movie_id FROM ratings WHERE user_id = ?)');
+    params.push(req.user.id);
+  }
+  if (watched === 'unwatched' && req.user) {
+    conditions.push('m.id NOT IN (SELECT movie_id FROM ratings WHERE user_id = ?)');
+    params.push(req.user.id);
   }
 
   if (conditions.length) sql += ' WHERE ' + conditions.join(' AND ');

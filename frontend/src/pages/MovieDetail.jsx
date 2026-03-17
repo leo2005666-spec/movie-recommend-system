@@ -13,6 +13,8 @@ export default function MovieDetail() {
   const [similar, setSimilar] = useState([]);
   const [cast, setCast] = useState([]);
   const [tmdbRecs, setTmdbRecs] = useState([]);
+  const [backdropPath, setBackdropPath] = useState(null);
+  const [tagline, setTagline] = useState(null);
   const [comments, setComments] = useState([]);
   const [commentContent, setCommentContent] = useState('');
   const [score, setScore] = useState(0);
@@ -41,6 +43,8 @@ export default function MovieDetail() {
       api.get(`/movies/${id}/credits`).then((r) => {
         setCast(r.data?.cast || []);
         setTmdbRecs(r.data?.recommendations || []);
+        setBackdropPath(r.data?.backdrop_path || null);
+        setTagline(r.data?.tagline || null);
       }).catch(() => {});
     }
   }, [id]);
@@ -109,57 +113,98 @@ export default function MovieDetail() {
   if (loading) return <p className="empty-hint">加载中...</p>;
   if (!movie) return <p>作品不存在</p>;
 
-  return (
-    <div>
-      <div className="detail-layout">
-        <img
-          src={getCoverUrl(movie)}
-          alt=""
-          className="detail-poster"
-          onError={(e) => e.target.src = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="240" height="360" fill="%232a2a35"><rect width="240" height="360"/></svg>'}
-        />
-        <div className="detail-info">
-          <h1 style={{ marginBottom: 'var(--space-sm)' }}>{movie.title}</h1>
-          <p className="detail-meta">
-            {movie.categories?.map((c) => c.name).join(' / ')} {movie.tags?.map((t) => t.name).join(' · ')} {movie.release_year && ` · ${movie.release_year}`}
-          </p>
-          {movie.tmdb_rating != null && (
-            <p style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: 'var(--space-xs)' }}>
-              <span style={{ color: 'var(--accent)', fontWeight: 600, fontSize: '1.25rem' }}>★ {movie.tmdb_rating}</span>
-              <span className="empty-hint" style={{ fontSize: '0.85rem' }}>TMDB 评分</span>
-            </p>
-          )}
-          {movie.director && <p>导演：{movie.director}</p>}
-          {movie.actors && <p>主演：{movie.actors}</p>}
-          {movie.duration && <p>片长：{movie.duration} 分钟</p>}
-          {movie.description && <p style={{ marginTop: 'var(--space-md)' }}>{movie.description}</p>}
+  const bgImage = backdropPath || (movie?.id ? getCoverUrl(movie) : null);
+  const scorePercent = movie.tmdb_rating != null ? Math.round(movie.tmdb_rating * 10) : (movie.myScore != null ? Math.round(movie.myScore * 20) : null);
 
-          {user && (
-            <div style={{ marginTop: 'var(--space-lg)', display: 'flex', gap: 'var(--space-md)', flexWrap: 'wrap' }}>
-              <div className="score-btns">
-                <span style={{ marginRight: 'var(--space-sm)' }}>评分：</span>
-                {[1, 2, 3, 4, 5].map((s) => (
-                  <button key={s} type="button" onClick={() => setScore(s)} className={`score-btn ${score >= s ? 'active' : ''}`}>
-                    {s}
-                  </button>
-                ))}
-                <button type="button" onClick={handleRate} className="btn" style={{ marginLeft: 'var(--space-sm)' }} disabled={submitting}>
-                  {submitting ? '提交中...' : '提交'}
-                </button>
+  return (
+    <div className="detail-page">
+      {/* TMDB 风格：顶部背景 + 渐变遮罩 */}
+      <div className="detail-hero">
+        <div
+          className="detail-hero__bg"
+          style={{ backgroundImage: bgImage ? `url(${bgImage})` : undefined }}
+        />
+        <div className="detail-hero__overlay" />
+        <div className="detail-hero__content">
+          <div className="detail-layout">
+            <img
+              src={getCoverUrl(movie)}
+              alt=""
+              className="detail-poster"
+              onError={(e) => { e.target.src = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="300" height="450" fill="%231a1a2e"><rect width="300" height="450"/></svg>'; }}
+            />
+            <div className="detail-info">
+              <h1 className="detail-title">
+                {movie.title}
+                {movie.release_year && <span className="detail-year"> ({movie.release_year})</span>}
+              </h1>
+              <div className="detail-meta">
+                {movie.categories?.map((c) => c.name).join(' · ')}
+                {movie.tags?.length > 0 && ` · ${movie.tags.map((t) => t.name).join(', ')}`}
+                {movie.duration && ` · ${movie.duration} 分钟`}
               </div>
-              <button className={`btn ${movie.isFavorite ? 'btn-outline' : ''}`} onClick={handleFavorite}>
-                {movie.isFavorite ? '已收藏' : '收藏'}
-              </button>
+
+              {/* 用户评分 · 圆形进度 */}
+              <div className="detail-score-row">
+                <div className="detail-score-circle">
+                  <svg viewBox="0 0 36 36">
+                    <path
+                      className="detail-score-bg"
+                      d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                    />
+                    <path
+                      className="detail-score-fill"
+                      strokeDasharray={`${scorePercent || 0}, 100`}
+                      d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                    />
+                  </svg>
+                  <span className="detail-score-value">{scorePercent != null ? scorePercent : '—'}%</span>
+                </div>
+                <div className="detail-score-label">
+                  <span>用户评分</span>
+                  {user && <span className="detail-score-hint">你的感觉如何？</span>}
+                </div>
+              </div>
+
+              {/* 操作按钮 */}
+              <div className="detail-actions">
+                {user && (
+                  <>
+                    <div className="score-btns">
+                      {[1, 2, 3, 4, 5].map((s) => (
+                        <button key={s} type="button" onClick={() => setScore(s)} className={`score-btn ${score >= s ? 'active' : ''}`}>{s}</button>
+                      ))}
+                      <button type="button" onClick={handleRate} className="btn" disabled={submitting}>{submitting ? '提交中...' : '提交评分'}</button>
+                    </div>
+                    <button className={`btn ${movie.isFavorite ? 'btn-outline' : ''}`} onClick={handleFavorite}>
+                      {movie.isFavorite ? '已收藏' : '收藏'}
+                    </button>
+                  </>
+                )}
+              </div>
+              {err && <div className="error-msg">{err}</div>}
+              {movie?.myScore != null && !err && <p className="detail-my-score">您已评 {movie.myScore} 分</p>}
+
+              {tagline && <p className="detail-tagline">{tagline}</p>}
+
+              <h3 className="detail-synopsis-title">简介</h3>
+              <p className="detail-synopsis">{movie.description || '暂无简介'}</p>
+
+              {movie.director && (
+                <div className="detail-crew">
+                  <strong>导演</strong> {movie.director}
+                  {movie.actors && <><br /><strong>主演</strong> {movie.actors}</>}
+                </div>
+              )}
             </div>
-          )}
-          {err && <div className="error-msg" style={{ marginTop: 'var(--space-sm)' }}>{err}</div>}
-          {movie?.myScore != null && !err && <p style={{ color: 'var(--accent)', marginTop: 'var(--space-sm)' }}>您已评 {movie.myScore} 分</p>}
+          </div>
         </div>
       </div>
 
+      {/* 演员阵容 */}
       {cast.length > 0 && (
-        <section style={{ marginTop: 'var(--space-xl)' }}>
-          <h2 className="section-title">演员表</h2>
+        <section className="detail-section">
+          <h2 className="section-title">演员阵容</h2>
           <div className="cast-row">
             {cast.map((c, i) => (
               <div key={i} className="cast-card">
@@ -178,8 +223,9 @@ export default function MovieDetail() {
         </section>
       )}
 
+      {/* 推荐观看 */}
       {(tmdbRecs.length > 0 || similar.length > 0) && (
-        <section style={{ marginTop: 'var(--space-xl)' }}>
+        <section className="detail-section">
           <h2 className="section-title">推荐观看</h2>
           <div className="rec-carousel">
             {tmdbRecs.length > 0
@@ -203,7 +249,8 @@ export default function MovieDetail() {
         </section>
       )}
 
-      <section>
+      {/* 评论 */}
+      <section className="detail-section">
         <h2 className="section-title">评论</h2>
         {user && (
           <form onSubmit={handleComment} style={{ marginBottom: 'var(--space-md)' }}>

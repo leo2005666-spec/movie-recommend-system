@@ -39,7 +39,7 @@ export default function Layout() {
       <BackgroundFX />
       <ApiStatus />
       <header className="header">
-        <Link to="/" className="logo">火龙果影院</Link>
+        <Link to="/" className="logo">影视推荐</Link>
         <nav className="nav">
           {navItems.map(({ to, label, Icon }) => (
             <Link

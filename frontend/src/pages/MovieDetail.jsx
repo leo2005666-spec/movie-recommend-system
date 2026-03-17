@@ -11,6 +11,8 @@ export default function MovieDetail() {
   const { user } = useAuth();
   const [movie, setMovie] = useState(null);
   const [similar, setSimilar] = useState([]);
+  const [cast, setCast] = useState([]);
+  const [tmdbRecs, setTmdbRecs] = useState([]);
   const [comments, setComments] = useState([]);
   const [commentContent, setCommentContent] = useState('');
   const [score, setScore] = useState(0);
@@ -32,6 +34,15 @@ export default function MovieDetail() {
 
   useEffect(() => {
     if (id) api.get(`/comments/movie/${id}`).then((r) => setComments(r.data?.list || [])).catch(() => {});
+  }, [id]);
+
+  useEffect(() => {
+    if (id) {
+      api.get(`/movies/${id}/credits`).then((r) => {
+        setCast(r.data?.cast || []);
+        setTmdbRecs(r.data?.recommendations || []);
+      }).catch(() => {});
+    }
   }, [id]);
 
   useEffect(() => {
@@ -112,6 +123,12 @@ export default function MovieDetail() {
           <p className="detail-meta">
             {movie.categories?.map((c) => c.name).join(' / ')} {movie.tags?.map((t) => t.name).join(' · ')} {movie.release_year && ` · ${movie.release_year}`}
           </p>
+          {movie.tmdb_rating != null && (
+            <p style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: 'var(--space-xs)' }}>
+              <span style={{ color: 'var(--accent)', fontWeight: 600, fontSize: '1.25rem' }}>★ {movie.tmdb_rating}</span>
+              <span className="empty-hint" style={{ fontSize: '0.85rem' }}>TMDB 评分</span>
+            </p>
+          )}
           {movie.director && <p>导演：{movie.director}</p>}
           {movie.actors && <p>主演：{movie.actors}</p>}
           {movie.duration && <p>片长：{movie.duration} 分钟</p>}
@@ -140,17 +157,48 @@ export default function MovieDetail() {
         </div>
       </div>
 
-      {similar.length > 0 && (
+      {cast.length > 0 && (
         <section style={{ marginTop: 'var(--space-xl)' }}>
-          <h2 className="section-title">喜欢这部的人也喜欢</h2>
-          <div className="movie-grid">
-            {similar.map((m) => (
-              <MovieCard
-                key={m.id}
-                movie={m}
-                onClick={() => api.post('/recommend/events', { scene: SCENE_SIMILAR, movieId: m.id, eventType: 'click' }).catch(() => {})}
-              />
+          <h2 className="section-title">演员表</h2>
+          <div className="cast-row">
+            {cast.map((c, i) => (
+              <div key={i} className="cast-card">
+                <div className="cast-photo">
+                  {c.profile_path ? (
+                    <img src={c.profile_path} alt={c.name} onError={(e) => { e.target.style.display = 'none'; }} />
+                  ) : (
+                    <div className="cast-placeholder" />
+                  )}
+                </div>
+                <div className="cast-name">{c.name}</div>
+                <div className="cast-character">{c.character || '—'}</div>
+              </div>
             ))}
+          </div>
+        </section>
+      )}
+
+      {(tmdbRecs.length > 0 || similar.length > 0) && (
+        <section style={{ marginTop: 'var(--space-xl)' }}>
+          <h2 className="section-title">推荐观看</h2>
+          <div className="rec-carousel">
+            {tmdbRecs.length > 0
+              ? tmdbRecs.map((m) => {
+                  const Card = m.id ? Link : 'div';
+                  const cardProps = m.id ? { to: `/movies/${m.id}` } : { style: { cursor: 'default' } };
+                  return (
+                    <Card key={m.tmdb_id} {...cardProps} className="rec-card">
+                      <img src={m.poster_path || ''} alt="" onError={(e) => { e.target.style.display = 'none'; }} />
+                      <div className="rec-info">
+                        <span className="rec-title">{m.title}</span>
+                        {m.vote_average != null && <span className="rec-score">★ {m.vote_average}</span>}
+                      </div>
+                    </Card>
+                  );
+                })
+              : similar.map((m) => (
+                  <MovieCard key={m.id} movie={m} onClick={() => api.post('/recommend/events', { scene: SCENE_SIMILAR, movieId: m.id, eventType: 'click' }).catch(() => {})} />
+                ))}
           </div>
         </section>
       )}

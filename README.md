@@ -2,6 +2,8 @@
 
 一个基于影视作品的个性化推荐系统，支持用户管理、影视信息维护、智能推荐和丰富的用户交互功能。
 
+> **首次了解本项目？** 请先看 [访问说明.md](./访问说明.md)：网站能否直接打开、为何有时打不开、Render / Vercel / Turso 各是什么，一眼看懂。
+
 ## 功能模块总览
 
 ### （1）用户管理功能
@@ -41,6 +43,7 @@
 ## 技术栈
 
 - **前端**：React 18 + Vite + React Router + Phosphor Icons（图标）
+- **界面风格**：TMDB 深色电影主题（深蓝背景 + 青蓝强调色）
 - **字体**：Plus Jakarta Sans + Noto Sans SC（Google Fonts，高级无衬线风格）
 - **后端**：Node.js + Express
 - **数据库**：sql.js（纯 JavaScript 实现的 SQLite，**无需 Visual Studio 编译**，Windows 可直接运行）
@@ -77,7 +80,9 @@ npm run dev
 
 详见 [DEPLOY.md](./DEPLOY.md)，包含：完整部署步骤、代码更新后重新部署、404/登录失败等故障排查、换平台配置。支持 **Turso 云数据库** 实现数据持久化（Render 重启后数据不丢失）。
 
-**若线上网页没有反应**：多为 Vercel 未配置 `VITE_API_BASE`。在 Vercel 项目 Settings → Environment Variables 添加 `VITE_API_BASE` = `https://你的后端.onrender.com/api`，然后 Redeploy。若页面顶部出现红色提示条，说明后端不可达，按提示检查。
+**平台说明**：前端用 **Vercel**（网页托管）、后端用 **Render**（程序托管）、数据库可选 **Turso**（云数据库）。详见 [访问说明.md](./访问说明.md)。
+
+**若线上网页没有反应**：多为 Vercel 未配置 `VITE_API_BASE`。在 Vercel 项目 Settings → Environment Variables 添加 `VITE_API_BASE` = `https://你的后端.onrender.com/api`，然后 Redeploy。若页面顶部出现红色提示条，说明后端不可达，按提示检查。**长时间未访问后首次打开需等 30～50 秒**（Render 免费版休眠冷启动），属正常现象。
 
 ### 默认账号
 - 管理员：admin / admin123

@@ -6,7 +6,7 @@ import { Link } from 'react-router-dom';
 
 export default function AuthLayout({
   children,
-  sideTitle = '火龙果影院',
+  sideTitle = '影视推荐',
   sideDesc = '发现你喜欢的影视',
   sideFeatures = [],
   showLogo = true,
@@ -14,12 +14,12 @@ export default function AuthLayout({
   return (
     <div className="auth-split">
       <div className="auth-split__form">
-        {showLogo && <Link to="/" className="auth-split__logo">火龙果影院</Link>}
+        {showLogo && <Link to="/" className="auth-split__logo">影视推荐</Link>}
         {children}
       </div>
       <div className="auth-split__brand">
         <div className="auth-split__brand-content">
-          <img src="/dragon-fruit.png" alt="火龙果" className="auth-split__dragon-fruit" />
+          <div className="auth-split__icon" aria-hidden />
           <h2 className="auth-split__brand-title">{sideTitle}</h2>
           <p className="auth-split__brand-desc">{sideDesc}</p>
           {sideFeatures.length > 0 && (

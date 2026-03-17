@@ -12,6 +12,48 @@ const { asyncHandler } = require('../utils/asyncHandler');
 
 const router = express.Router();
 
+const TMDB_API_KEY = process.env.TMDB_API_KEY;
+const TMDB_IMG = 'https://image.tmdb.org/t/p';
+
+// 从 TMDB 获取演员表（需电影有 tmdb_id，且配置 TMDB_API_KEY）
+router.get('/:id/credits', asyncHandler(async (req, res) => {
+  const id = parseInt(req.params.id);
+  const row = await db.prepare('SELECT tmdb_id FROM movies WHERE id = ?').get(id);
+  if (!row?.tmdb_id || !TMDB_API_KEY) {
+    return res.json({ code: 0, data: { cast: [], recommendations: [] } });
+  }
+  try {
+    const [creditsRes, recRes] = await Promise.all([
+      fetch(`https://api.themoviedb.org/3/movie/${row.tmdb_id}/credits?api_key=${TMDB_API_KEY}&language=zh-CN`),
+      fetch(`https://api.themoviedb.org/3/movie/${row.tmdb_id}/recommendations?api_key=${TMDB_API_KEY}&language=zh-CN&page=1`),
+    ]);
+    const credits = creditsRes.ok ? await creditsRes.json() : {};
+    const rec = recRes.ok ? await recRes.json() : {};
+    const cast = (credits.cast || []).slice(0, 12).map((c) => ({
+      name: c.name,
+      character: c.character,
+      profile_path: c.profile_path ? `${TMDB_IMG}/w185${c.profile_path}` : null,
+      order: c.order,
+    }));
+    const recList = (rec.results || []).slice(0, 12);
+    const recommendations = [];
+    for (const m of recList) {
+      const ours = await db.prepare('SELECT id FROM movies WHERE tmdb_id = ?').get(m.id);
+      recommendations.push({
+        id: ours?.id ?? null,
+        tmdb_id: m.id,
+        title: m.title || m.original_title,
+        poster_path: m.poster_path ? `${TMDB_IMG}/w300${m.poster_path}` : null,
+        release_date: m.release_date,
+        vote_average: m.vote_average,
+      });
+    }
+    res.json({ code: 0, data: { cast, recommendations } });
+  } catch (e) {
+    res.json({ code: 0, data: { cast: [], recommendations: [] } });
+  }
+}));
+
 // 封面代理：解决外部图床防盗链/CORS/网络加载失败
 // 先直连，失败则通过 wsrv.nl 全球 CDN 代理拉取
 router.get('/:id/cover', asyncHandler(async (req, res) => {

@@ -4,15 +4,12 @@
 import { Link } from 'react-router-dom';
 import { getCoverUrl } from '../api/request';
 
-/** 火龙果风格角标 SVG */
-function DragonFruitBadge() {
+/** TMDB 风格角标 · 星标 */
+function MovieBadge() {
   return (
     <span className="movie-card__badge" aria-hidden>
-      <svg viewBox="0 0 24 24" width="20" height="20">
-        <ellipse cx="12" cy="12" rx="8" ry="10" fill="#D94D6E" />
-        <path d="M8 4 Q12 2 16 4 Q14 6 12 6 Q10 6 8 4" fill="#4ADE80" />
-        <circle cx="10" cy="11" r="1.5" fill="rgba(255,255,255,0.5)" />
-        <circle cx="14" cy="13" r="1" fill="rgba(255,255,255,0.4)" />
+      <svg viewBox="0 0 24 24" width="14" height="14" fill="white">
+        <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
       </svg>
     </span>
   );
@@ -49,7 +46,7 @@ export default function MovieCard({ movie, onClick, showBadge = true, topRight, 
       className={`movie-card ${className || ''}`}
       onClick={onClick}
     >
-      {(showBadge && !topRight) && <DragonFruitBadge />}
+      {(showBadge && !topRight) && <MovieBadge />}
       {topRight && <span className="movie-card__top-right">{topRight}</span>}
       <div className="movie-card__cover-wrap">
         <img

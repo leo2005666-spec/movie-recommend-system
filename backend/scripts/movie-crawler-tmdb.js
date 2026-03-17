@@ -204,5 +204,6 @@ async function main() {
 
 main().catch((e) => {
   console.error('错误:', e.message);
+  if (process.env.CI) console.error(e.stack);
   process.exit(1);
 });

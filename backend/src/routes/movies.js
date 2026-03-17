@@ -55,7 +55,7 @@ router.get('/', optionalAuth, asyncHandler(async (req, res) => {
   const offset = (page - 1) * limit;
 
   let sql = `
-    SELECT m.id, m.title, m.cover, m.description, m.release_year, m.director, m.duration, m.created_at
+    SELECT m.id, m.title, m.cover, m.description, m.release_year, m.director, m.duration, m.tmdb_rating, m.created_at
     FROM movies m
   `;
   const params = [];

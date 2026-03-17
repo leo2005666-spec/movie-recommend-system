@@ -1,0 +1,28 @@
+# 定时从 TMDB 同步电影到 Turso（绕过本地网络限制）
+# 在 GitHub 仓库 Settings → Secrets 添加：TMDB_API_KEY, TURSO_DATABASE_URL, TURSO_AUTH_TOKEN
+name: Sync Movies from TMDB
+
+on:
+  workflow_dispatch:  # 手动触发
+  schedule:
+    - cron: '0 */6 * * *'  # 每 6 小时
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install
+        run: cd backend && npm install
+
+      - name: Sync TMDB
+        env:
+          TMDB_API_KEY: ${{ secrets.TMDB_API_KEY }}
+          TURSO_DATABASE_URL: ${{ secrets.TURSO_DATABASE_URL }}
+          TURSO_AUTH_TOKEN: ${{ secrets.TURSO_AUTH_TOKEN }}
+        run: cd backend && node scripts/movie-crawler-tmdb.js

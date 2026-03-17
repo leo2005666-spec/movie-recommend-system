@@ -47,6 +47,8 @@ async function run() {
       director TEXT,
       actors TEXT,
       duration INTEGER,
+      tmdb_id INTEGER UNIQUE,
+      tmdb_rating REAL,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )
@@ -172,6 +174,14 @@ async function run() {
     INSERT OR IGNORE INTO tags (name) VALUES
     ('高分'), ('经典'), ('热门'), ('新片'), ('治愈'), ('烧脑')
   `);
+
+  // 确保 tmdb_id、tmdb_rating 列存在（兼容旧库）
+  try {
+    await db.exec('ALTER TABLE movies ADD COLUMN tmdb_id INTEGER UNIQUE');
+  } catch (_) {}
+  try {
+    await db.exec('ALTER TABLE movies ADD COLUMN tmdb_rating REAL');
+  } catch (_) {}
 
   const movieCount = (await db.prepare('SELECT COUNT(*) as n FROM movies').get()).n;
   if (movieCount === 0) {

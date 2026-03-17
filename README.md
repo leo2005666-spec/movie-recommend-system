@@ -118,6 +118,23 @@ npm run fetch-movies
 
 **往线上导入**：若使用 Turso 云数据库，在本地同时设置 `TURSO_DATABASE_URL`、`TURSO_AUTH_TOKEN`（与 Render 相同）和 `OMDB_API_KEY`，再运行上述命令，电影会写入线上数据库。
 
+### TMDB 电影同步脚本（推荐，数据最全）
+
+使用 TMDB 官方 API（非爬虫），支持：电影名、评分、海报、简介、导演、演员、年份、片长。数据源：热门、高分、正在上映、即将上映，约 400+ 部。
+
+```bash
+cd backend
+set TMDB_API_KEY=你的key
+npm run crawler              # 单次同步
+npm run crawler:cron         # 启动定时任务（每 6 小时同步）
+```
+
+**为何选 TMDB 不选豆瓣**：豆瓣无公开 API，爬虫易被封且违反 ToS；TMDB 官方接口稳定、数据完整、支持中文。
+
+**往线上 Turso 同步**：设置 `TURSO_DATABASE_URL`、`TURSO_AUTH_TOKEN` 后运行，数据会写入线上库。
+
+**本地 ETIMEDOUT**：若本地网络无法访问 TMDB，可用 GitHub Actions 同步：仓库 → Settings → Secrets 添加 `TMDB_API_KEY`、`TURSO_DATABASE_URL`、`TURSO_AUTH_TOKEN`，然后 Actions → Sync Movies from TMDB → Run workflow。
+
 ### 删除无封面电影
 
 ```bash

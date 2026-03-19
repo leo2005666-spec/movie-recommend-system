@@ -1,10 +1,18 @@
 import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import MovieCard from '../components/MovieCard';
+import MovieCard, { getScoreColor } from '../components/MovieCard';
 import { useAuth } from '../context/AuthContext';
 import { api, getCoverUrl } from '../api/request';
 
 const SCENE_SIMILAR = 'similar';
+
+/** 片长格式：108 → "1h 48m" */
+function formatRuntime(mins) {
+  if (!mins || mins < 1) return null;
+  const h = Math.floor(mins / 60);
+  const m = mins % 60;
+  return h > 0 ? `${h}h ${m}m` : `${m}m`;
+}
 
 export default function MovieDetail() {
   const { id } = useParams();
@@ -15,12 +23,14 @@ export default function MovieDetail() {
   const [tmdbRecs, setTmdbRecs] = useState([]);
   const [backdropPath, setBackdropPath] = useState(null);
   const [tagline, setTagline] = useState(null);
+  const [tmdbDetails, setTmdbDetails] = useState(null);
   const [comments, setComments] = useState([]);
   const [commentContent, setCommentContent] = useState('');
   const [score, setScore] = useState(0);
   const [submitting, setSubmitting] = useState(false);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState('');
+  const [socialTab, setSocialTab] = useState('discuss'); // 'review' | 'discuss'
 
   const load = () => {
     api.get(`/movies/${id}`)
@@ -45,6 +55,7 @@ export default function MovieDetail() {
         setTmdbRecs(r.data?.recommendations || []);
         setBackdropPath(r.data?.backdrop_path || null);
         setTagline(r.data?.tagline || null);
+        setTmdbDetails(r.data?.tmdb_details || null);
       }).catch(() => {});
     }
   }, [id]);
@@ -115,6 +126,8 @@ export default function MovieDetail() {
 
   const bgImage = backdropPath || (movie?.id ? getCoverUrl(movie) : null);
   const scorePercent = movie.tmdb_rating != null ? Math.round(movie.tmdb_rating * 10) : (movie.myScore != null ? Math.round(movie.myScore * 20) : null);
+  const formatMoney = (n) => (n >= 1000000 ? `$${(n / 1000000).toFixed(1)}M` : n >= 1000 ? `$${(n / 1000).toFixed(0)}K` : n ? `$${n}` : null);
+  const hasSidebar = tmdbDetails && (tmdbDetails.original_title || tmdbDetails.status || tmdbDetails.budget || tmdbDetails.revenue || (tmdbDetails.keywords?.length > 0));
 
   return (
     <div className="detail-page">
@@ -139,21 +152,23 @@ export default function MovieDetail() {
                 {movie.release_year && <span className="detail-year"> ({movie.release_year})</span>}
               </h1>
               <div className="detail-meta">
-                {movie.categories?.map((c) => c.name).join(' · ')}
-                {movie.tags?.length > 0 && ` · ${movie.tags.map((t) => t.name).join(', ')}`}
-                {movie.duration && ` · ${movie.duration} 分钟`}
+                {tmdbDetails?.certification && <span className="detail-cert">{tmdbDetails.certification}</span>}
+                {(tmdbDetails?.release_date || movie.release_year) && (
+                  <span>{tmdbDetails?.release_date || `${movie.release_year}-01-01`}</span>
+                )}
+                {movie.categories?.length > 0 && <span> · {movie.categories.map((c) => c.name).join(', ')}</span>}
+                {movie.tags?.length > 0 && <span> 和 {movie.tags.map((t) => t.name).join(', ')}</span>}
+                {movie.duration && <span> · {formatRuntime(movie.duration)}</span>}
               </div>
 
-              {/* 用户评分 · 圆形进度 */}
+              {/* 用户评分 · 圆形进度（颜色编码：绿/黄/红） */}
               <div className="detail-score-row">
-                <div className="detail-score-circle">
+                <div className="detail-score-circle" data-color={scorePercent != null ? (scorePercent >= 70 ? 'green' : scorePercent >= 40 ? 'yellow' : 'red') : ''}>
                   <svg viewBox="0 0 36 36">
-                    <path
-                      className="detail-score-bg"
-                      d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                    />
+                    <path className="detail-score-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
                     <path
                       className="detail-score-fill"
+                      stroke={scorePercent != null ? getScoreColor(scorePercent) : 'rgba(255,255,255,0.3)'}
                       strokeDasharray={`${scorePercent || 0}, 100`}
                       d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
                     />
@@ -162,26 +177,50 @@ export default function MovieDetail() {
                 </div>
                 <div className="detail-score-label">
                   <span>用户评分</span>
-                  {user && <span className="detail-score-hint">你的感觉如何？</span>}
+                  {user && (
+                    <div className="detail-feel-row">
+                      <span className="detail-emojis" aria-hidden>😊 🥱</span>
+                      <button type="button" className="detail-feel-btn" onClick={() => document.querySelector('.score-btns')?.scrollIntoView({ behavior: 'smooth' })}>
+                        你的感觉如何? <span aria-label="信息">ℹ️</span>
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
 
-              {/* 操作按钮 */}
-              <div className="detail-actions">
+              {/* TMDB 风格 · 列表/收藏/书签 + 播放预告片 */}
+              <div className="detail-actions detail-actions--icons">
                 {user && (
                   <>
-                    <div className="score-btns">
-                      {[1, 2, 3, 4, 5].map((s) => (
-                        <button key={s} type="button" onClick={() => setScore(s)} className={`score-btn ${score >= s ? 'active' : ''}`}>{s}</button>
-                      ))}
-                      <button type="button" onClick={handleRate} className="btn" disabled={submitting}>{submitting ? '提交中...' : '提交评分'}</button>
-                    </div>
-                    <button className={`btn ${movie.isFavorite ? 'btn-outline' : ''}`} onClick={handleFavorite}>
-                      {movie.isFavorite ? '已收藏' : '收藏'}
+                    <button type="button" className="detail-action-icon" title="添加到片单" aria-label="片单">
+                      <svg viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M4 6h2v12H4V6zm4 0h2v12H8V6zm4 0h2v12h-2V6zm4 0h2v12h-2V6z" /></svg>
                     </button>
+                    <button type="button" className={`detail-action-icon ${movie.isFavorite ? 'active' : ''}`} title="收藏" onClick={handleFavorite} aria-label="收藏">
+                      <svg viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" /></svg>
+                    </button>
+                    <button type="button" className="detail-action-icon" title="待看" aria-label="待看">
+                      <svg viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M17 3H7c-1.1 0-2 .9-2 2v16l7-3 7 3V5c0-1.1-.9-2-2-2z" /></svg>
+                    </button>
+                    {tmdbDetails?.trailer_url && (
+                      <a href={tmdbDetails.trailer_url} target="_blank" rel="noopener noreferrer" className="detail-trailer">
+                        <svg viewBox="0 0 24 24" width="18" height="18"><path fill="currentColor" d="M8 5v14l11-7z" /></svg>
+                        播放预告片
+                      </a>
+                    )}
                   </>
                 )}
               </div>
+
+              {user && (
+                <div className="detail-actions detail-actions--score">
+                  <div className="score-btns">
+                    {[1, 2, 3, 4, 5].map((s) => (
+                      <button key={s} type="button" onClick={() => setScore(s)} className={`score-btn ${score >= s ? 'active' : ''}`}>{s}</button>
+                    ))}
+                    <button type="button" onClick={handleRate} className="btn" disabled={submitting}>{submitting ? '提交中...' : '提交评分'}</button>
+                  </div>
+                </div>
+              )}
               {err && <div className="error-msg">{err}</div>}
               {movie?.myScore != null && !err && <p className="detail-my-score">您已评 {movie.myScore} 分</p>}
 
@@ -201,77 +240,150 @@ export default function MovieDetail() {
         </div>
       </div>
 
-      {/* 演员阵容 */}
-      {cast.length > 0 && (
-        <section className="detail-section">
-          <h2 className="section-title">演员阵容</h2>
-          <div className="cast-row">
-            {cast.map((c, i) => (
-              <div key={i} className="cast-card">
-                <div className="cast-photo">
-                  {c.profile_path ? (
-                    <img src={c.profile_path} alt={c.name} onError={(e) => { e.target.style.display = 'none'; }} />
-                  ) : (
-                    <div className="cast-placeholder" />
-                  )}
-                </div>
-                <div className="cast-name">{c.name}</div>
-                <div className="cast-character">{c.character || '—'}</div>
-              </div>
-            ))}
-          </div>
-        </section>
-      )}
-
-      {/* 推荐观看 */}
-      {(tmdbRecs.length > 0 || similar.length > 0) && (
-        <section className="detail-section">
-          <h2 className="section-title">推荐观看</h2>
-          <div className="rec-carousel">
-            {tmdbRecs.length > 0
-              ? tmdbRecs.map((m) => {
-                  const Card = m.id ? Link : 'div';
-                  const cardProps = m.id ? { to: `/movies/${m.id}` } : { style: { cursor: 'default' } };
-                  return (
-                    <Card key={m.tmdb_id} {...cardProps} className="rec-card">
-                      <img src={m.poster_path || ''} alt="" onError={(e) => { e.target.style.display = 'none'; }} />
-                      <div className="rec-info">
-                        <span className="rec-title">{m.title}</span>
-                        {m.vote_average != null && <span className="rec-score">★ {m.vote_average}</span>}
-                      </div>
-                    </Card>
-                  );
-                })
-              : similar.map((m) => (
-                  <MovieCard key={m.id} movie={m} onClick={() => api.post('/recommend/events', { scene: SCENE_SIMILAR, movieId: m.id, eventType: 'click' }).catch(() => {})} />
+      {/* 两栏布局：主内容 + 右侧栏 */}
+      <div className={`detail-body ${(tmdbDetails && (tmdbDetails.original_title || tmdbDetails.status || tmdbDetails.budget || tmdbDetails.revenue || (tmdbDetails.keywords?.length > 0))) ? '' : 'detail-body--no-sidebar'}`}>
+        <div className="detail-main">
+          {/* 演员阵容 · TMDB 竖向卡片 */}
+          {cast.length > 0 && (
+            <section className="detail-section">
+              <h2 className="section-title">演员阵容</h2>
+              <div className="cast-row cast-row--vertical">
+                {cast.map((c, i) => (
+                  <div key={i} className="cast-card cast-card--vertical">
+                    <div className="cast-photo cast-photo--vertical">
+                      {c.profile_path ? (
+                        <img src={c.profile_path} alt={c.name} onError={(e) => { e.target.style.display = 'none'; }} />
+                      ) : (
+                        <div className="cast-placeholder" />
+                      )}
+                    </div>
+                    <div className="cast-info">
+                      <div className="cast-name">{c.name}</div>
+                      <div className="cast-character">{c.character || '—'}</div>
+                    </div>
+                  </div>
                 ))}
-          </div>
-        </section>
-      )}
-
-      {/* 评论 */}
-      <section className="detail-section">
-        <h2 className="section-title">评论</h2>
-        {user && (
-          <form onSubmit={handleComment} style={{ marginBottom: 'var(--space-md)' }}>
-            <textarea className="form-textarea form-input" value={commentContent} onChange={(e) => setCommentContent(e.target.value)} placeholder="写下你的影评，支持最多 2000 字…" rows={4} maxLength={2000} style={{ marginBottom: 'var(--space-sm)' }} />
-            <button type="submit" className="btn">发表评论</button>
-          </form>
-        )}
-        {!user && <p className="empty-hint" style={{ marginBottom: 'var(--space-md)' }}><Link to="/login">登录</Link>后可以评论</p>}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-md)' }}>
-          {comments.map((c) => (
-            <div key={c.id} className="card" style={{ padding: 'var(--space-md)' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 'var(--space-xs)' }}>
-                <strong>{c.nickname || c.username}</strong>
-                <span className="empty-hint" style={{ fontSize: '0.85rem' }}>{c.created_at}</span>
               </div>
-              <p>{c.content}</p>
+              {tmdbDetails?.tmdb_id && (
+                <a href={`https://www.themoviedb.org/movie/${tmdbDetails.tmdb_id}/cast`} target="_blank" rel="noopener noreferrer" className="link-more" style={{ display: 'inline-block', marginTop: 'var(--space-sm)' }}>
+                  完整演职员表
+                </a>
+              )}
+            </section>
+          )}
+
+          {/* 社交 · 评价/讨论 Tab */}
+          <section className="detail-section">
+            <h2 className="section-title">社交</h2>
+            <div className="social-tabs">
+              <button type="button" className={`social-tab ${socialTab === 'review' ? 'active' : ''}`} onClick={() => setSocialTab('review')}>
+                评价 {comments.length}
+              </button>
+              <button type="button" className={`social-tab ${socialTab === 'discuss' ? 'active' : ''}`} onClick={() => setSocialTab('discuss')}>
+                讨论 {comments.length}
+              </button>
             </div>
-          ))}
+            {user && (
+              <form onSubmit={handleComment} className="social-form">
+                <textarea className="form-textarea form-input" value={commentContent} onChange={(e) => setCommentContent(e.target.value)} placeholder="写下你的影评或参与讨论…" rows={3} maxLength={2000} />
+                <button type="submit" className="btn">发表</button>
+              </form>
+            )}
+            {!user && <p className="empty-hint" style={{ marginBottom: 'var(--space-md)' }}><Link to="/login">登录</Link>后可以评论</p>}
+            <div className="social-discuss-list">
+              {comments.map((c) => (
+                <div key={c.id} className="social-discuss-item">
+                  <div className="social-discuss-avatar">{(c.nickname || c.username || '?')[0]}</div>
+                  <div className="social-discuss-content">
+                    <div className="social-discuss-title">{c.content.length > 80 ? c.content.slice(0, 80) + '…' : c.content}</div>
+                    <div className="social-discuss-meta">
+                      <span>开放</span>
+                      <span>·</span>
+                      <span>{c.nickname || c.username}</span>
+                      <span>·</span>
+                      <span>{c.created_at}</span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+            {comments.length === 0 && <p className="empty-hint">暂无评论</p>}
+          </section>
+
+          {/* 推荐观看 */}
+          {(tmdbRecs.length > 0 || similar.length > 0) && (
+            <section className="detail-section">
+              <h2 className="section-title">推荐观看</h2>
+              <div className="rec-carousel">
+                {tmdbRecs.length > 0
+                  ? tmdbRecs.map((m) => {
+                      const Card = m.id ? Link : 'div';
+                      const cardProps = m.id ? { to: `/movies/${m.id}` } : { style: { cursor: 'default' } };
+                      return (
+                        <Card key={m.tmdb_id} {...cardProps} className="rec-card">
+                          <img src={m.poster_path || ''} alt="" onError={(e) => { e.target.style.display = 'none'; }} />
+                          <div className="rec-info">
+                            <span className="rec-title">{m.title}</span>
+                            {m.vote_average != null && <span className="rec-score">★ {m.vote_average}</span>}
+                          </div>
+                        </Card>
+                      );
+                    })
+                  : similar.map((m) => (
+                      <MovieCard key={m.id} movie={m} onClick={() => api.post('/recommend/events', { scene: SCENE_SIMILAR, movieId: m.id, eventType: 'click' }).catch(() => {})} />
+                    ))}
+              </div>
+            </section>
+          )}
         </div>
-        {comments.length === 0 && <p className="empty-hint">暂无评论</p>}
-      </section>
+
+        {/* 右侧信息栏 */}
+        {(tmdbDetails && (tmdbDetails.original_title || tmdbDetails.status || tmdbDetails.budget || tmdbDetails.revenue || (tmdbDetails.keywords?.length > 0))) && (
+          <aside className="detail-sidebar">
+            {tmdbDetails.original_title && (
+              <div className="detail-sidebar-row">
+                <span className="detail-sidebar-label">原名</span>
+                <span className="detail-sidebar-value">{tmdbDetails.original_title}</span>
+              </div>
+            )}
+            {tmdbDetails.status && (
+              <div className="detail-sidebar-row">
+                <span className="detail-sidebar-label">状态</span>
+                <span className="detail-sidebar-value">{tmdbDetails.status}</span>
+              </div>
+            )}
+            {tmdbDetails.budget != null && tmdbDetails.budget > 0 && (
+              <div className="detail-sidebar-row">
+                <span className="detail-sidebar-label">预算</span>
+                <span className="detail-sidebar-value">{formatMoney(tmdbDetails.budget)}</span>
+              </div>
+            )}
+            {tmdbDetails.revenue != null && tmdbDetails.revenue > 0 && (
+              <div className="detail-sidebar-row">
+                <span className="detail-sidebar-label">票房</span>
+                <span className="detail-sidebar-value">{formatMoney(tmdbDetails.revenue)}</span>
+              </div>
+            )}
+            {tmdbDetails.keywords?.length > 0 && (
+              <div className="detail-sidebar-section">
+                <span className="detail-sidebar-label">关键词</span>
+                <div className="detail-keywords">
+                  {tmdbDetails.keywords.map((kw, i) => (
+                    <span key={i} className="detail-keyword-tag">{kw}</span>
+                  ))}
+                </div>
+              </div>
+            )}
+            <div className="detail-sidebar-section">
+              <span className="detail-sidebar-label">完成度</span>
+              <div className="detail-completeness">
+                <div className="detail-completeness-bar" style={{ width: '100%' }} />
+                <span>100</span>
+              </div>
+            </div>
+          </aside>
+        )}
+      </div>
     </div>
   );
 }

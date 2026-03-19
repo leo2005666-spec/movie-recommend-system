@@ -19,19 +19,27 @@ const TMDB_IMG = 'https://image.tmdb.org/t/p';
 router.get('/:id/credits', asyncHandler(async (req, res) => {
   const id = parseInt(req.params.id);
   const row = await db.prepare('SELECT tmdb_id FROM movies WHERE id = ?').get(id);
+  const emptyData = {
+    cast: [], recommendations: [], backdrop_path: null, tagline: null,
+    tmdb_details: { original_title: null, status: null, budget: null, revenue: null, keywords: [], tmdb_id: null },
+  };
   if (!row?.tmdb_id || !TMDB_API_KEY) {
-    return res.json({ code: 0, data: { cast: [], recommendations: [], backdrop_path: null, tagline: null } });
+    return res.json({ code: 0, data: emptyData });
   }
   try {
-    const [creditsRes, recRes, detailsRes] = await Promise.all([
+    const [creditsRes, recRes, detailsRes, keywordsRes, releaseRes, videosRes] = await Promise.all([
       fetch(`https://api.themoviedb.org/3/movie/${row.tmdb_id}/credits?api_key=${TMDB_API_KEY}&language=zh-CN`),
       fetch(`https://api.themoviedb.org/3/movie/${row.tmdb_id}/recommendations?api_key=${TMDB_API_KEY}&language=zh-CN&page=1`),
       fetch(`https://api.themoviedb.org/3/movie/${row.tmdb_id}?api_key=${TMDB_API_KEY}&language=zh-CN`),
+      fetch(`https://api.themoviedb.org/3/movie/${row.tmdb_id}/keywords?api_key=${TMDB_API_KEY}`),
+      fetch(`https://api.themoviedb.org/3/movie/${row.tmdb_id}/release_dates?api_key=${TMDB_API_KEY}`),
+      fetch(`https://api.themoviedb.org/3/movie/${row.tmdb_id}/videos?api_key=${TMDB_API_KEY}&language=zh-CN`),
     ]);
     const credits = creditsRes.ok ? await creditsRes.json() : {};
     const rec = recRes.ok ? await recRes.json() : {};
     const details = detailsRes.ok ? await detailsRes.json() : {};
-    const cast = (credits.cast || []).slice(0, 12).map((c) => ({
+    const keywordsJson = keywordsRes.ok ? await keywordsRes.json() : {};
+    const cast = (credits.cast || []).slice(0, 20).map((c) => ({
       name: c.name,
       character: c.character,
       profile_path: c.profile_path ? `${TMDB_IMG}/w185${c.profile_path}` : null,
@@ -52,9 +60,40 @@ router.get('/:id/credits', asyncHandler(async (req, res) => {
     }
     const backdrop_path = details.backdrop_path ? `${TMDB_IMG}/w1280${details.backdrop_path}` : null;
     const tagline = details.tagline || null;
-    res.json({ code: 0, data: { cast, recommendations, backdrop_path, tagline } });
+    const statusMap = { Released: '已上映', Rumored: '传闻中', Planned: '计划中', 'In Production': '制作中', 'Post Production': '后期制作' };
+
+    let certification = null;
+    try {
+      const releaseJson = releaseRes.ok ? await releaseRes.json() : {};
+      for (const r of releaseJson.results || []) {
+        for (const rd of r.release_dates || []) {
+          if (rd.certification) { certification = rd.certification; break; }
+        }
+        if (certification) break;
+      }
+    } catch (_) {}
+
+    let trailerUrl = null;
+    try {
+      const videosJson = videosRes.ok ? await videosRes.json() : {};
+      const trailer = (videosJson.results || []).find((v) => v.type === 'Trailer' && v.site === 'YouTube');
+      if (trailer?.key) trailerUrl = `https://www.youtube.com/watch?v=${trailer.key}`;
+    } catch (_) {}
+
+    const tmdb_details = {
+      tmdb_id: row.tmdb_id,
+      original_title: details.original_title || null,
+      status: statusMap[details.status] || details.status || null,
+      budget: details.budget > 0 ? details.budget : null,
+      revenue: details.revenue > 0 ? details.revenue : null,
+      keywords: (keywordsJson.keywords || []).slice(0, 12).map((k) => k.name),
+      certification,
+      release_date: details.release_date || null,
+      trailer_url: trailerUrl,
+    };
+    res.json({ code: 0, data: { cast, recommendations, backdrop_path, tagline, tmdb_details } });
   } catch (e) {
-    res.json({ code: 0, data: { cast: [], recommendations: [], backdrop_path: null, tagline: null } });
+    res.json({ code: 0, data: emptyData });
   }
 }));
 
@@ -170,8 +209,13 @@ router.get('/', optionalAuth, asyncHandler(async (req, res) => {
   params.push(limit, offset);
   const list = await db.prepare(sql).all(...params);
 
+  // 平台用户评分均值（1-5 分制）
+  const avgRows = await db.prepare('SELECT movie_id, AVG(score) as avg_score FROM ratings GROUP BY movie_id').all();
+  const avgMap = Object.fromEntries(avgRows.map((r) => [r.movie_id, Math.round(r.avg_score * 10) / 10]));
+
   // 附加分类和标签
   for (const m of list) {
+    m.avg_score = avgMap[m.id] ?? null;
     m.categories = await db.prepare(`
       SELECT c.id, c.name FROM categories c
       INNER JOIN movie_categories mc ON c.id = mc.category_id WHERE mc.movie_id = ?

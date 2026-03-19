@@ -1159,6 +1159,120 @@ button { cursor: pointer; }
   display: block;
 }
 
+/* TMDB 风格 · 封面左下角评分圆环（半重叠到信息区） */
+.movie-card__score-ring {
+  position: absolute;
+  left: var(--space-sm);
+  bottom: -6px;
+  z-index: 2;
+  width: 38px;
+  height: 38px;
+  background: rgba(8, 28, 36, 0.95);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+}
+.movie-card__score-ring svg {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  transform: rotate(-90deg);
+}
+.movie-card__score-bg {
+  fill: none;
+  stroke: rgba(255,255,255,0.2);
+  stroke-width: 2.5;
+}
+.movie-card__score-fill {
+  fill: none;
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  transition: stroke-dasharray 0.4s ease;
+}
+.movie-card__score-value {
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: #fff;
+  z-index: 1;
+}
+
+/* 右上角三点菜单 */
+.movie-card__more {
+  position: absolute;
+  top: var(--space-xs);
+  right: var(--space-xs);
+  z-index: 2;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: rgba(0,0,0,0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+.movie-card:hover .movie-card__more { opacity: 1; }
+.movie-card__more:hover { background: rgba(0,0,0,0.7); }
+
+/* 封面左下角 · TMDB 风格评分圆环 */
+.movie-card__score-ring {
+  position: absolute;
+  bottom: -6px;
+  left: 8px;
+  z-index: 2;
+  width: 38px;
+  height: 38px;
+}
+.movie-card__score-ring svg {
+  width: 100%;
+  height: 100%;
+  transform: rotate(-90deg);
+}
+.movie-card__score-bg {
+  fill: none;
+  stroke: rgba(0, 0, 0, 0.8);
+  stroke-width: 3;
+}
+.movie-card__score-fill {
+  fill: none;
+  stroke-width: 3;
+  stroke-linecap: round;
+  transition: stroke 0.2s ease;
+}
+.movie-card__score-value {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: #fff;
+}
+
+/* 右上角三点菜单 */
+.movie-card__more {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  z-index: 2;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.5);
+  border-radius: 50%;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+.movie-card:hover .movie-card__more { opacity: 1; }
+
 .movie-card__play {
   position: absolute;
   inset: 0;
@@ -1169,6 +1283,67 @@ button { cursor: pointer; }
   transition: opacity var(--duration-normal);
   pointer-events: none;
 }
+
+/* 封面左下角 · TMDB 风格评分圆环（半重叠到 info 区） */
+.movie-card__score-ring {
+  position: absolute;
+  bottom: -6px;
+  left: var(--space-sm);
+  z-index: 2;
+  width: 38px;
+  height: 38px;
+  background: rgba(8, 28, 36, 0.95);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 0 2px rgba(255,255,255,0.3);
+}
+.movie-card__score-ring svg {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  transform: rotate(-90deg);
+}
+.movie-card__score-bg {
+  fill: none;
+  stroke: rgba(255,255,255,0.2);
+  stroke-width: 2.5;
+}
+.movie-card__score-fill {
+  fill: none;
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  stroke-dasharray: 0 100;
+  transition: stroke-dasharray 0.4s ease;
+}
+.movie-card__score-value {
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: #fff;
+  position: relative;
+  z-index: 1;
+}
+
+/* 封面右上角 · 三点菜单 */
+.movie-card__more {
+  position: absolute;
+  top: var(--space-xs);
+  right: var(--space-xs);
+  z-index: 2;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: rgba(0,0,0,0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity var(--duration-fast);
+}
+.movie-card:hover .movie-card__more { opacity: 1; }
+.movie-card__more:hover { background: rgba(0,0,0,0.7); }
 
 .movie-card__meta-icon {
   display: inline-block;
@@ -1520,6 +1695,81 @@ button { cursor: pointer; }
   color: var(--text-secondary);
   font-size: 0.95rem;
   margin-bottom: var(--space-md);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem;
+}
+.detail-cert {
+  padding: 2px 6px;
+  border: 1px solid rgba(255,255,255,0.5);
+  border-radius: 2px;
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+.detail-feel-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  margin-top: 0.25rem;
+}
+.detail-emojis {
+  font-size: 1.25rem;
+}
+.detail-feel-btn {
+  background: rgba(1, 180, 228, 0.25);
+  border: 1px solid rgba(1, 180, 228, 0.5);
+  color: var(--text-primary);
+  padding: var(--space-xs) var(--space-md);
+  border-radius: 999px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s;
+}
+.detail-feel-btn:hover {
+  background: rgba(1, 180, 228, 0.4);
+  border-color: var(--accent);
+}
+.detail-actions--icons {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-md);
+}
+.detail-action-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: rgba(1, 180, 228, 0.2);
+  border: 1px solid var(--border);
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s;
+}
+.detail-action-icon:hover,
+.detail-action-icon.active {
+  background: rgba(1, 180, 228, 0.35);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.detail-action-icon svg { flex-shrink: 0; }
+.detail-trailer {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs);
+  padding: var(--space-sm) var(--space-md);
+  color: var(--accent);
+  font-size: 0.9rem;
+  text-decoration: none;
+  border-radius: var(--radius-md);
+  transition: color 0.2s, background 0.2s;
+}
+.detail-trailer:hover {
+  color: var(--accent-hover);
+  background: rgba(1, 180, 228, 0.15);
 }
 
 .detail-score-row {
@@ -1619,10 +1869,207 @@ button { cursor: pointer; }
   margin-top: var(--space-xs);
 }
 
+/* 两栏布局 */
+.detail-body {
+  display: grid;
+  grid-template-columns: 1fr 280px;
+  gap: var(--space-2xl);
+  padding: var(--space-xl);
+  max-width: 1200px;
+  margin: 0 auto;
+}
+.detail-main { min-width: 0; }
+.detail-sidebar {
+  position: sticky;
+  top: 80px;
+  height: fit-content;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+}
+.detail-sidebar-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+.detail-sidebar-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+.detail-sidebar-value {
+  font-size: 0.95rem;
+  color: var(--text-primary);
+}
+.detail-keywords {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xs);
+}
+.detail-keyword-tag {
+  display: inline-block;
+  padding: var(--space-xs) var(--space-sm);
+  font-size: 0.8rem;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+}
+.detail-completeness {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  font-size: 0.85rem;
+  color: var(--text-tertiary);
+}
+.detail-completeness-bar {
+  flex: 1;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
+  overflow: hidden;
+}
+.detail-completeness-fill {
+  height: 100%;
+  background: var(--accent);
+  border-radius: 3px;
+}
+
+@media (max-width: 900px) {
+  .detail-body {
+    grid-template-columns: 1fr;
+    padding: var(--space-md);
+  }
+  .detail-sidebar { position: static; }
+}
+
+/* 演员阵容 · 竖向卡片 */
+.cast-row--vertical {
+  display: flex;
+  gap: var(--space-md);
+  overflow-x: auto;
+  padding-bottom: var(--space-sm);
+  scroll-snap-type: x mandatory;
+}
+.cast-card--vertical {
+  flex-shrink: 0;
+  width: 140px;
+  scroll-snap-align: start;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+}
+.cast-photo--vertical {
+  aspect-ratio: 2 / 3;
+  width: 100%;
+  background: var(--bg-muted);
+  overflow: hidden;
+}
+.cast-photo--vertical img,
+.cast-photo--vertical .cast-placeholder {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.cast-card--vertical .cast-info {
+  padding: var(--space-sm) var(--space-md);
+}
+.cast-card--vertical .cast-name {
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: var(--text-primary);
+}
+.cast-card--vertical .cast-character {
+  font-size: 0.8rem;
+  color: var(--text-tertiary);
+  margin-top: 0.125rem;
+}
+
+/* 社交 · Tab + 讨论卡片 */
+.social-tabs {
+  display: flex;
+  gap: 0;
+  border-bottom: 2px solid var(--border);
+  margin-bottom: var(--space-lg);
+}
+.social-tab {
+  padding: var(--space-sm) var(--space-lg);
+  background: none;
+  border: none;
+  color: var(--text-tertiary);
+  font-size: 0.95rem;
+  font-weight: 500;
+  cursor: pointer;
+  position: relative;
+  margin-bottom: -2px;
+  transition: color var(--duration-fast);
+}
+.social-tab:hover { color: var(--text-primary); }
+.social-tab.active {
+  color: var(--accent);
+  border-bottom: 2px solid var(--accent);
+}
+.social-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-lg);
+}
+.social-discuss-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+.social-discuss-item {
+  display: flex;
+  gap: var(--space-md);
+  padding: var(--space-md);
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  transition: border-color var(--duration-fast), background var(--duration-fast);
+}
+.social-discuss-item:hover {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: var(--border-strong);
+}
+.social-discuss-avatar {
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent) 0%, var(--tmdb-green) 100%);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 1rem;
+}
+.social-discuss-content { flex: 1; min-width: 0; }
+.social-discuss-title {
+  font-weight: 500;
+  color: var(--text-primary);
+  line-height: 1.4;
+  margin-bottom: var(--space-xs);
+}
+.social-discuss-meta {
+  font-size: 0.8rem;
+  color: var(--text-tertiary);
+  display: flex;
+  gap: 0.25rem;
+  flex-wrap: wrap;
+}
+
 .detail-section {
   margin-top: var(--space-xl);
-  padding: 0 var(--space-xl);
+  padding: 0;
 }
+.detail-section:first-child { margin-top: 0; }
 
 .detail-info p {
   color: var(--text-secondary);

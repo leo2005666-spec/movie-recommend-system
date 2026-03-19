@@ -1,15 +1,42 @@
 /**
- * 电影卡片 - 带火龙果主题图标装饰
+ * 电影卡片 · TMDB 风格
+ * 封面左下角评分圆环（颜色编码）+ 右上角三点菜单
  */
 import { Link } from 'react-router-dom';
 import { getCoverUrl } from '../api/request';
 
-/** TMDB 风格角标 · 星标 */
-function MovieBadge() {
+/** 根据百分比获取评分颜色：绿(>=70) / 黄(40-69) / 红(<40) */
+export function getScoreColor(percent) {
+  if (percent == null) return 'var(--text-tertiary)';
+  if (percent >= 70) return '#90EE90'; // 青绿
+  if (percent >= 40) return '#FFD700'; // 金黄
+  return '#FF6B6B'; // 红
+}
+
+/** TMDB 风格 · 封面上的评分圆环（左下角，半重叠） */
+function ScoreCircle({ movie }) {
+  const percent = movie.tmdb_rating != null ? Math.round(movie.tmdb_rating * 10) : (movie.avg_score != null ? Math.round(movie.avg_score * 20) : null);
+  if (percent == null) return null;
+  const color = getScoreColor(percent);
   return (
-    <span className="movie-card__badge" aria-hidden>
-      <svg viewBox="0 0 24 24" width="14" height="14" fill="white">
-        <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+    <div className="movie-card__score-ring" aria-hidden>
+      <svg viewBox="0 0 36 36">
+        <path className="movie-card__score-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+        <path className="movie-card__score-fill" stroke={color} strokeDasharray={`${percent}, 100`} d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+      </svg>
+      <span className="movie-card__score-value">{percent}%</span>
+    </div>
+  );
+}
+
+/** 右上角三点菜单 */
+function MoreMenu() {
+  return (
+    <span className="movie-card__more" aria-hidden onClick={(e) => e.preventDefault()}>
+      <svg viewBox="0 0 24 24" width="20" height="20">
+        <circle cx="12" cy="6" r="1.5" fill="white" />
+        <circle cx="12" cy="12" r="1.5" fill="white" />
+        <circle cx="12" cy="18" r="1.5" fill="white" />
       </svg>
     </span>
   );
@@ -46,7 +73,6 @@ export default function MovieCard({ movie, onClick, showBadge = true, topRight, 
       className={`movie-card ${className || ''}`}
       onClick={onClick}
     >
-      {(showBadge && !topRight) && <MovieBadge />}
       {topRight && <span className="movie-card__top-right">{topRight}</span>}
       <div className="movie-card__cover-wrap">
         <img
@@ -55,6 +81,8 @@ export default function MovieCard({ movie, onClick, showBadge = true, topRight, 
           className="cover"
           onError={(e) => { e.target.src = fallbackSvg; }}
         />
+        <ScoreCircle movie={movie} />
+        <MoreMenu />
         <PlayOverlay />
       </div>
       <div className="info">

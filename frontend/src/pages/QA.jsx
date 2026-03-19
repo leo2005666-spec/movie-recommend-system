@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ChatCircleIcon } from '@phosphor-icons/react';
 import { useAuth } from '../context/AuthContext';
+import Pagination from '../components/Pagination';
 import { api } from '../api/request';
 
 export default function QA() {
@@ -95,11 +96,7 @@ export default function QA() {
               </Link>
             ))}
           </div>
-          <div className="pagination">
-            <button className="btn btn-outline" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>上一页</button>
-            <span>{page} / {Math.ceil(total / 20) || 1}</span>
-            <button className="btn btn-outline" disabled={page >= Math.ceil(total / 20)} onClick={() => setPage((p) => p + 1)}>下一页</button>
-          </div>
+          <Pagination page={page} totalPages={Math.ceil(total / 20) || 1} onPageChange={setPage} />
         </>
       ) : (
         <p className="empty-hint">暂无问题，{user ? '快来提问吧' : '登录后可提问'}</p>

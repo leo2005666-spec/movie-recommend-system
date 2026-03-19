@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { FilmStripIcon, CaretDown, CaretUp } from '@phosphor-icons/react';
 import MovieCard from '../components/MovieCard';
 import MovieLoading from '../components/MovieLoading';
+import Pagination from '../components/Pagination';
 import { api } from '../api/request';
 import { useAuth } from '../context/AuthContext';
 
@@ -188,11 +189,7 @@ export default function MovieList() {
                   <MovieCard key={m.id} movie={m} />
                 ))}
               </div>
-              <div className="pagination">
-                <button className="btn btn-outline" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>上一页</button>
-                <span>{page} / {totalPages}</span>
-                <button className="btn btn-outline" disabled={page >= totalPages} onClick={() => setPage((p) => p + 1)}>下一页</button>
-              </div>
+              <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
             </>
           ) : (
             <p className="empty-hint">暂无影视作品，试试调整筛选条件</p>

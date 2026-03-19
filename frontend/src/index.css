@@ -1428,7 +1428,6 @@ button { cursor: pointer; }
   fill: none;
   stroke-width: 2.5;
   stroke-linecap: round;
-  stroke-dasharray: 0 100;
   transition: stroke-dasharray 0.4s ease;
 }
 .movie-card__score-value {
@@ -1919,7 +1918,6 @@ button { cursor: pointer; }
   stroke: var(--accent);
   stroke-width: 3;
   stroke-linecap: round;
-  stroke-dasharray: 0 100;
   transition: stroke-dasharray 0.5s ease;
 }
 
@@ -2349,6 +2347,34 @@ button { cursor: pointer; }
   justify-content: center;
   gap: var(--space-md);
   margin-top: var(--space-xl);
+  flex-wrap: wrap;
+}
+
+.pagination__jump {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+}
+
+.pagination__jump input {
+  width: 56px;
+  padding: var(--space-xs) var(--space-sm);
+  font-size: 0.9rem;
+  text-align: center;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+}
+
+.pagination__jump input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.pagination__jump button {
+  padding: var(--space-xs) var(--space-md);
+  font-size: 0.85rem;
 }
 
 /* ========== Admin ========== */

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import AdminNav from '../../components/AdminNav';
+import Pagination from '../../components/Pagination';
 import { api } from '../../api/request';
 
 export default function AdminLogs() {
@@ -62,11 +63,7 @@ export default function AdminLogs() {
           </tbody>
         </table>
       </div>
-      <div style={{ marginTop: '1rem', display: 'flex', gap: '0.5rem', justifyContent: 'center' }}>
-        <button className="btn btn-outline" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>上一页</button>
-        <span style={{ alignSelf: 'center' }}>{page} / {totalPages}</span>
-        <button className="btn btn-outline" disabled={page >= totalPages} onClick={() => setPage((p) => p + 1)}>下一页</button>
-      </div>
+      <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
     </div>
   );
 }

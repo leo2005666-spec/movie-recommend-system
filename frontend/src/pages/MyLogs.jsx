@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { FileTextIcon } from '@phosphor-icons/react';
+import Pagination from '../components/Pagination';
 import { api } from '../api/request';
 
 export default function MyLogs() {
@@ -53,11 +54,11 @@ export default function MyLogs() {
               </tbody>
             </table>
           </div>
-          <div style={{ marginTop: '1rem', display: 'flex', gap: '0.5rem', justifyContent: 'center' }}>
-            <button className="btn btn-outline" disabled={data.page <= 1} onClick={() => load(data.page - 1)}>上一页</button>
-            <span style={{ alignSelf: 'center' }}>{data.page} / {totalPages}</span>
-            <button className="btn btn-outline" disabled={data.page >= totalPages} onClick={() => load(data.page + 1)}>下一页</button>
-          </div>
+          <Pagination
+            page={data.page}
+            totalPages={totalPages}
+            onPageChange={(p) => load(p)}
+          />
         </>
       ) : (
         <p style={{ color: 'var(--text-muted)' }}>暂无活动记录</p>

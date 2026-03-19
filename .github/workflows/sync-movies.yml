@@ -21,7 +21,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
 
       - name: Install
         run: cd backend && npm install
@@ -41,4 +41,4 @@ jobs:
         run: |
           EXTRA=""
           if [ "${{ github.event.inputs.replace }}" = "true" ]; then EXTRA="--replace"; fi
-          cd backend && node scripts/movie-crawler-tmdb.js $EXTRA 2>&1 || (echo "::error::同步失败" && exit 1)
+          cd backend && node scripts/movie-crawler-tmdb.js $EXTRA

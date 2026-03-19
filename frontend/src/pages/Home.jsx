@@ -100,7 +100,7 @@ export default function Home() {
         {loading ? (
           <MovieLoading count={12} />
         ) : recommend.length ? (
-          <div className="movie-grid">
+          <div className="movie-grid movie-grid--home">
             {recommend.map((m) => (
               <MovieCard
                 key={m.id}

@@ -1189,6 +1189,21 @@ button { cursor: pointer; }
   }
 }
 
+/* 首页推荐：卡片略小，海报更清晰 */
+.movie-grid--home {
+  grid-template-columns: repeat(auto-fill, minmax(125px, 1fr));
+  gap: var(--space-md);
+}
+.movie-grid--home .movie-card .cover {
+  image-rendering: -webkit-optimize-contrast;
+}
+
+@media (max-width: 640px) {
+  .movie-grid--home {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
 .movie-card {
   position: relative;
   background: var(--bg-surface);

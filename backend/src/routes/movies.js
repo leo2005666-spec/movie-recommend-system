@@ -21,19 +21,21 @@ router.get('/:id/credits', asyncHandler(async (req, res) => {
   const row = await db.prepare('SELECT tmdb_id FROM movies WHERE id = ?').get(id);
   const emptyData = {
     cast: [], recommendations: [], backdrop_path: null, tagline: null,
-    tmdb_details: { original_title: null, status: null, budget: null, revenue: null, keywords: [], tmdb_id: null },
+    tmdb_details: { original_title: null, status: null, original_language: null, budget: null, revenue: null, keywords: [], tmdb_id: null, homepage: null, facebook_id: null, instagram_id: null, twitter_id: null },
   };
   if (!row?.tmdb_id || !TMDB_API_KEY) {
     return res.json({ code: 0, data: emptyData });
   }
+  const langMap = { en: '英语', ja: '日语', ko: '韩语', zh: '中文', 'zh-CN': '中文', fr: '法语', es: '西班牙语', de: '德语', it: '意大利语', pt: '葡萄牙语', ru: '俄语', hi: '印地语', th: '泰语', vi: '越南语', ar: '阿拉伯语', tr: '土耳其语', pl: '波兰语', nl: '荷兰语', sv: '瑞典语', da: '丹麦语', no: '挪威语', fi: '芬兰语' };
   try {
-    const [creditsRes, recRes, detailsRes, keywordsRes, releaseRes, videosRes] = await Promise.all([
+    const [creditsRes, recRes, detailsRes, keywordsRes, releaseRes, videosRes, externalRes] = await Promise.all([
       fetch(`https://api.themoviedb.org/3/movie/${row.tmdb_id}/credits?api_key=${TMDB_API_KEY}&language=zh-CN`),
       fetch(`https://api.themoviedb.org/3/movie/${row.tmdb_id}/recommendations?api_key=${TMDB_API_KEY}&language=zh-CN&page=1`),
       fetch(`https://api.themoviedb.org/3/movie/${row.tmdb_id}?api_key=${TMDB_API_KEY}&language=zh-CN`),
       fetch(`https://api.themoviedb.org/3/movie/${row.tmdb_id}/keywords?api_key=${TMDB_API_KEY}`),
       fetch(`https://api.themoviedb.org/3/movie/${row.tmdb_id}/release_dates?api_key=${TMDB_API_KEY}`),
       fetch(`https://api.themoviedb.org/3/movie/${row.tmdb_id}/videos?api_key=${TMDB_API_KEY}&language=zh-CN`),
+      fetch(`https://api.themoviedb.org/3/movie/${row.tmdb_id}/external_ids?api_key=${TMDB_API_KEY}`),
     ]);
     const credits = creditsRes.ok ? await creditsRes.json() : {};
     const rec = recRes.ok ? await recRes.json() : {};
@@ -80,16 +82,27 @@ router.get('/:id/credits', asyncHandler(async (req, res) => {
       if (trailer?.key) trailerUrl = `https://www.youtube.com/watch?v=${trailer.key}`;
     } catch (_) {}
 
+    let externalIds = {};
+    try {
+      externalIds = externalRes.ok ? await externalRes.json() : {};
+    } catch (_) {}
+
+    const origLang = details.original_language || null;
     const tmdb_details = {
       tmdb_id: row.tmdb_id,
       original_title: details.original_title || null,
       status: statusMap[details.status] || details.status || null,
+      original_language: origLang ? (langMap[origLang] || origLang) : null,
       budget: details.budget > 0 ? details.budget : null,
       revenue: details.revenue > 0 ? details.revenue : null,
       keywords: (keywordsJson.keywords || []).slice(0, 12).map((k) => k.name),
       certification,
       release_date: details.release_date || null,
       trailer_url: trailerUrl,
+      homepage: details.homepage || null,
+      facebook_id: externalIds.facebook_id || null,
+      instagram_id: externalIds.instagram_id || null,
+      twitter_id: externalIds.twitter_id || null,
     };
     res.json({ code: 0, data: { cast, recommendations, backdrop_path, tagline, tmdb_details } });
   } catch (e) {

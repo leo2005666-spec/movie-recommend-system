@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { api, getCoverUrl } from '../api/request';
 import MovieBanner from '../components/MovieBanner';
 import MovieCard from '../components/MovieCard';
+import MovieLoading from '../components/MovieLoading';
 
 const SCENE_HOME = 'home_personalized';
 
@@ -97,15 +98,7 @@ export default function Home() {
           {tasteType ? tastes.find((t) => t.key === tasteType)?.label + '精选' : '为你推荐'}
         </h2>
         {loading ? (
-          <div className="movie-grid">
-            {Array.from({ length: 12 }).map((_, i) => (
-              <div key={i} className="skeleton-card movie-card" style={{ pointerEvents: 'none' }}>
-                <div className="skeleton skeleton-cover" />
-                <div className="skeleton skeleton-title" />
-                <div className="skeleton skeleton-meta" />
-              </div>
-            ))}
-          </div>
+          <MovieLoading count={12} />
         ) : recommend.length ? (
           <div className="movie-grid">
             {recommend.map((m) => (

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { SparkleIcon } from '@phosphor-icons/react';
 import MovieCard from '../components/MovieCard';
+import MovieLoading from '../components/MovieLoading';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../api/request';
 

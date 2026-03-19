@@ -3,6 +3,7 @@
  */
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { SignIn } from '@phosphor-icons/react';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../api/request';
 import AuthLayout from '../components/AuthLayout';
@@ -61,6 +62,7 @@ export default function Login() {
           </div>
           {err && <div className="auth-error">{err}</div>}
           <button type="submit" className="auth-btn auth-btn--primary" disabled={loading}>
+            <SignIn size={20} weight="bold" className="auth-btn__icon" />
             {loading ? '登录中...' : '登录'}
           </button>
         </form>

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { FilmStripIcon, CaretDown, CaretUp } from '@phosphor-icons/react';
 import MovieCard from '../components/MovieCard';
+import MovieLoading from '../components/MovieLoading';
 import { api } from '../api/request';
 import { useAuth } from '../context/AuthContext';
 

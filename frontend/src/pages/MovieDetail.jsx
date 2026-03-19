@@ -126,8 +126,10 @@ export default function MovieDetail() {
 
   const bgImage = backdropPath || (movie?.id ? getCoverUrl(movie) : null);
   const scorePercent = movie.tmdb_rating != null ? Math.round(movie.tmdb_rating * 10) : (movie.myScore != null ? Math.round(movie.myScore * 20) : null);
-  const formatMoney = (n) => (n >= 1000000 ? `$${(n / 1000000).toFixed(1)}M` : n >= 1000 ? `$${(n / 1000).toFixed(0)}K` : n ? `$${n}` : null);
-  const hasSidebar = tmdbDetails && (tmdbDetails.original_title || tmdbDetails.status || tmdbDetails.budget || tmdbDetails.revenue || (tmdbDetails.keywords?.length > 0));
+  /** TMDB 风格：完整货币格式，如 $44,559,195.00 */
+  const formatMoney = (n) => (n != null && n > 0 ? `$${Number(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : null);
+  const hasSocial = tmdbDetails && (tmdbDetails.facebook_id || tmdbDetails.instagram_id || tmdbDetails.twitter_id || tmdbDetails.homepage);
+  const hasSidebar = tmdbDetails && (hasSocial || tmdbDetails.original_title || tmdbDetails.status || tmdbDetails.original_language || tmdbDetails.budget || tmdbDetails.revenue || (tmdbDetails.keywords?.length > 0));
 
   return (
     <div className="detail-page">
@@ -241,7 +243,7 @@ export default function MovieDetail() {
       </div>
 
       {/* 两栏布局：主内容 + 右侧栏 */}
-      <div className={`detail-body ${(tmdbDetails && (tmdbDetails.original_title || tmdbDetails.status || tmdbDetails.budget || tmdbDetails.revenue || (tmdbDetails.keywords?.length > 0))) ? '' : 'detail-body--no-sidebar'}`}>
+      <div className={`detail-body ${hasSidebar ? '' : 'detail-body--no-sidebar'}`}>
         <div className="detail-main">
           {/* 演员阵容 · TMDB 竖向卡片 */}
           {cast.length > 0 && (
@@ -337,9 +339,36 @@ export default function MovieDetail() {
           )}
         </div>
 
-        {/* 右侧信息栏 */}
-        {(tmdbDetails && (tmdbDetails.original_title || tmdbDetails.status || tmdbDetails.budget || tmdbDetails.revenue || (tmdbDetails.keywords?.length > 0))) && (
+        {/* 右侧信息栏 · TMDB 风格：社交图标 + 元数据 + 关键词 */}
+        {hasSidebar && (
           <aside className="detail-sidebar">
+            {/* 社交链接：Facebook / Twitter / Instagram / 官网链接 */}
+            {hasSocial && (
+              <div className="detail-sidebar-social">
+                {tmdbDetails.facebook_id && (
+                  <a href={`https://www.facebook.com/${tmdbDetails.facebook_id}`} target="_blank" rel="noopener noreferrer" className="detail-social-icon" aria-label="Facebook">
+                    <svg viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" /></svg>
+                  </a>
+                )}
+                {tmdbDetails.twitter_id && (
+                  <a href={`https://twitter.com/${tmdbDetails.twitter_id}`} target="_blank" rel="noopener noreferrer" className="detail-social-icon" aria-label="Twitter">
+                    <svg viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" /></svg>
+                  </a>
+                )}
+                {tmdbDetails.instagram_id && (
+                  <a href={`https://www.instagram.com/${tmdbDetails.instagram_id}`} target="_blank" rel="noopener noreferrer" className="detail-social-icon" aria-label="Instagram">
+                    <svg viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z" /></svg>
+                  </a>
+                )}
+                {(tmdbDetails.facebook_id || tmdbDetails.instagram_id || tmdbDetails.twitter_id) && tmdbDetails.homepage && <span className="detail-social-sep" />}
+                {tmdbDetails.homepage && (
+                  <a href={tmdbDetails.homepage} target="_blank" rel="noopener noreferrer" className="detail-social-icon" aria-label="官网">
+                    <svg viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M3.9 12c0-1.71 1.39-3.1 3.1-3.1h4V7H7c-2.76 0-5 2.24-5 5s2.24 5 5 5h4v-1.9H7c-1.71 0-3.1-1.39-3.1-3.1zM8 13h8v-2H8v2zm9-6h-4v1.9h4c1.71 0 3.1 1.39 3.1 3.1s-1.39 3.1-3.1 3.1h-4V17h4c2.76 0 5-2.24 5-5s-2.24-5-5-5z" /></svg>
+                  </a>
+                )}
+              </div>
+            )}
+            {/* 元数据：原名、状态、默认语言、预算、票房 */}
             {tmdbDetails.original_title && (
               <div className="detail-sidebar-row">
                 <span className="detail-sidebar-label">原名</span>
@@ -350,6 +379,12 @@ export default function MovieDetail() {
               <div className="detail-sidebar-row">
                 <span className="detail-sidebar-label">状态</span>
                 <span className="detail-sidebar-value">{tmdbDetails.status}</span>
+              </div>
+            )}
+            {tmdbDetails.original_language && (
+              <div className="detail-sidebar-row">
+                <span className="detail-sidebar-label">默认语言</span>
+                <span className="detail-sidebar-value">{tmdbDetails.original_language}</span>
               </div>
             )}
             {tmdbDetails.budget != null && tmdbDetails.budget > 0 && (
@@ -374,13 +409,6 @@ export default function MovieDetail() {
                 </div>
               </div>
             )}
-            <div className="detail-sidebar-section">
-              <span className="detail-sidebar-label">完成度</span>
-              <div className="detail-completeness">
-                <div className="detail-completeness-bar" style={{ width: '100%' }} />
-                <span>100</span>
-              </div>
-            </div>
           </aside>
         )}
       </div>

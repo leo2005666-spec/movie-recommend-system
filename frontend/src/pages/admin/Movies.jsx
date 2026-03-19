@@ -10,17 +10,29 @@ export default function AdminMovies() {
   const [editing, setEditing] = useState(null);
   const [form, setForm] = useState({ title: '', cover: '', description: '', release_year: '', director: '', actors: '', duration: '', categoryIds: [], tagIds: [] });
   const [loading, setLoading] = useState(true);
+  const [loadErr, setLoadErr] = useState('');
   const [err, setErr] = useState('');
 
   const load = () => {
-    api.get('/movies', { limit: 500 }).then((r) => setList(r.data?.list || [])).catch(() => setList([]));
+    setLoadErr('');
+    setLoading(true);
+    api
+      .get('/movies', { limit: 500 })
+      .then((r) => {
+        const list = r?.data?.list ?? r?.list ?? [];
+        setList(Array.isArray(list) ? list : []);
+      })
+      .catch((e) => {
+        setList([]);
+        setLoadErr(e?.message || '加载失败');
+      })
+      .finally(() => setLoading(false));
   };
 
   useEffect(() => {
     load();
-    api.get('/categories').then((r) => setCategories(r.data || [])).catch(() => {});
-    api.get('/tags').then((r) => setTags(r.data || [])).catch(() => {});
-    setLoading(false);
+    api.get('/categories').then((r) => setCategories(r?.data ?? r ?? [])).catch(() => {});
+    api.get('/tags').then((r) => setTags(r?.data ?? r ?? [])).catch(() => {});
   }, []);
 
   const resetForm = () => {

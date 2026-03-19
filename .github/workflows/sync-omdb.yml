@@ -1,0 +1,33 @@
+# 从 OMBd 同步电影到 Turso（TMDB 失败时的备选，通常更易成功）
+# 在 GitHub 仓库 Settings → Secrets 添加：OMDB_API_KEY, TURSO_DATABASE_URL, TURSO_AUTH_TOKEN
+name: Sync Movies from OMBd
+
+on:
+  workflow_dispatch:
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install
+        run: cd backend && npm install
+
+      - name: Check secrets
+        run: |
+          if [ -z "${{ secrets.OMDB_API_KEY }}" ]; then echo "::error::OMDB_API_KEY 未配置"; exit 1; fi
+          if [ -z "${{ secrets.TURSO_DATABASE_URL }}" ]; then echo "::error::TURSO_DATABASE_URL 未配置"; exit 1; fi
+          if [ -z "${{ secrets.TURSO_AUTH_TOKEN }}" ]; then echo "::error::TURSO_AUTH_TOKEN 未配置"; exit 1; fi
+          echo "Secrets OK"
+
+      - name: Sync OMBd
+        env:
+          OMDB_API_KEY: ${{ secrets.OMDB_API_KEY }}
+          TURSO_DATABASE_URL: ${{ secrets.TURSO_DATABASE_URL }}
+          TURSO_AUTH_TOKEN: ${{ secrets.TURSO_AUTH_TOKEN }}
+        run: cd backend && node scripts/fetch-omdb.js

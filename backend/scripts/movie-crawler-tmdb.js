@@ -29,7 +29,7 @@ const ENDPOINTS = [
   { name: '即将上映', path: '/movie/upcoming' },
 ];
 
-const PAGES_PER_SOURCE = 10; // 每个源抓取页数，约 200 部/源，总量约 600–800 部
+const PAGES_PER_SOURCE = 25; // 每个源抓取页数，约 500 部/源，总量约 800–1200 部（去重后）
 
 function sleep(ms) {
   return new Promise((r) => setTimeout(r, ms));

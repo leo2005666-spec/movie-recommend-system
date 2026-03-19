@@ -16,13 +16,15 @@ router.post('/', asyncHandler(async (req, res) => {
   if (!movieId) return res.status(400).json({ code: 400, message: '缺少 movieId' });
   const movie = await db.prepare('SELECT id, title FROM movies WHERE id = ?').get(movieId);
   if (!movie) return res.status(404).json({ code: 404, message: '作品不存在' });
+  const existing = await db.prepare('SELECT 1 FROM favorites WHERE user_id = ? AND movie_id = ?').get(req.user.id, movieId);
+  if (existing) return res.json({ code: 0, message: '已收藏过' });
   try {
     await db.prepare('INSERT INTO favorites (user_id, movie_id) VALUES (?, ?)').run(req.user.id, movieId);
     await logActivity(req, 'FAVORITE', 'movie', movieId, movie.title);
     res.json({ code: 0, message: '已收藏' });
   } catch (e) {
-    if (e.code === 'SQLITE_CONSTRAINT_UNIQUE') {
-      return res.status(400).json({ code: 400, message: '已收藏过' });
+    if (e.code === 'SQLITE_CONSTRAINT_UNIQUE' || e.code === 'SQLITE_CONSTRAINT' || (e.message && /unique|UNIQUE|constraint/i.test(e.message))) {
+      return res.json({ code: 0, message: '已收藏过' });
     }
     throw e;
   }

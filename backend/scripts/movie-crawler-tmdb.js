@@ -29,7 +29,7 @@ const ENDPOINTS = [
   { name: '即将上映', path: '/movie/upcoming' },
 ];
 
-const PAGES_PER_SOURCE = 25; // 每个源抓取页数，约 500 部/源，总量约 800–1200 部（去重后）
+const PAGES_PER_SOURCE = 13; // 每个源抓取页数，约 260 部/源，总量约 1000 部（去重后）
 
 function sleep(ms) {
   return new Promise((r) => setTimeout(r, ms));
@@ -183,16 +183,23 @@ async function runCrawler() {
           `INSERT INTO movies (title, cover, description, release_year, director, actors, duration, tmdb_id, tmdb_rating) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
         )
         .run(title, cover, description, releaseYear, director, actors, duration, m.id, rating);
+      const row = await db.prepare('SELECT id FROM movies WHERE tmdb_id = ?').get(m.id);
+      const mid = row?.id;
 
-      const lastRow = await db.prepare('SELECT last_insert_rowid() as id').get();
-      const mid = lastRow?.id;
-
-      const genreMap = { 28: 1, 35: 2, 10749: 3, 878: 4, 9648: 5, 16: 6 };
-      for (const gid of (m.genre_ids || []).slice(0, 2)) {
-        const cid = genreMap[gid];
-        if (cid) await db.prepare('INSERT OR IGNORE INTO movie_categories (movie_id, category_id) VALUES (?, ?)').run(mid, cid);
+      if (mid) {
+        try {
+          const genreMap = { 28: 1, 35: 2, 10749: 3, 878: 4, 9648: 5, 16: 6 };
+          for (const gid of (m.genre_ids || []).slice(0, 2)) {
+            const cid = genreMap[gid];
+            if (cid) await db.prepare('INSERT OR IGNORE INTO movie_categories (movie_id, category_id) VALUES (?, ?)').run(mid, cid);
+          }
+          await db.prepare('INSERT OR IGNORE INTO movie_tags (movie_id, tag_id) VALUES (?, ?)').run(mid, 3);
+        } catch (fkErr) {
+          if (/foreign key|FOREIGN_KEY|SQLITE_CONSTRAINT/i.test(fkErr.message)) {
+            console.warn(`  [跳过] ${title} 分类/标签插入失败（FK），电影已入库`);
+          } else throw fkErr;
+        }
       }
-      await db.prepare('INSERT OR IGNORE INTO movie_tags (movie_id, tag_id) VALUES (?, ?)').run(mid, 3);
       added++;
     }
 

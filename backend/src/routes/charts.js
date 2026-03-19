@@ -1,6 +1,8 @@
 /**
  * 榜单：一周口碑榜、高分榜、热门榜
- * 参考豆瓣电影榜单展示形式，数据来源于本平台用户评分
+ * - 口碑榜：基于用户评分行为（过去7天）
+ * - 高分榜：系统数据 tmdb_rating 排序，自动更新
+ * - 热门榜：综合收藏数+评分人数，经典高分可上榜
  */
 const express = require('express');
 const db = require('../db/db');
@@ -11,6 +13,7 @@ const router = express.Router();
 
 /**
  * 一周口碑榜：过去 7 天内有评分的电影，按 (平均分 × 评分人数^0.5) 排序
+ * 唯一基于用户行为的榜单
  */
 async function getWeeklyTop(limit = 10) {
   const rows = await db.prepare(`
@@ -21,7 +24,7 @@ async function getWeeklyTop(limit = 10) {
     INNER JOIN movies m ON r.movie_id = m.id
     WHERE r.created_at >= datetime('now', '-7 days')
     GROUP BY r.movie_id
-    HAVING cnt >= 1
+    HAVING COUNT(*) >= 1
     ORDER BY avg_score * (cnt * 1.0) DESC, cnt DESC
     LIMIT ?
   `).all(limit);
@@ -29,38 +32,51 @@ async function getWeeklyTop(limit = 10) {
 }
 
 /**
- * 高分榜：历史总评最高，评分人数不少于 1
+ * 高分榜：系统根据 tmdb_rating 自动排序，取前 10 名
+ * 不依赖用户评分，TMDB 同步后自动更新
  */
 async function getTopRated(limit = 10) {
   const rows = await db.prepare(`
-    SELECT m.id, m.title, m.cover, m.release_year,
-           AVG(r.score) as avg_score,
-           COUNT(*) as cnt
-    FROM ratings r
-    INNER JOIN movies m ON r.movie_id = m.id
-    GROUP BY r.movie_id
-    HAVING cnt >= 1
-    ORDER BY avg_score DESC, cnt DESC
+    SELECT m.id, m.title, m.cover, m.release_year, m.tmdb_rating
+    FROM movies m
+    WHERE m.tmdb_rating IS NOT NULL AND m.tmdb_rating > 0
+    ORDER BY m.tmdb_rating DESC
     LIMIT ?
   `).all(limit);
-  return rows.map((r, i) => ({ rank: i + 1, ...r, avg_score: Math.round(r.avg_score * 10) / 10 }));
+  return rows.map((r, i) => ({
+    rank: i + 1,
+    id: r.id,
+    title: r.title,
+    cover: r.cover,
+    release_year: r.release_year,
+    avg_score: Math.round((r.tmdb_rating || 0) * 10) / 10,
+    cnt: 0,
+  }));
 }
 
 /**
- * 热门榜：评分人数最多
+ * 热门榜：综合收藏数 + 评分人数，经典高分片可上榜
+ * 收藏多、评分多的排前；无数据时 fallback 到 tmdb_rating（经典）
  */
 async function getHotList(limit = 10) {
   const rows = await db.prepare(`
-    SELECT m.id, m.title, m.cover, m.release_year,
-           AVG(r.score) as avg_score,
-           COUNT(*) as cnt
-    FROM ratings r
-    INNER JOIN movies m ON r.movie_id = m.id
-    GROUP BY r.movie_id
-    ORDER BY cnt DESC, avg_score DESC
+    SELECT m.id, m.title, m.cover, m.release_year, m.tmdb_rating,
+           (SELECT COUNT(*) FROM favorites WHERE movie_id = m.id) as fav_cnt,
+           (SELECT COUNT(*) FROM ratings WHERE movie_id = m.id) as rating_cnt,
+           (SELECT AVG(score) FROM ratings WHERE movie_id = m.id) as user_avg
+    FROM movies m
+    ORDER BY (fav_cnt * 2 + rating_cnt) DESC, COALESCE(m.tmdb_rating, 0) DESC
     LIMIT ?
   `).all(limit);
-  return rows.map((r, i) => ({ rank: i + 1, ...r, avg_score: r.avg_score ? Math.round(r.avg_score * 10) / 10 : null }));
+  return rows.map((r, i) => ({
+    rank: i + 1,
+    id: r.id,
+    title: r.title,
+    cover: r.cover,
+    release_year: r.release_year,
+    avg_score: r.user_avg != null ? Math.round(r.user_avg * 10) / 10 : (r.tmdb_rating != null ? Math.round(r.tmdb_rating * 10) / 10 : null),
+    cnt: r.rating_cnt || 0,
+  }));
 }
 
 /** 获取榜单 */

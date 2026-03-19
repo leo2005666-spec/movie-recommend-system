@@ -9,16 +9,16 @@ export default function Charts() {
   const [activeTab, setActiveTab] = useState('weekly');
 
   useEffect(() => {
-    api.get('/charts/all', { limit: 15 })
+    api.get('/charts/all', { limit: 10 })
       .then((r) => setData(r.data || { weekly: [], top: [], hot: [] }))
       .catch(() => setData({ weekly: [], top: [], hot: [] }))
       .finally(() => setLoading(false));
   }, []);
 
   const tabs = [
-    { key: 'weekly', label: '一周口碑榜', desc: '本周最受好评' },
-    { key: 'top', label: '高分榜', desc: '口碑最佳' },
-    { key: 'hot', label: '热门榜', desc: '评分人数最多' },
+    { key: 'weekly', label: '一周口碑榜', desc: '本周最受好评（基于用户评分）' },
+    { key: 'top', label: '高分榜', desc: '系统高分 Top10' },
+    { key: 'hot', label: '热门榜', desc: '收藏+评分综合热度 Top10' },
   ];
 
   const list = data[activeTab] || [];
@@ -30,7 +30,7 @@ export default function Charts() {
         榜单
       </h1>
       <p className="empty-hint" style={{ marginBottom: 'var(--space-lg)' }}>
-        基于平台用户评分生成，类似豆瓣电影榜单
+        口碑榜基于用户行为；高分榜、热门榜由系统自动排序，TMDB 同步后更新
       </p>
 
       <div className="taste-chips">
@@ -95,7 +95,10 @@ export default function Charts() {
         </div>
       ) : (
         <p className="empty-hint">
-          暂无数据。去 <Link to="/movies">影视库</Link> 浏览并对喜欢的作品评分，榜单将自动生成。
+          {activeTab === 'weekly'
+            ? '暂无数据。去 影视库 浏览并对喜欢的作品评分，口碑榜将自动生成。'
+            : '暂无数据，TMDB 同步后会显示高分榜与热门榜。'}
+          <Link to="/movies"> 影视库</Link>
         </p>
       )}
     </div>

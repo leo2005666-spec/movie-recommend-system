@@ -16,6 +16,8 @@ on:
 jobs:
   sync:
     runs-on: ubuntu-latest
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true  # 消除 Node 20 废弃提示
     steps:
       - uses: actions/checkout@v4
 

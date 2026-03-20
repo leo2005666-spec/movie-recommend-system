@@ -188,8 +188,25 @@ export default function Home() {
                   <span className="empty-hint" style={{ fontSize: '0.82rem' }}>{c.created_at}</span>
                 </div>
                 <p className="hot-review-content">{c.content.length > 120 ? c.content.slice(0, 120) + '…' : c.content}</p>
-                <div className="hot-review-author">
-                  — {c.nickname || c.username}
+                <div className="hot-review-footer">
+                  <div className="hot-review-author">— {c.nickname || c.username}</div>
+                  {user && Number(c.user_id) === Number(user.id) && (
+                    <button
+                      type="button"
+                      className="btn btn-outline hot-review-delete"
+                      onClick={async () => {
+                        if (!window.confirm('确定删除这条评论？')) return;
+                        try {
+                          await api.delete(`/comments/${c.id}`);
+                          setHotComments((prev) => prev.filter((x) => x.id !== c.id));
+                        } catch (e) {
+                          alert(e.message || '删除失败');
+                        }
+                      }}
+                    >
+                      删除
+                    </button>
+                  )}
                 </div>
               </div>
             ))}

@@ -1776,6 +1776,19 @@ button { cursor: pointer; }
   color: var(--text-tertiary);
 }
 
+.hot-review-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  flex-wrap: wrap;
+}
+
+.hot-review-delete {
+  padding: 0.2rem 0.5rem;
+  font-size: 0.75rem;
+}
+
 /* ========== 详情页 · TMDB 风格 ========== */
 .detail-page {
   margin: calc(-1 * var(--space-xl)) calc(-1 * var(--space-xl)) 0;
@@ -2237,6 +2250,23 @@ button { cursor: pointer; }
   font-size: 1rem;
 }
 .social-discuss-content { flex: 1; min-width: 0; }
+.social-discuss-title-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-xs);
+}
+.social-discuss-title-row .social-discuss-title {
+  margin-bottom: 0;
+  flex: 1;
+  min-width: 0;
+}
+.comment-delete-btn {
+  flex-shrink: 0;
+  padding: 0.2rem 0.5rem;
+  font-size: 0.75rem;
+}
 .social-discuss-title {
   font-weight: 500;
   color: var(--text-primary);

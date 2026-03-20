@@ -119,6 +119,18 @@ export default function MovieDetail() {
     }
   };
 
+  /** 删除本人发表的评论（后端校验 user_id） */
+  const handleDeleteComment = async (commentId) => {
+    if (!user || !window.confirm('确定删除这条评论？删除后无法恢复。')) return;
+    setErr('');
+    try {
+      await api.delete(`/comments/${commentId}`);
+      setComments((prev) => prev.filter((c) => c.id !== commentId));
+    } catch (e) {
+      setErr(e.message || '删除失败');
+    }
+  };
+
   if (loading) return <p className="empty-hint">加载中...</p>;
   if (!movie) return <p>作品不存在</p>;
 
@@ -287,7 +299,18 @@ export default function MovieDetail() {
                 <div key={c.id} className="social-discuss-item">
                   <div className="social-discuss-avatar">{(c.nickname || c.username || '?')[0]}</div>
                   <div className="social-discuss-content">
-                    <div className="social-discuss-title">{c.content.length > 80 ? c.content.slice(0, 80) + '…' : c.content}</div>
+                    <div className="social-discuss-title-row">
+                      <div className="social-discuss-title">{c.content.length > 80 ? c.content.slice(0, 80) + '…' : c.content}</div>
+                      {user && Number(c.user_id) === Number(user.id) && (
+                        <button
+                          type="button"
+                          className="btn btn-outline comment-delete-btn"
+                          onClick={() => handleDeleteComment(c.id)}
+                        >
+                          删除
+                        </button>
+                      )}
+                    </div>
                     <div className="social-discuss-meta">
                       <span>开放</span>
                       <span>·</span>

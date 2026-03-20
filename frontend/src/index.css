@@ -1585,6 +1585,39 @@ button { cursor: pointer; }
   font-weight: 500;
 }
 
+/* 左右切换箭头 */
+.movie-banner__arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 3;
+  width: 44px;
+  height: 44px;
+  border: none;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: #fff;
+  background: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(6px);
+  transition: background 0.2s, transform 0.2s, color 0.2s;
+}
+.movie-banner__arrow:hover {
+  background: rgba(0, 0, 0, 0.65);
+  color: var(--accent);
+}
+.movie-banner__arrow:active {
+  transform: translateY(-50%) scale(0.96);
+}
+.movie-banner__arrow--prev {
+  left: var(--space-md);
+}
+.movie-banner__arrow--next {
+  right: var(--space-md);
+}
+
 .movie-banner__dots {
   position: absolute;
   bottom: var(--space-md);
@@ -1615,6 +1648,9 @@ button { cursor: pointer; }
   .movie-banner__content { max-width: 90%; padding: var(--space-lg); }
   .movie-banner__title { font-size: 1.25rem; }
   .movie-banner__desc { font-size: 0.85rem; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .movie-banner__arrow { width: 38px; height: 38px; }
+  .movie-banner__arrow--prev { left: var(--space-xs); }
+  .movie-banner__arrow--next { right: var(--space-xs); }
 }
 
 /* ========== 榜单表格 ========== */

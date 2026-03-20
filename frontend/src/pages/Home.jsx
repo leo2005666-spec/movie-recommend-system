@@ -28,34 +28,51 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
-    setLoading(true);
+    let cancelled = false;
     const params = { limit: 12 };
 
-    if (tasteType) {
-      params.tasteType = tasteType;
-      api.get('/recommend', params)
-        .then((r) => setRecommend(r.data || []))
-        .catch(() => setRecommend([]))
-        .finally(() => setLoading(false));
-      return;
-    }
+    const finish = (list) => {
+      if (!cancelled) {
+        setRecommend(list);
+        setLoading(false);
+      }
+    };
 
-    api.get('/recommendations', { scene: SCENE_HOME, ...params })
-      .then((r) => {
-        const list = Array.isArray(r.data) ? r.data : [];
-        if (list.length > 0) {
-          setRecommend(list);
-          if (user) {
-            list.slice(0, 12).forEach((m) => {
-              api.post('/recommend/events', { scene: SCENE_HOME, movieId: m.id, eventType: 'exposure' }).catch(() => {});
-            });
-          }
-        } else {
-          return api.get('/recommend', params).then((res) => setRecommend(res.data || []));
+    const loadRecommend = async () => {
+      setLoading(true);
+      try {
+        if (tasteType) {
+          const r = await api.get('/recommend', { ...params, tasteType });
+          finish(r.data || []);
+          return;
         }
-      })
-      .catch(() => api.get('/recommend', params).then((r) => setRecommend(r.data || [])).catch(() => setRecommend([])))
-      .finally(() => setLoading(false));
+
+        const r = await api.get('/recommendations', { scene: SCENE_HOME, ...params });
+        let list = Array.isArray(r.data) ? r.data : [];
+        if (list.length === 0) {
+          const fb = await api.get('/recommend', params);
+          list = fb.data || [];
+        }
+        finish(list);
+
+        if (!cancelled && user && list.length > 0) {
+          list.slice(0, 12).forEach((m) => {
+            api.post('/recommend/events', { scene: SCENE_HOME, movieId: m.id, eventType: 'exposure' }).catch(() => {});
+          });
+        }
+      } catch {
+        if (cancelled) return;
+        try {
+          const r = await api.get('/recommend', params);
+          finish(r.data || []);
+        } catch {
+          finish([]);
+        }
+      }
+    };
+
+    loadRecommend();
+    return () => { cancelled = true; };
   }, [tasteType, user]);
 
   return (

@@ -200,7 +200,7 @@ npm run fill-covers
 - `/api/users` - 用户信息管理
 - `/api/users/me/stats` - 当前用户统计（收藏、评分、影评数量）
 - `/api/logs` - 活动日志
-- `/api/movies` - 影视作品列表/CRUD；列表支持 `releaseStatus=released|unreleased`（已上映/未上映，按 `release_year` 与当前年比较；兼容旧参数 `watched`/`unwatched`）
+- `/api/movies` - 影视作品列表/CRUD；列表支持：`releaseStatus`、`typeKeys`（类型多选，如 `c:1,t:2` 表示须同时含分类1与标签2）、`dateFrom`/`dateTo`（`YYYY-MM-DD`，无精确日时按 `release_year` 推算）、`language`（`original_language`）、`scoreMin`/`scoreMax`（TMDB 分 0–10）、`minVotes`（`tmdb_vote_count`）、`durationMin`/`durationMax`、`providerIds`（逗号分隔 TMDB provider id，需库内有 `watch_provider_ids`）、`searchAllChannels=true` 时忽略平台筛选
 - `/api/categories` - 分类管理
 - `/api/tags` - 标签管理
 - `/api/recommend` - 个性化推荐（支持 `tasteType` 人群口味、`limit` 控制数量，最多 80 条）
@@ -293,3 +293,4 @@ npm run fill-covers
 - **评论删除**：`DELETE /api/comments/:id`，仅评论作者本人；详情页与首页热门影评对自己发的评论显示「删除」。
 - **反馈管理**：管理员 `GET /api/feedbacks` 始终返回全表，可重复刷新查看；`DELETE /api/feedbacks/:id` 物理删除单条反馈。
 - **影视库筛选**：原「已观看/未观看」（按是否评分）已改为 **「已上映/未上映」**，按作品 `release_year` 与当前公历年比较；未登录也可筛选。
+- **影视库 TMDB 风格面板**：「在哪里观看」（平台多选、地区、仅订阅、本机记住订阅）、「发行日期」（勾选「搜索所有发行渠道」则不按日期筛；否则用日历选起止日）、**类型**（原分类+原标签合并为多选胶囊）、语言下拉、用户评分/最少投票/时长双滑块。库表含 `watch_provider_ids`、`original_language`、`tmdb_vote_count`、`release_date`（可选），启动时 `init` 会为旧数据补空字段以便筛选演示。

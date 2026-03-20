@@ -12,6 +12,23 @@ const { asyncHandler } = require('../utils/asyncHandler');
 
 const router = express.Router();
 
+/** 影视库「类型」多选：typeKeys=c:1,c:2,t:3 表示须同时满足分类与标签 */
+function parseTypeKeys(raw) {
+  const categoryIds = [];
+  const tagIds = [];
+  if (!raw || typeof raw !== 'string') return { categoryIds, tagIds };
+  raw.split(',').forEach((part) => {
+    const p = part.trim();
+    if (!p) return;
+    const [kind, idStr] = p.split(':');
+    const id = parseInt(idStr, 10);
+    if (Number.isNaN(id)) return;
+    if (kind === 'c') categoryIds.push(id);
+    if (kind === 't') tagIds.push(id);
+  });
+  return { categoryIds, tagIds };
+}
+
 const TMDB_API_KEY = process.env.TMDB_API_KEY;
 const TMDB_IMG = 'https://image.tmdb.org/t/p';
 
@@ -143,16 +160,31 @@ router.get('/:id/cover', asyncHandler(async (req, res) => {
   res.status(502).send('Failed to fetch cover');
 }));
 
-// 获取影视列表（支持分页、分类、标签、人群口味 tasteType 筛选）
+// 获取影视列表（分页、类型多选、发行日期、语言、评分/投票/时长滑块、观看平台等）
 router.get('/', optionalAuth, asyncHandler(async (req, res) => {
   const page = Math.max(1, parseInt(req.query.page) || 1);
   const limit = Math.min(500, Math.max(10, parseInt(req.query.limit) || 12));
-  const categoryId = req.query.categoryId ? parseInt(req.query.categoryId) : null;
-  const tagId = req.query.tagId ? parseInt(req.query.tagId) : null;
+  const categoryId = req.query.categoryId ? parseInt(req.query.categoryId, 10) : null;
+  const tagId = req.query.tagId ? parseInt(req.query.tagId, 10) : null;
   const keyword = req.query.keyword ? req.query.keyword.trim() : null;
   const tasteType = (req.query.tasteType || '').trim();
-  const yearFrom = req.query.yearFrom ? parseInt(req.query.yearFrom) : null;
-  const yearTo = req.query.yearTo ? parseInt(req.query.yearTo) : null;
+  const yearFrom = req.query.yearFrom ? parseInt(req.query.yearFrom, 10) : null;
+  const yearTo = req.query.yearTo ? parseInt(req.query.yearTo, 10) : null;
+  const dateFrom = (req.query.dateFrom || '').trim();
+  const dateTo = (req.query.dateTo || '').trim();
+  const language = (req.query.language || '').trim().toLowerCase();
+  const searchAllChannels = req.query.searchAllChannels === '1' || req.query.searchAllChannels === 'true';
+  const providerIdsRaw = (req.query.providerIds || '').trim();
+  const providerIds = providerIdsRaw
+    ? providerIdsRaw.split(',').map((x) => parseInt(x.trim(), 10)).filter((n) => !Number.isNaN(n))
+    : [];
+
+  const scoreMin = req.query.scoreMin !== undefined && req.query.scoreMin !== '' ? parseFloat(req.query.scoreMin) : null;
+  const scoreMax = req.query.scoreMax !== undefined && req.query.scoreMax !== '' ? parseFloat(req.query.scoreMax) : null;
+  const minVotes = req.query.minVotes !== undefined && req.query.minVotes !== '' ? parseInt(req.query.minVotes, 10) : null;
+  const durationMin = req.query.durationMin !== undefined && req.query.durationMin !== '' ? parseInt(req.query.durationMin, 10) : null;
+  const durationMax = req.query.durationMax !== undefined && req.query.durationMax !== '' ? parseInt(req.query.durationMax, 10) : null;
+
   /** 上映状态：released=已上映，unreleased=未上映（按发行年份与当前年比较；兼容旧参数 watched/unwatched） */
   let releaseStatus = (req.query.releaseStatus || '').trim().toLowerCase();
   if (!releaseStatus) {
@@ -162,6 +194,8 @@ router.get('/', optionalAuth, asyncHandler(async (req, res) => {
   }
   const currentYear = new Date().getFullYear();
   const offset = (page - 1) * limit;
+
+  const { categoryIds: typeCategoryIds, tagIds: typeTagIds } = parseTypeKeys(req.query.typeKeys || '');
 
   let sql = `
     SELECT m.id, m.title, m.cover, m.description, m.release_year, m.director, m.duration, m.tmdb_rating, m.created_at
@@ -190,11 +224,21 @@ router.get('/', optionalAuth, asyncHandler(async (req, res) => {
     conditions.push('(' + subQueries.join(' OR ') + ')');
   }
 
-  if (categoryId) {
+  // 类型多选（AND）：每个分类 / 标签都必须命中
+  for (const cid of typeCategoryIds) {
+    conditions.push('m.id IN (SELECT movie_id FROM movie_categories WHERE category_id = ?)');
+    params.push(cid);
+  }
+  for (const tid of typeTagIds) {
+    conditions.push('m.id IN (SELECT movie_id FROM movie_tags WHERE tag_id = ?)');
+    params.push(tid);
+  }
+
+  if (categoryId && typeCategoryIds.length === 0) {
     sql += ' INNER JOIN movie_categories mc ON m.id = mc.movie_id AND mc.category_id = ?';
     params.push(categoryId);
   }
-  if (tagId) {
+  if (tagId && typeTagIds.length === 0) {
     sql += ' INNER JOIN movie_tags mt ON m.id = mt.movie_id AND mt.tag_id = ?';
     params.push(tagId);
   }
@@ -203,14 +247,29 @@ router.get('/', optionalAuth, asyncHandler(async (req, res) => {
     const kw = `%${keyword}%`;
     params.push(kw, kw, kw);
   }
-  if (yearFrom != null && !isNaN(yearFrom)) {
+  if (yearFrom != null && !Number.isNaN(yearFrom)) {
     conditions.push('m.release_year >= ?');
     params.push(yearFrom);
   }
-  if (yearTo != null && !isNaN(yearTo)) {
+  if (yearTo != null && !Number.isNaN(yearTo)) {
     conditions.push('m.release_year <= ?');
     params.push(yearTo);
   }
+
+  // 发行日期区间（有 release_date 用精确日；否则用发行年推算 1/1～12/31）
+  if (dateFrom && dateTo) {
+    conditions.push(`(COALESCE(NULLIF(TRIM(m.release_date), ''), printf('%04d-01-01', m.release_year), '1900-01-01') <= ?)`);
+    params.push(dateTo);
+    conditions.push(`(COALESCE(NULLIF(TRIM(m.release_date), ''), printf('%04d-12-31', m.release_year), '9999-12-31') >= ?)`);
+    params.push(dateFrom);
+  } else if (dateFrom) {
+    conditions.push(`(COALESCE(NULLIF(TRIM(m.release_date), ''), printf('%04d-12-31', m.release_year), '9999-12-31') >= ?)`);
+    params.push(dateFrom);
+  } else if (dateTo) {
+    conditions.push(`(COALESCE(NULLIF(TRIM(m.release_date), ''), printf('%04d-01-01', m.release_year), '1900-01-01') <= ?)`);
+    params.push(dateTo);
+  }
+
   if (releaseStatus === 'released') {
     conditions.push('(m.release_year IS NULL OR m.release_year <= ?)');
     params.push(currentYear);
@@ -218,6 +277,40 @@ router.get('/', optionalAuth, asyncHandler(async (req, res) => {
   if (releaseStatus === 'unreleased') {
     conditions.push('(m.release_year IS NOT NULL AND m.release_year > ?)');
     params.push(currentYear);
+  }
+
+  if (language) {
+    conditions.push('LOWER(TRIM(m.original_language)) = ?');
+    params.push(language);
+  }
+
+  if (scoreMin != null && !Number.isNaN(scoreMin)) {
+    conditions.push('m.tmdb_rating IS NOT NULL AND m.tmdb_rating >= ?');
+    params.push(scoreMin);
+  }
+  if (scoreMax != null && !Number.isNaN(scoreMax)) {
+    conditions.push('m.tmdb_rating IS NOT NULL AND m.tmdb_rating <= ?');
+    params.push(scoreMax);
+  }
+
+  if (minVotes != null && !Number.isNaN(minVotes) && minVotes > 0) {
+    conditions.push('COALESCE(m.tmdb_vote_count, 0) >= ?');
+    params.push(minVotes);
+  }
+
+  if (durationMin != null && !Number.isNaN(durationMin)) {
+    conditions.push('m.duration IS NOT NULL AND m.duration >= ?');
+    params.push(durationMin);
+  }
+  if (durationMax != null && !Number.isNaN(durationMax)) {
+    conditions.push('m.duration IS NOT NULL AND m.duration <= ?');
+    params.push(durationMax);
+  }
+
+  if (providerIds.length > 0 && !searchAllChannels) {
+    const ors = providerIds.map(() => '(m.watch_provider_ids LIKE ?)');
+    conditions.push(`(m.watch_provider_ids IS NOT NULL AND TRIM(m.watch_provider_ids) != '' AND (${ors.join(' OR ')}))`);
+    providerIds.forEach((pid) => params.push(`%|${pid}|%`));
   }
 
   if (conditions.length) sql += ' WHERE ' + conditions.join(' AND ');

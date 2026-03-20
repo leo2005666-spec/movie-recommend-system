@@ -13,8 +13,6 @@ import Charts from './pages/Charts';
 import Profile from './pages/Profile';
 import MyFavorites from './pages/MyFavorites';
 import MyLogs from './pages/MyLogs';
-import QA from './pages/QA';
-import QADetail from './pages/QADetail';
 import Feedback from './pages/Feedback';
 import AdminMovies from './pages/admin/Movies';
 import AdminCategories from './pages/admin/Categories';
@@ -43,8 +41,6 @@ export default function App() {
           <Route path="movies/:id" element={<MovieDetail />} />
           <Route path="recommend" element={<Recommend />} />
           <Route path="charts" element={<Charts />} />
-          <Route path="qa" element={<QA />} />
-          <Route path="qa/:id" element={<QADetail />} />
           <Route path="feedback" element={<Feedback />} />
 
           <Route

@@ -30,8 +30,6 @@ export default function MovieDetail() {
   const [submitting, setSubmitting] = useState(false);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState('');
-  const [socialTab, setSocialTab] = useState('discuss'); // 'review' | 'discuss'
-
   const load = () => {
     api.get(`/movies/${id}`)
       .then((r) => {
@@ -274,20 +272,12 @@ export default function MovieDetail() {
             </section>
           )}
 
-          {/* 社交 · 评价/讨论 Tab */}
+          {/* 用户评论（原「评价/讨论」为同一列表，合并为一栏） */}
           <section className="detail-section">
-            <h2 className="section-title">社交</h2>
-            <div className="social-tabs">
-              <button type="button" className={`social-tab ${socialTab === 'review' ? 'active' : ''}`} onClick={() => setSocialTab('review')}>
-                评价 {comments.length}
-              </button>
-              <button type="button" className={`social-tab ${socialTab === 'discuss' ? 'active' : ''}`} onClick={() => setSocialTab('discuss')}>
-                讨论 {comments.length}
-              </button>
-            </div>
+            <h2 className="section-title">评论 {comments.length > 0 ? `(${comments.length})` : ''}</h2>
             {user && (
               <form onSubmit={handleComment} className="social-form">
-                <textarea className="form-textarea form-input" value={commentContent} onChange={(e) => setCommentContent(e.target.value)} placeholder="写下你的影评或参与讨论…" rows={3} maxLength={2000} />
+                <textarea className="form-textarea form-input" value={commentContent} onChange={(e) => setCommentContent(e.target.value)} placeholder="写下你的影评…" rows={3} maxLength={2000} />
                 <button type="submit" className="btn">发表</button>
               </form>
             )}
@@ -312,31 +302,36 @@ export default function MovieDetail() {
             {comments.length === 0 && <p className="empty-hint">暂无评论</p>}
           </section>
 
-          {/* 推荐观看 */}
-          {(tmdbRecs.length > 0 || similar.length > 0) && (
-            <section className="detail-section">
-              <h2 className="section-title">推荐观看</h2>
-              <div className="rec-carousel">
-                {tmdbRecs.length > 0
-                  ? tmdbRecs.map((m) => {
-                      const Card = m.id ? Link : 'div';
-                      const cardProps = m.id ? { to: `/movies/${m.id}` } : { style: { cursor: 'default' } };
-                      return (
-                        <Card key={m.tmdb_id} {...cardProps} className="rec-card">
-                          <img src={m.poster_path || ''} alt="" onError={(e) => { e.target.style.display = 'none'; }} />
-                          <div className="rec-info">
-                            <span className="rec-title">{m.title}</span>
-                            {m.vote_average != null && <span className="rec-score">★ {m.vote_average}</span>}
-                          </div>
-                        </Card>
-                      );
-                    })
-                  : similar.map((m) => (
-                      <MovieCard key={m.id} movie={m} onClick={() => api.post('/recommend/events', { scene: SCENE_SIMILAR, movieId: m.id, eventType: 'click' }).catch(() => {})} />
-                    ))}
-              </div>
-            </section>
-          )}
+          {/* 推荐观看：TMDB 推荐仅展示已入库（有本地 id）的项；其余用相似推荐补足，避免「有海报但点不进去」 */}
+          {(() => {
+            const tmdbLinked = (tmdbRecs || []).filter((m) => m.id != null);
+            const tmdbIdSet = new Set(tmdbLinked.map((m) => m.id));
+            const similarExtra = similar.filter((m) => !tmdbIdSet.has(m.id));
+            if (tmdbLinked.length === 0 && similarExtra.length === 0) return null;
+            return (
+              <section className="detail-section">
+                <h2 className="section-title">推荐观看</h2>
+                <div className="rec-carousel">
+                  {tmdbLinked.map((m) => (
+                    <Link key={`tmdb-${m.tmdb_id}`} to={`/movies/${m.id}`} className="rec-card">
+                      <img src={m.poster_path || ''} alt="" onError={(e) => { e.target.style.display = 'none'; }} />
+                      <div className="rec-info">
+                        <span className="rec-title">{m.title}</span>
+                        {m.vote_average != null && <span className="rec-score">★ {m.vote_average}</span>}
+                      </div>
+                    </Link>
+                  ))}
+                  {similarExtra.map((m) => (
+                    <MovieCard
+                      key={`sim-${m.id}`}
+                      movie={m}
+                      onClick={() => api.post('/recommend/events', { scene: SCENE_SIMILAR, movieId: m.id, eventType: 'click' }).catch(() => {})}
+                    />
+                  ))}
+                </div>
+              </section>
+            );
+          })()}
         </div>
 
         {/* 右侧信息栏 · TMDB 风格：社交图标 + 元数据 + 关键词 */}

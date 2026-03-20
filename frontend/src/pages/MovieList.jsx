@@ -5,10 +5,8 @@ import MovieCard from '../components/MovieCard';
 import MovieLoading from '../components/MovieLoading';
 import Pagination from '../components/Pagination';
 import { api } from '../api/request';
-import { useAuth } from '../context/AuthContext';
 
 export default function MovieList() {
-  const { user } = useAuth();
   const [list, setList] = useState([]);
   const [categories, setCategories] = useState([]);
   const [tags, setTags] = useState([]);
@@ -22,7 +20,8 @@ export default function MovieList() {
   const [appliedKeyword, setAppliedKeyword] = useState('');
   const [yearFrom, setYearFrom] = useState('');
   const [yearTo, setYearTo] = useState('');
-  const [watched, setWatched] = useState('all');
+  /** 上映状态筛选：all | released(已上映) | unreleased(未上映) */
+  const [releaseStatus, setReleaseStatus] = useState('all');
   const [filterOpen, setFilterOpen] = useState(true);
   const [loading, setLoading] = useState(true);
 
@@ -35,7 +34,7 @@ export default function MovieList() {
     if (appliedKeyword) params.keyword = appliedKeyword;
     if (yearFrom) params.yearFrom = yearFrom;
     if (yearTo) params.yearTo = yearTo;
-    if (watched !== 'all' && user) params.watched = watched;
+    if (releaseStatus !== 'all') params.releaseStatus = releaseStatus;
     api.get('/movies', params)
       .then((r) => {
         setList(r.data.list || []);
@@ -51,7 +50,7 @@ export default function MovieList() {
     api.get('/recommend/tastes').then((r) => setTastes(r.data || [])).catch(() => {});
   }, []);
 
-  useEffect(() => { load(); }, [page, categoryId, tagId, tasteType, appliedKeyword, yearFrom, yearTo, watched]);
+  useEffect(() => { load(); }, [page, categoryId, tagId, tasteType, appliedKeyword, yearFrom, yearTo, releaseStatus]);
 
   const search = () => {
     setAppliedKeyword(keyword);
@@ -67,7 +66,7 @@ export default function MovieList() {
     setAppliedKeyword('');
     setYearFrom('');
     setYearTo('');
-    setWatched('all');
+    setReleaseStatus('all');
     setPage(1);
   };
 
@@ -86,26 +85,24 @@ export default function MovieList() {
           </button>
           {filterOpen && (
             <div className="filter-sidebar__content">
-              {/* 显示 */}
-              {user && (
-                <div className="filter-section">
-                  <h3 className="filter-section__title">显示</h3>
-                  <div className="filter-radio-group">
-                    <label className="filter-radio">
-                      <input type="radio" name="watched" checked={watched === 'all'} onChange={() => { setWatched('all'); setPage(1); }} />
-                      <span>全部</span>
-                    </label>
-                    <label className="filter-radio">
-                      <input type="radio" name="watched" checked={watched === 'unwatched'} onChange={() => { setWatched('unwatched'); setPage(1); }} />
-                      <span>未观看</span>
-                    </label>
-                    <label className="filter-radio">
-                      <input type="radio" name="watched" checked={watched === 'watched'} onChange={() => { setWatched('watched'); setPage(1); }} />
-                      <span>已观看</span>
-                    </label>
-                  </div>
+              {/* 上映状态（按作品发行年份与当前年比较，无需登录） */}
+              <div className="filter-section">
+                <h3 className="filter-section__title">上映状态</h3>
+                <div className="filter-radio-group">
+                  <label className="filter-radio">
+                    <input type="radio" name="releaseStatus" checked={releaseStatus === 'all'} onChange={() => { setReleaseStatus('all'); setPage(1); }} />
+                    <span>全部</span>
+                  </label>
+                  <label className="filter-radio">
+                    <input type="radio" name="releaseStatus" checked={releaseStatus === 'released'} onChange={() => { setReleaseStatus('released'); setPage(1); }} />
+                    <span>已上映</span>
+                  </label>
+                  <label className="filter-radio">
+                    <input type="radio" name="releaseStatus" checked={releaseStatus === 'unreleased'} onChange={() => { setReleaseStatus('unreleased'); setPage(1); }} />
+                    <span>未上映</span>
+                  </label>
                 </div>
-              )}
+              </div>
 
               {/* 发行年份 */}
               <div className="filter-section">

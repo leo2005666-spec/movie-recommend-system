@@ -153,7 +153,14 @@ router.get('/', optionalAuth, asyncHandler(async (req, res) => {
   const tasteType = (req.query.tasteType || '').trim();
   const yearFrom = req.query.yearFrom ? parseInt(req.query.yearFrom) : null;
   const yearTo = req.query.yearTo ? parseInt(req.query.yearTo) : null;
-  const watched = (req.query.watched || '').trim(); // 'watched' | 'unwatched' | ''
+  /** 上映状态：released=已上映，unreleased=未上映（按发行年份与当前年比较；兼容旧参数 watched/unwatched） */
+  let releaseStatus = (req.query.releaseStatus || '').trim().toLowerCase();
+  if (!releaseStatus) {
+    const w = (req.query.watched || '').trim();
+    if (w === 'watched') releaseStatus = 'released';
+    if (w === 'unwatched') releaseStatus = 'unreleased';
+  }
+  const currentYear = new Date().getFullYear();
   const offset = (page - 1) * limit;
 
   let sql = `
@@ -204,13 +211,13 @@ router.get('/', optionalAuth, asyncHandler(async (req, res) => {
     conditions.push('m.release_year <= ?');
     params.push(yearTo);
   }
-  if (watched === 'watched' && req.user) {
-    conditions.push('m.id IN (SELECT movie_id FROM ratings WHERE user_id = ?)');
-    params.push(req.user.id);
+  if (releaseStatus === 'released') {
+    conditions.push('(m.release_year IS NULL OR m.release_year <= ?)');
+    params.push(currentYear);
   }
-  if (watched === 'unwatched' && req.user) {
-    conditions.push('m.id NOT IN (SELECT movie_id FROM ratings WHERE user_id = ?)');
-    params.push(req.user.id);
+  if (releaseStatus === 'unreleased') {
+    conditions.push('(m.release_year IS NOT NULL AND m.release_year > ?)');
+    params.push(currentYear);
   }
 
   if (conditions.length) sql += ' WHERE ' + conditions.join(' AND ');

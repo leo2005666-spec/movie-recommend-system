@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import MovieCard, { getScoreColor } from '../components/MovieCard';
 import { useAuth } from '../context/AuthContext';
-import { api, getCoverUrl } from '../api/request';
+import { api, getCoverUrl, getCoverProxyById } from '../api/request';
+import { usePosterAccent } from '../hooks/usePosterAccent';
 
 const SCENE_SIMILAR = 'similar';
 
@@ -131,6 +132,9 @@ export default function MovieDetail() {
     }
   };
 
+  /** 与当前路由 id 同步，换片时立即按新海报取色 */
+  const posterAccent = usePosterAccent(id ? getCoverProxyById(id) : '');
+
   if (loading) return <p className="empty-hint">加载中...</p>;
   if (!movie) return <p>作品不存在</p>;
 
@@ -143,8 +147,15 @@ export default function MovieDetail() {
 
   return (
     <div className="detail-page">
-      {/* TMDB 风格：顶部背景 + 渐变遮罩 */}
-      <div className="detail-hero">
+      {/* TMDB 浅色条：海报主色 + 高斯模糊底图，每片不同 */}
+      <div
+        className="detail-hero detail-hero--pastel"
+        style={{
+          '--hero-r': posterAccent.r,
+          '--hero-g': posterAccent.g,
+          '--hero-b': posterAccent.b,
+        }}
+      >
         <div
           className="detail-hero__bg"
           style={{ backgroundImage: bgImage ? `url(${bgImage})` : undefined }}

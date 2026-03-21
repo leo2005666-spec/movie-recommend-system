@@ -2196,6 +2196,95 @@ button { cursor: pointer; }
   padding: 0 var(--space-xl);
 }
 
+/* 按海报主色变化的浅色 Hero（参考 TMDB 浅色详情条） */
+.detail-hero--pastel .detail-hero__bg {
+  filter: blur(52px) saturate(1.12);
+  transform: scale(1.14);
+  opacity: 0.48;
+  background-color: rgb(var(--hero-r) var(--hero-g) var(--hero-b));
+}
+.detail-hero--pastel .detail-hero__overlay {
+  background: linear-gradient(
+    to bottom,
+    rgb(var(--hero-r) var(--hero-g) var(--hero-b) / 0.18) 0%,
+    rgb(var(--hero-r) var(--hero-g) var(--hero-b) / 0.42) 38%,
+    rgb(var(--hero-r) var(--hero-g) var(--hero-b) / 0.68) 72%,
+    var(--bg-surface) 100%
+  );
+}
+.detail-hero--pastel .detail-title,
+.detail-hero--pastel .detail-score-value {
+  color: #121a22;
+}
+.detail-hero--pastel .detail-year {
+  color: #2d3a47;
+  opacity: 1;
+}
+.detail-hero--pastel .detail-meta {
+  color: #3d4d5c;
+}
+.detail-hero--pastel .detail-cert {
+  border-color: rgba(0, 0, 0, 0.28);
+  color: #1e2832;
+}
+.detail-hero--pastel .detail-score-label span,
+.detail-hero--pastel .detail-score-hint {
+  color: #3d4d5c;
+}
+.detail-hero--pastel .detail-score-bg {
+  stroke: rgba(0, 0, 0, 0.12);
+}
+.detail-hero--pastel .detail-feel-btn {
+  background: rgba(1, 180, 228, 0.12);
+  border-color: rgba(1, 180, 228, 0.45);
+  color: #0d3a4a;
+}
+.detail-hero--pastel .detail-feel-btn:hover {
+  background: rgba(1, 180, 228, 0.22);
+  color: #062530;
+}
+.detail-hero--pastel .detail-action-icon {
+  background: rgba(255, 255, 255, 0.65);
+  border-color: rgba(0, 0, 0, 0.12);
+  color: #1a2530;
+}
+.detail-hero--pastel .detail-action-icon:hover,
+.detail-hero--pastel .detail-action-icon.active {
+  background: rgba(1, 180, 228, 0.2);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.detail-hero--pastel .detail-trailer {
+  color: #007aa8;
+}
+.detail-hero--pastel .detail-trailer:hover {
+  background: rgba(1, 180, 228, 0.12);
+  color: #005f82;
+}
+.detail-hero--pastel .detail-tagline {
+  color: #5a6b7a;
+}
+.detail-hero--pastel .detail-synopsis-title {
+  color: #121a22;
+}
+.detail-hero--pastel .detail-synopsis {
+  color: #2f3d4a;
+}
+.detail-hero--pastel .detail-crew {
+  color: #2f3d4a;
+}
+.detail-hero--pastel .detail-crew strong {
+  color: #121a22;
+}
+.detail-hero--pastel .score-btn {
+  background: rgba(255, 255, 255, 0.75);
+  border-color: rgba(0, 0, 0, 0.14);
+  color: #2a3540;
+}
+.detail-hero--pastel .detail-my-score {
+  color: #007aa8;
+}
+
 .detail-layout {
   display: flex;
   gap: var(--space-xl);

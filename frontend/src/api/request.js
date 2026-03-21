@@ -12,6 +12,13 @@ export function getCoverUrl(movie) {
   return BASE + '/movies/' + movie.id + '/cover';
 }
 
+/** 仅按作品 id 拼封面代理地址（用于取色等，不依赖是否已加载 movie 对象） */
+export function getCoverProxyById(id) {
+  const n = typeof id === 'string' ? parseInt(id, 10) : id;
+  if (n == null || Number.isNaN(n)) return '';
+  return `${BASE}/movies/${n}/cover`;
+}
+
 function getToken() {
   return localStorage.getItem('token');
 }

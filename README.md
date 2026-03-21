@@ -294,3 +294,4 @@ npm run fill-covers
 - **反馈管理**：管理员 `GET /api/feedbacks` 始终返回全表，可重复刷新查看；`DELETE /api/feedbacks/:id` 物理删除单条反馈。
 - **影视库筛选**：原「已观看/未观看」（按是否评分）已改为 **「已上映/未上映」**，按作品 `release_year` 与当前公历年比较；未登录也可筛选。
 - **影视库 TMDB 风格面板**：「在哪里观看」（平台多选、地区、仅订阅、本机记住订阅）、「发行日期」（勾选「搜索所有发行渠道」则不按日期筛；否则用日历选起止日）、**类型**（原分类+原标签合并为多选胶囊）、语言下拉、用户评分/最少投票/时长双滑块。库表含 `watch_provider_ids`、`original_language`、`tmdb_vote_count`、`release_date`（可选），启动时 `init` 会为旧数据补空字段以便筛选演示。
+- **影视详情 Hero**：从当前影片封面（`/movies/:id/cover`）在浏览器 canvas 采样主色，生成浅色粉彩背景 + 模糊底图；换片后主色随之变化（`usePosterAccent`）。若跨域取色失败则回退默认灰青色。

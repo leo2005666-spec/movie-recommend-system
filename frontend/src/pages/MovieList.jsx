@@ -5,6 +5,7 @@ import Pagination from '../components/Pagination';
 import { api } from '../api/request';
 import FilterRangeDual from '../components/filter/FilterRangeDual';
 import FilterRangeSingle from '../components/filter/FilterRangeSingle';
+import ProviderIcon from '../components/filter/ProviderIcon';
 import {
   WATCH_REGIONS,
   STREAM_PROVIDERS,
@@ -58,14 +59,6 @@ export default function MovieList() {
   const [scoreRange, setScoreRange] = useState({ min: 0, max: 10 });
   const [minVotes, setMinVotes] = useState(0);
   const [durationRange, setDurationRange] = useState({ min: 0, max: 360 });
-
-  const uniqueProviders = useMemo(() => {
-    const m = new Map();
-    STREAM_PROVIDERS.forEach((p) => {
-      if (!m.has(p.id)) m.set(p.id, p);
-    });
-    return [...m.values()];
-  }, []);
 
   useEffect(() => {
     localStorage.setItem(LS_WATCH_REGION, watchRegion);
@@ -229,7 +222,7 @@ export default function MovieList() {
                   onClick={() => setWhereWatchOpen(!whereWatchOpen)}
                 >
                   <span className="filter-collapse-head__title">在哪里观看</span>
-                  <span className="filter-collapse-head__badge">{uniqueProviders.length}</span>
+                  <span className="filter-collapse-head__badge">{STREAM_PROVIDERS.length}</span>
                   {whereWatchOpen ? <CaretUp size={18} /> : <CaretDown size={18} />}
                 </button>
                 {whereWatchOpen && (
@@ -264,17 +257,16 @@ export default function MovieList() {
                     {editSubscribed && (
                       <div className="filter-subscribed-editor">
                         <p className="filter-hint">勾选你订阅的平台（保存到本机浏览器）</p>
-                        <div className="provider-grid provider-grid--small">
-                          {uniqueProviders.map((p) => (
-                            <label key={`sub-${p.id}`} className="provider-cell provider-cell--check">
+                        <div className="provider-grid provider-grid--small provider-grid--scroll">
+                          {STREAM_PROVIDERS.map((p, idx) => (
+                            <label key={`sub-${p.id}-${idx}`} className="provider-cell provider-cell--check">
                               <input
                                 type="checkbox"
                                 checked={subscribedIds.includes(p.id)}
                                 onChange={() => toggleSubscribedId(p.id)}
                               />
                               <span className="provider-cell__logo-wrap">
-                                <img src={p.logo} alt="" onError={(e) => { e.target.style.display = 'none'; }} />
-                                <span className="provider-cell__fallback">{p.name[0]}</span>
+                                <ProviderIcon name={p.name} logoPath={p.logoPath} clearbitDomain={p.clearbitDomain} />
                               </span>
                             </label>
                           ))}
@@ -289,7 +281,7 @@ export default function MovieList() {
                     >
                       {WATCH_REGIONS.map((r) => (
                         <option key={r.code} value={r.code}>
-                          {r.label}
+                          {(r.flag ? `${r.flag} ` : '') + r.label}
                         </option>
                       ))}
                     </select>
@@ -301,22 +293,22 @@ export default function MovieList() {
                       />
                       <span>搜索全部平台（不按观看渠道筛选）</span>
                     </label>
-                    <div className="provider-grid">
-                      {uniqueProviders.map((p) => {
+                    <div className="provider-grid provider-grid--scroll">
+                      {STREAM_PROVIDERS.map((p, idx) => {
                         const disabled = onlySubscribedFilter && !subscribedIds.includes(p.id);
                         const active = selectedProviderIds.includes(p.id);
                         return (
                           <button
-                            key={p.id}
+                            key={`pv-${p.id}-${idx}`}
                             type="button"
                             disabled={disabled}
                             className={`provider-cell ${active ? 'provider-cell--active' : ''} ${disabled ? 'provider-cell--disabled' : ''}`}
                             title={p.name}
+                            aria-label={p.name}
                             onClick={() => toggleProviderFilter(p.id)}
                           >
                             <span className="provider-cell__logo-wrap">
-                              <img src={p.logo} alt="" onError={(e) => { e.target.style.display = 'none'; }} />
-                              <span className="provider-cell__fallback">{p.name[0]}</span>
+                              <ProviderIcon name={p.name} logoPath={p.logoPath} clearbitDomain={p.clearbitDomain} />
                             </span>
                           </button>
                         );

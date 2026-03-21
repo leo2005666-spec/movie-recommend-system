@@ -160,7 +160,7 @@ router.get('/:id/cover', asyncHandler(async (req, res) => {
   res.status(502).send('Failed to fetch cover');
 }));
 
-// 获取影视列表（分页、类型多选、发行日期、语言、评分/投票/时长滑块、观看平台等）
+// 获取影视列表（分页、类型多选、发行日期、语言、评分/投票滑块、观看平台等）
 router.get('/', optionalAuth, asyncHandler(async (req, res) => {
   const page = Math.max(1, parseInt(req.query.page) || 1);
   const limit = Math.min(500, Math.max(10, parseInt(req.query.limit) || 12));
@@ -182,8 +182,6 @@ router.get('/', optionalAuth, asyncHandler(async (req, res) => {
   const scoreMin = req.query.scoreMin !== undefined && req.query.scoreMin !== '' ? parseFloat(req.query.scoreMin) : null;
   const scoreMax = req.query.scoreMax !== undefined && req.query.scoreMax !== '' ? parseFloat(req.query.scoreMax) : null;
   const minVotes = req.query.minVotes !== undefined && req.query.minVotes !== '' ? parseInt(req.query.minVotes, 10) : null;
-  const durationMin = req.query.durationMin !== undefined && req.query.durationMin !== '' ? parseInt(req.query.durationMin, 10) : null;
-  const durationMax = req.query.durationMax !== undefined && req.query.durationMax !== '' ? parseInt(req.query.durationMax, 10) : null;
 
   /** 上映状态：released=已上映，unreleased=未上映（按发行年份与当前年比较；兼容旧参数 watched/unwatched） */
   let releaseStatus = (req.query.releaseStatus || '').trim().toLowerCase();
@@ -296,15 +294,6 @@ router.get('/', optionalAuth, asyncHandler(async (req, res) => {
   if (minVotes != null && !Number.isNaN(minVotes) && minVotes > 0) {
     conditions.push('COALESCE(m.tmdb_vote_count, 0) >= ?');
     params.push(minVotes);
-  }
-
-  if (durationMin != null && !Number.isNaN(durationMin)) {
-    conditions.push('m.duration IS NOT NULL AND m.duration >= ?');
-    params.push(durationMin);
-  }
-  if (durationMax != null && !Number.isNaN(durationMax)) {
-    conditions.push('m.duration IS NOT NULL AND m.duration <= ?');
-    params.push(durationMax);
   }
 
   if (providerIds.length > 0 && !searchAllChannels) {

@@ -2,8 +2,7 @@ import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import MovieCard, { getScoreColor } from '../components/MovieCard';
 import { useAuth } from '../context/AuthContext';
-import { api, getCoverUrl, getCoverProxyById } from '../api/request';
-import { usePosterAccent } from '../hooks/usePosterAccent';
+import { api, getCoverUrl } from '../api/request';
 
 const SCENE_SIMILAR = 'similar';
 
@@ -132,9 +131,6 @@ export default function MovieDetail() {
     }
   };
 
-  /** 与当前路由 id 同步，换片时立即按新海报取色 */
-  const posterAccent = usePosterAccent(id ? getCoverProxyById(id) : '');
-
   if (loading) return <p className="empty-hint">加载中...</p>;
   if (!movie) return <p>作品不存在</p>;
 
@@ -147,15 +143,8 @@ export default function MovieDetail() {
 
   return (
     <div className="detail-page">
-      {/* TMDB 浅色条：海报主色 + 高斯模糊底图，每片不同 */}
-      <div
-        className="detail-hero detail-hero--pastel"
-        style={{
-          '--hero-r': posterAccent.r,
-          '--hero-g': posterAccent.g,
-          '--hero-b': posterAccent.b,
-        }}
-      >
+      {/* TMDB 深色条：左侧实色 + 右侧半透明剧照（backdrop/封面随影片变化） */}
+      <div className="detail-hero detail-hero--cinematic">
         <div
           className="detail-hero__bg"
           style={{ backgroundImage: bgImage ? `url(${bgImage})` : undefined }}
@@ -202,7 +191,7 @@ export default function MovieDetail() {
                   <span>用户评分</span>
                   {user && (
                     <div className="detail-feel-row">
-                      <span className="detail-emojis" aria-hidden>😊 🥱</span>
+                      <span className="detail-emojis detail-emojis--static" aria-hidden="true">😊 🥱</span>
                       <button type="button" className="detail-feel-btn" onClick={() => document.querySelector('.score-btns')?.scrollIntoView({ behavior: 'smooth' })}>
                         你的感觉如何? <span aria-label="信息">ℹ️</span>
                       </button>
@@ -266,23 +255,23 @@ export default function MovieDetail() {
       {/* 两栏布局：主内容 + 右侧栏 */}
       <div className={`detail-body ${hasSidebar ? '' : 'detail-body--no-sidebar'}`}>
         <div className="detail-main">
-          {/* 演员阵容 · TMDB 竖向卡片 */}
+          {/* 演员阵容 · 横向剧照卡（上照下文、白底圆角，参考第四张参考图） */}
           {cast.length > 0 && (
-            <section className="detail-section">
-              <h2 className="section-title">演员阵容</h2>
-              <div className="cast-row cast-row--vertical">
+            <section className="detail-section detail-section--cast">
+              <h2 className="section-title section-title--cast">演员阵容</h2>
+              <div className="cast-row cast-row--filmstrip">
                 {cast.map((c, i) => (
-                  <div key={i} className="cast-card cast-card--vertical">
-                    <div className="cast-photo cast-photo--vertical">
+                  <div key={i} className="cast-card cast-card--filmstrip">
+                    <div className="cast-photo cast-photo--filmstrip">
                       {c.profile_path ? (
                         <img src={c.profile_path} alt={c.name} onError={(e) => { e.target.style.display = 'none'; }} />
                       ) : (
-                        <div className="cast-placeholder" />
+                        <div className="cast-placeholder cast-placeholder--filmstrip" />
                       )}
                     </div>
-                    <div className="cast-info">
-                      <div className="cast-name">{c.name}</div>
-                      <div className="cast-character">{c.character || '—'}</div>
+                    <div className="cast-info cast-info--filmstrip">
+                      <div className="cast-name cast-name--filmstrip">{c.name}</div>
+                      <div className="cast-character cast-character--filmstrip">{c.character || '—'}</div>
                     </div>
                   </div>
                 ))}

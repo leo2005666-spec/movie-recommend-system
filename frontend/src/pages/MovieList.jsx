@@ -58,7 +58,6 @@ export default function MovieList() {
   const [language, setLanguage] = useState('');
   const [scoreRange, setScoreRange] = useState({ min: 0, max: 10 });
   const [minVotes, setMinVotes] = useState(0);
-  const [durationRange, setDurationRange] = useState({ min: 0, max: 360 });
 
   useEffect(() => {
     localStorage.setItem(LS_WATCH_REGION, watchRegion);
@@ -114,9 +113,6 @@ export default function MovieList() {
 
     if (minVotes > 0) params.minVotes = minVotes;
 
-    if (durationRange.min > 0) params.durationMin = durationRange.min;
-    if (durationRange.max < 360) params.durationMax = durationRange.max;
-
     if (!watchAllPlatforms && selectedProviderIds.length > 0) {
       params.providerIds = selectedProviderIds.join(',');
     }
@@ -142,7 +138,6 @@ export default function MovieList() {
     language,
     scoreRange,
     minVotes,
-    durationRange,
     watchAllPlatforms,
     selectedProviderIds,
   ]);
@@ -176,7 +171,6 @@ export default function MovieList() {
     setLanguage('');
     setScoreRange({ min: 0, max: 10 });
     setMinVotes(0);
-    setDurationRange({ min: 0, max: 360 });
     setWatchAllPlatforms(false);
     setSelectedProviderIds([]);
     setOnlySubscribedFilter(false);
@@ -459,7 +453,7 @@ export default function MovieList() {
                 </div>
               )}
 
-              {/* 语言 + 评分 + 投票 + 时长 */}
+              {/* 语言 + 评分 + 投票 */}
               <div className="filter-section filter-section--sliders">
                 <div className="filter-lang-row">
                   <label className="filter-lang-row__label">
@@ -510,20 +504,6 @@ export default function MovieList() {
                     setPage(1);
                   }}
                   ticks={[0, 100, 200, 300, 400, 500]}
-                />
-
-                <FilterRangeDual
-                  label="时长（分钟）"
-                  min={0}
-                  max={360}
-                  step={5}
-                  valueMin={durationRange.min}
-                  valueMax={durationRange.max}
-                  onChange={(r) => {
-                    setDurationRange(r);
-                    setPage(1);
-                  }}
-                  ticks={[0, 120, 240, 360]}
                 />
               </div>
 

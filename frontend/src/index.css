@@ -2201,7 +2201,34 @@ button { cursor: pointer; }
 .detail-hero__overlay {
   position: absolute;
   inset: 0;
+  pointer-events: none;
   background: linear-gradient(to top, rgba(13, 37, 63, 0.98) 0%, rgba(13, 37, 63, 0.7) 40%, rgba(13, 37, 63, 0.4) 100%);
+}
+
+/* 详情 Hero · 与 TMDB 图2：左深右浅剧照，每片背景图为该片 backdrop/封面 */
+.detail-hero--cinematic .detail-hero__bg {
+  background-size: cover;
+  background-position: 78% center;
+  filter: saturate(0.55) brightness(0.5) contrast(1.05);
+  opacity: 0.62;
+  transform: scale(1.06);
+}
+.detail-hero--cinematic .detail-hero__overlay {
+  background: linear-gradient(
+    90deg,
+    rgba(8, 18, 32, 0.98) 0%,
+    rgba(8, 18, 32, 0.94) 28%,
+    rgba(8, 18, 32, 0.72) 48%,
+    rgba(8, 18, 32, 0.35) 68%,
+    rgba(8, 18, 32, 0.12) 100%
+  );
+}
+.detail-hero--cinematic .detail-hero__overlay::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, rgba(8, 18, 32, 0.92) 0%, transparent 45%);
+  pointer-events: none;
 }
 
 .detail-hero__content {
@@ -2211,93 +2238,12 @@ button { cursor: pointer; }
   padding: 0 var(--space-xl);
 }
 
-/* 按海报主色变化的浅色 Hero（参考 TMDB 浅色详情条） */
-.detail-hero--pastel .detail-hero__bg {
-  filter: blur(52px) saturate(1.12);
-  transform: scale(1.14);
-  opacity: 0.48;
-  background-color: rgb(var(--hero-r) var(--hero-g) var(--hero-b));
-}
-.detail-hero--pastel .detail-hero__overlay {
-  background: linear-gradient(
-    to bottom,
-    rgb(var(--hero-r) var(--hero-g) var(--hero-b) / 0.18) 0%,
-    rgb(var(--hero-r) var(--hero-g) var(--hero-b) / 0.42) 38%,
-    rgb(var(--hero-r) var(--hero-g) var(--hero-b) / 0.68) 72%,
-    var(--bg-surface) 100%
-  );
-}
-.detail-hero--pastel .detail-title,
-.detail-hero--pastel .detail-score-value {
-  color: #121a22;
-}
-.detail-hero--pastel .detail-year {
-  color: #2d3a47;
-  opacity: 1;
-}
-.detail-hero--pastel .detail-meta {
-  color: #3d4d5c;
-}
-.detail-hero--pastel .detail-cert {
-  border-color: rgba(0, 0, 0, 0.28);
-  color: #1e2832;
-}
-.detail-hero--pastel .detail-score-label span,
-.detail-hero--pastel .detail-score-hint {
-  color: #3d4d5c;
-}
-.detail-hero--pastel .detail-score-bg {
-  stroke: rgba(0, 0, 0, 0.12);
-}
-.detail-hero--pastel .detail-feel-btn {
-  background: rgba(1, 180, 228, 0.12);
-  border-color: rgba(1, 180, 228, 0.45);
-  color: #0d3a4a;
-}
-.detail-hero--pastel .detail-feel-btn:hover {
-  background: rgba(1, 180, 228, 0.22);
-  color: #062530;
-}
-.detail-hero--pastel .detail-action-icon {
-  background: rgba(255, 255, 255, 0.65);
-  border-color: rgba(0, 0, 0, 0.12);
-  color: #1a2530;
-}
-.detail-hero--pastel .detail-action-icon:hover,
-.detail-hero--pastel .detail-action-icon.active {
-  background: rgba(1, 180, 228, 0.2);
-  border-color: var(--accent);
-  color: var(--accent);
-}
-.detail-hero--pastel .detail-trailer {
-  color: #007aa8;
-}
-.detail-hero--pastel .detail-trailer:hover {
-  background: rgba(1, 180, 228, 0.12);
-  color: #005f82;
-}
-.detail-hero--pastel .detail-tagline {
-  color: #5a6b7a;
-}
-.detail-hero--pastel .detail-synopsis-title {
-  color: #121a22;
-}
-.detail-hero--pastel .detail-synopsis {
-  color: #2f3d4a;
-}
-.detail-hero--pastel .detail-crew {
-  color: #2f3d4a;
-}
-.detail-hero--pastel .detail-crew strong {
-  color: #121a22;
-}
-.detail-hero--pastel .score-btn {
-  background: rgba(255, 255, 255, 0.75);
-  border-color: rgba(0, 0, 0, 0.14);
-  color: #2a3540;
-}
-.detail-hero--pastel .detail-my-score {
-  color: #007aa8;
+/* 评分旁表情：纯装饰，不可点击 */
+.detail-emojis--static {
+  pointer-events: none;
+  user-select: none;
+  cursor: default;
+  -webkit-user-select: none;
 }
 
 .detail-layout {
@@ -2842,6 +2788,111 @@ button { cursor: pointer; }
 }
 .cast-name { font-weight: 600; font-size: 0.9rem; }
 .cast-character { font-size: 0.8rem; color: var(--text-tertiary); }
+
+/* 演员阵容 · 横向剧照卡（参考第四张图：上照下文、白底、圆角、轻阴影、右侧渐隐） */
+.detail-section--cast {
+  margin-top: var(--space-xl);
+}
+.section-title--cast {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: var(--space-md);
+  letter-spacing: 0.02em;
+}
+.cast-row--filmstrip {
+  display: flex;
+  gap: 0.7rem;
+  overflow-x: auto;
+  padding: 0.2rem 0.15rem var(--space-md);
+  scroll-snap-type: x proximity;
+  -webkit-overflow-scrolling: touch;
+  -webkit-mask-image: linear-gradient(90deg, #000 0%, #000 calc(100% - 40px), transparent 100%);
+  mask-image: linear-gradient(90deg, #000 0%, #000 calc(100% - 40px), transparent 100%);
+}
+.cast-row--filmstrip::-webkit-scrollbar {
+  height: 5px;
+}
+.cast-row--filmstrip::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+  border-radius: 3px;
+}
+.cast-card--filmstrip {
+  flex-shrink: 0;
+  width: 112px;
+  scroll-snap-align: start;
+  background: rgba(255, 255, 255, 0.97);
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow:
+    0 4px 16px rgba(0, 0, 0, 0.2),
+    0 1px 4px rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.55);
+  transition: transform var(--duration-fast), box-shadow var(--duration-fast);
+}
+.cast-card--filmstrip:hover {
+  transform: translateY(-3px);
+  box-shadow:
+    0 10px 28px rgba(0, 0, 0, 0.28),
+    0 2px 8px rgba(0, 0, 0, 0.12);
+}
+.cast-photo--filmstrip {
+  width: 100% !important;
+  height: auto !important;
+  margin: 0 !important;
+  border-radius: 0 !important;
+  aspect-ratio: 2 / 3;
+  background: #e4e9ef;
+  overflow: hidden;
+}
+.cast-photo--filmstrip img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.cast-placeholder--filmstrip {
+  width: 100%;
+  height: 100%;
+  min-height: 100%;
+  background: linear-gradient(155deg, #e2e8f0 0%, #cbd5e1 100%);
+}
+.cast-info--filmstrip {
+  padding: 0.45rem 0.55rem 0.6rem;
+  text-align: left;
+}
+.cast-name--filmstrip {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #131820;
+  line-height: 1.35;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.cast-character--filmstrip {
+  font-size: 0.7rem;
+  color: #5c6775;
+  margin-top: 0.15rem;
+  line-height: 1.3;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+@media (max-width: 768px) {
+  .cast-card--filmstrip {
+    width: 100px;
+  }
+  .cast-name--filmstrip {
+    font-size: 0.75rem;
+  }
+  .cast-character--filmstrip {
+    font-size: 0.65rem;
+  }
+}
 
 /* 推荐轮播 · 横向滚动 */
 .rec-carousel {

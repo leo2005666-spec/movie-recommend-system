@@ -23,6 +23,12 @@ async function start() {
   app.use(cors({ origin: true }));
   app.use(express.json());
 
+  const uploadsRoot = path.join(__dirname, '../uploads');
+  if (!fs.existsSync(uploadsRoot)) {
+    fs.mkdirSync(uploadsRoot, { recursive: true });
+  }
+  app.use('/uploads', express.static(uploadsRoot));
+
   const authRouter = require('./routes/auth');
   const usersRouter = require('./routes/users');
   const logsRouter = require('./routes/logs');

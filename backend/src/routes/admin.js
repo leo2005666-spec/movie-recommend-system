@@ -50,4 +50,48 @@ router.get('/ratings', asyncHandler(async (req, res) => {
   res.json({ code: 0, data: list });
 }));
 
+/**
+ * GET /api/admin/explore/comments?page&limit
+ * 全站评论明细（管理员），分页
+ */
+router.get('/explore/comments', asyncHandler(async (req, res) => {
+  const page = Math.max(1, parseInt(req.query.page, 10) || 1);
+  const limit = Math.min(100, Math.max(1, parseInt(req.query.limit, 10) || 20));
+  const offset = (page - 1) * limit;
+  const total = (await db.prepare('SELECT COUNT(*) as n FROM comments').get())?.n ?? 0;
+  const list = await db.prepare(`
+    SELECT c.id, c.user_id, c.movie_id, c.content, c.created_at,
+           u.username, u.nickname,
+           m.title as movie_title
+    FROM comments c
+    LEFT JOIN users u ON c.user_id = u.id
+    LEFT JOIN movies m ON c.movie_id = m.id
+    ORDER BY c.created_at DESC
+    LIMIT ? OFFSET ?
+  `).all(limit, offset);
+  res.json({ code: 0, data: { list, total, page, limit } });
+}));
+
+/**
+ * GET /api/admin/explore/favorites?page&limit
+ * 全站收藏明细（管理员），分页：谁收藏了哪部影片
+ */
+router.get('/explore/favorites', asyncHandler(async (req, res) => {
+  const page = Math.max(1, parseInt(req.query.page, 10) || 1);
+  const limit = Math.min(100, Math.max(1, parseInt(req.query.limit, 10) || 20));
+  const offset = (page - 1) * limit;
+  const total = (await db.prepare('SELECT COUNT(*) as n FROM favorites').get())?.n ?? 0;
+  const list = await db.prepare(`
+    SELECT f.id, f.user_id, f.movie_id, f.created_at,
+           u.username, u.nickname,
+           m.title as movie_title
+    FROM favorites f
+    LEFT JOIN users u ON f.user_id = u.id
+    LEFT JOIN movies m ON f.movie_id = m.id
+    ORDER BY f.created_at DESC
+    LIMIT ? OFFSET ?
+  `).all(limit, offset);
+  res.json({ code: 0, data: { list, total, page, limit } });
+}));
+
 module.exports = router;

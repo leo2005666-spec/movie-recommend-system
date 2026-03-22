@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { UserIcon, HeartIcon, StarIcon, ChatCircleDotsIcon } from '@phosphor-icons/react';
 import { useAuth } from '../context/AuthContext';
-import { api } from '../api/request';
+import { api, getAvatarUrl } from '../api/request';
 
 export default function Profile() {
   const { updateUser } = useAuth();
@@ -13,6 +13,8 @@ export default function Profile() {
   const [avatar, setAvatar] = useState('');
   const [password, setPassword] = useState('');
   const [msg, setMsg] = useState('');
+  /** 本地上传头像中 */
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
   /** 头像图加载失败时回退为首字母 */
   const [avatarLoadErr, setAvatarLoadErr] = useState(false);
 
@@ -58,6 +60,33 @@ export default function Profile() {
     }
   };
 
+  const handleAvatarFile = async (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    setMsg('');
+    setUploadingAvatar(true);
+    try {
+      const fd = new FormData();
+      fd.append('avatar', file);
+      const r = await api.postForm('/users/me/avatar', fd);
+      const u = r.data;
+      setProfile(u);
+      setAvatar(u?.avatar || '');
+      setAvatarLoadErr(false);
+      updateUser({
+        username: u?.username,
+        nickname: u?.nickname,
+        avatar: u?.avatar || null,
+      });
+      setMsg('头像上传成功');
+    } catch (err) {
+      setMsg(err.message || '上传失败');
+    } finally {
+      setUploadingAvatar(false);
+    }
+  };
+
   if (!profile) return <p className="empty-hint">加载中...</p>;
 
   const displayName = profile.nickname || profile.username;
@@ -75,7 +104,7 @@ export default function Profile() {
         <div className="profile-overview__avatar">
           {profile.avatar && !avatarLoadErr ? (
             <img
-              src={profile.avatar}
+              src={getAvatarUrl(profile.avatar)}
               alt=""
               className="profile-overview__avatar-img"
               onError={() => setAvatarLoadErr(true)}
@@ -128,7 +157,24 @@ export default function Profile() {
           <input className="form-input" value={nickname} onChange={(e) => setNickname(e.target.value)} />
         </div>
         <div className="form-group">
-          <label>头像链接（http/https 图片地址，留空则显示首字母）</label>
+          <label>头像</label>
+          <div className="profile-avatar-upload">
+            <input
+              type="file"
+              accept="image/jpeg,image/png,image/gif,image/webp"
+              className="profile-avatar-upload__input"
+              id="profile-avatar-file"
+              disabled={uploadingAvatar}
+              onChange={handleAvatarFile}
+            />
+            <label htmlFor="profile-avatar-file" className="btn btn-outline profile-avatar-upload__btn">
+              {uploadingAvatar ? '上传中…' : '从本地上传图片'}
+            </label>
+            <span className="profile-avatar-upload__tip">支持 jpg / png / gif / webp，单张不超过 2MB</span>
+          </div>
+        </div>
+        <div className="form-group">
+          <label>或填写头像链接（http/https，留空则显示首字母）</label>
           <input
             className="form-input"
             type="url"

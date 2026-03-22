@@ -3,15 +3,73 @@
  * 需登录
  */
 const express = require('express');
+const path = require('path');
+const fs = require('fs');
 const bcrypt = require('bcryptjs');
+const multer = require('multer');
 const { body, validationResult } = require('express-validator');
 const db = require('../db/db');
 const { authMiddleware, requireAdmin } = require('../middleware/auth');
 const { logActivity } = require('../middleware/log');
 const { asyncHandler } = require('../utils/asyncHandler');
 
+const avatarsDir = path.join(__dirname, '../../uploads/avatars');
+fs.mkdirSync(avatarsDir, { recursive: true });
+
+const avatarStorage = multer.diskStorage({
+  destination: (req, file, cb) => cb(null, avatarsDir),
+  filename: (req, file, cb) => {
+    const ext = (path.extname(file.originalname) || '.jpg').toLowerCase();
+    const safe = ['.jpg', '.jpeg', '.png', '.gif', '.webp'].includes(ext) ? ext : '.jpg';
+    cb(null, `u${req.user.id}-${Date.now()}${safe}`);
+  },
+});
+
+const uploadAvatar = multer({
+  storage: avatarStorage,
+  limits: { fileSize: 2 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => {
+    if (/^image\/(jpeg|png|gif|webp)$/.test(file.mimetype)) return cb(null, true);
+    cb(new Error('仅支持 jpg、png、gif、webp 图片，单张不超过 2MB'));
+  },
+});
+
 const router = express.Router();
 router.use(authMiddleware);
+
+/** 本地上传头像：POST multipart，字段名 avatar */
+router.post(
+  '/me/avatar',
+  (req, res, next) => {
+    uploadAvatar.single('avatar')(req, res, (err) => {
+      if (err) {
+        const msg = err.code === 'LIMIT_FILE_SIZE' ? '图片不能超过 2MB' : (err.message || '上传失败');
+        return res.status(400).json({ code: 400, message: msg });
+      }
+      next();
+    });
+  },
+  asyncHandler(async (req, res) => {
+    if (!req.file) {
+      return res.status(400).json({ code: 400, message: '请选择图片文件' });
+    }
+    const publicPath = `/uploads/avatars/${req.file.filename}`;
+    const row = await db.prepare('SELECT avatar FROM users WHERE id = ?').get(req.user.id);
+    const prev = row?.avatar;
+    if (prev && String(prev).startsWith('/uploads/avatars/')) {
+      const oldAbs = path.join(__dirname, '../../', String(prev).replace(/^\//, ''));
+      try {
+        fs.unlinkSync(oldAbs);
+      } catch (_) {
+        /* 忽略旧文件删除失败 */
+      }
+    }
+    await db.prepare('UPDATE users SET avatar = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?').run(publicPath, req.user.id);
+    await logActivity(req, 'UPDATE_USER', 'user', req.user.id, '上传头像');
+    const user = await db.prepare('SELECT id, username, nickname, avatar, role FROM users WHERE id = ?').get(req.user.id);
+    res.json({ code: 0, data: user });
+  })
+);
 
 // 获取当前用户信息
 router.get('/me', asyncHandler(async (req, res) => {
@@ -38,9 +96,12 @@ router.put(
     body('nickname').optional().trim().isLength({ max: 50 }),
     body('avatar').optional({ values: 'falsy' }).trim().custom((v) => {
       if (v == null || v === '') return true;
-      if (String(v).length > 2048) throw new Error('头像链接过长');
-      return /^https?:\/\/.+/i.test(String(v).trim());
-    }).withMessage('头像需为 http(s) 开头的有效链接'),
+      const s = String(v).trim();
+      if (s.length > 2048) throw new Error('头像链接过长');
+      if (/^https?:\/\/.+/i.test(s)) return true;
+      if (/^\/uploads\/avatars\/.+/i.test(s)) return true;
+      throw new Error('头像需为 http(s) 链接或本站上传后的路径');
+    }),
     body('password').optional().isLength({ min: 6 }).withMessage('密码至少6位'),
   ],
   asyncHandler(async (req, res) => {

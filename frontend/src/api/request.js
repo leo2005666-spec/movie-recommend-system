@@ -29,6 +29,27 @@ export function getCoverProxyById(id, opts = {}) {
   return u;
 }
 
+/**
+ * 用户头像地址：支持外链 http(s) 与本站上传路径 /uploads/...
+ * 生产环境若 VITE_API_BASE 为完整域名（如 https://xxx/api），会自动拼成后端域名下的静态地址。
+ */
+export function getAvatarUrl(avatar) {
+  if (!avatar || typeof avatar !== 'string') return '';
+  const s = avatar.trim();
+  if (!s) return '';
+  if (/^https?:\/\//i.test(s)) return s;
+  if (s.startsWith('/uploads/')) {
+    const base = import.meta.env.VITE_API_BASE || '/api';
+    if (typeof base === 'string' && base.startsWith('http')) {
+      const origin = base.replace(/\/api\/?$/, '');
+      return `${origin}${s}`;
+    }
+    return s;
+  }
+  if (s.startsWith('/')) return s;
+  return s;
+}
+
 function getToken() {
   return localStorage.getItem('token');
 }
@@ -79,12 +100,42 @@ export async function checkApiHealth() {
   }
 }
 
+/** 上传文件（multipart），body 为 FormData，勿手动设 Content-Type */
+async function postForm(url, formData) {
+  const headers = {};
+  const token = getToken();
+  if (token) headers.Authorization = `Bearer ${token}`;
+  const timeout = 60000;
+  let res;
+  try {
+    res = await fetch(BASE + url, {
+      method: 'POST',
+      body: formData,
+      headers,
+      signal: AbortSignal.timeout(timeout),
+    });
+  } catch (e) {
+    throw new Error(e.name === 'AbortError' ? '请求超时' : '网络连接失败');
+  }
+  const data = await res.json().catch(() => ({}));
+  if (res.status === 401) {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    window.location.href = '/login';
+    throw new Error(data.message || '请重新登录');
+  }
+  if (!res.ok) throw new Error(data.message || `请求失败 (${res.status})`);
+  if (data.code !== 0 && data.code !== undefined) throw new Error(data.message || '请求失败');
+  return data;
+}
+
 export const api = {
   get: (url, params) => {
     const q = params ? '?' + new URLSearchParams(params).toString() : '';
     return request(url + q, { method: 'GET' });
   },
   post: (url, body) => request(url, { method: 'POST', body: JSON.stringify(body) }),
+  postForm,
   put: (url, body) => request(url, { method: 'PUT', body: JSON.stringify(body) }),
   patch: (url, body) => request(url, { method: 'PATCH', body: JSON.stringify(body) }),
   delete: (url) => request(url, { method: 'DELETE' }),

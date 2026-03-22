@@ -1,7 +1,18 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { ChartBarIcon, UsersIcon, FilmStripIcon, StarIcon, ChatCircleIcon, HeartIcon, PaperPlaneTiltIcon } from '@phosphor-icons/react';
 import AdminNav from '../../components/AdminNav';
 import { api } from '../../api/request';
+
+/** 数据概览卡片点击后进入的明细页 */
+const CARD_HREF = {
+  users: '/admin/users',
+  movies: '/admin/movies',
+  ratings: '/admin/ratings',
+  comments: '/admin/explore/comments',
+  favorites: '/admin/explore/favorites',
+  feedbacks: '/admin/feedbacks',
+};
 
 export default function AdminDashboard() {
   const [data, setData] = useState(null);
@@ -39,17 +50,30 @@ export default function AdminDashboard() {
       {!data && !err && <p className="empty-hint">加载中…</p>}
       {data && (
         <div className="admin-dashboard-grid">
-          {cards.map(({ key, label, value, Icon, color }) => (
-            <div key={key} className="admin-dashboard-card card">
-              <div className="admin-dashboard-card__icon" style={{ background: `${color}18`, color }}>
-                <Icon size={28} weight="duotone" />
+          {cards.map(({ key, label, value, Icon, color }) => {
+            const href = CARD_HREF[key];
+            const inner = (
+              <>
+                <div className="admin-dashboard-card__icon" style={{ background: `${color}18`, color }}>
+                  <Icon size={28} weight="duotone" />
+                </div>
+                <div className="admin-dashboard-card__meta">
+                  <div className="admin-dashboard-card__value">{value}</div>
+                  <div className="admin-dashboard-card__label">{label}</div>
+                  <div className="admin-dashboard-card__hint">点击查看明细</div>
+                </div>
+              </>
+            );
+            return href ? (
+              <Link key={key} to={href} className="admin-dashboard-card admin-dashboard-card--link card">
+                {inner}
+              </Link>
+            ) : (
+              <div key={key} className="admin-dashboard-card card">
+                {inner}
               </div>
-              <div className="admin-dashboard-card__meta">
-                <div className="admin-dashboard-card__value">{value}</div>
-                <div className="admin-dashboard-card__label">{label}</div>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>

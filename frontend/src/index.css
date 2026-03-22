@@ -2358,6 +2358,85 @@ button { cursor: pointer; }
   color: var(--text-tertiary);
   margin-top: 0.15rem;
 }
+.admin-dashboard-card__hint {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  margin-top: 0.35rem;
+}
+a.admin-dashboard-card--link {
+  text-decoration: none;
+  color: inherit;
+  transition: box-shadow 0.15s ease, transform 0.15s ease;
+}
+a.admin-dashboard-card--link:hover {
+  box-shadow: 0 4px 20px rgba(15, 23, 42, 0.08);
+  transform: translateY(-1px);
+}
+
+/* 管理端 · 数据概览下钻明细 */
+.admin-explore-back {
+  color: var(--text-secondary);
+  text-decoration: none;
+  font-size: 0.95rem;
+}
+.admin-explore-back:hover {
+  color: var(--accent);
+}
+.admin-explore-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.admin-explore-table th,
+.admin-explore-table td {
+  padding: 0.75rem;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+.admin-explore-id {
+  color: var(--text-muted);
+  font-size: 0.8rem;
+}
+.admin-explore-content {
+  max-width: 28rem;
+  word-break: break-word;
+}
+.admin-explore-pager {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 1rem;
+  flex-wrap: wrap;
+}
+.admin-explore-pager__info {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+}
+
+.profile-avatar-upload {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+}
+.profile-avatar-upload__input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+.profile-avatar-upload__btn {
+  cursor: pointer;
+}
+.profile-avatar-upload__tip {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
 
 /* 首页 / 推荐：与全站浅色画布一致（参考 TMDB 热门列表页浅灰底） */
 .home-page,

@@ -23,6 +23,7 @@ const AdminUsers = lazy(() => import('./pages/admin/Users'));
 const AdminLogs = lazy(() => import('./pages/admin/Logs'));
 const AdminFeedbacks = lazy(() => import('./pages/admin/Feedbacks'));
 const AdminRatings = lazy(() => import('./pages/admin/Ratings'));
+const AdminExplore = lazy(() => import('./pages/admin/AdminExplore'));
 
 function RouteFallback() {
   return (
@@ -125,6 +126,14 @@ export default function App() {
               element={
                 <ProtectedRoute admin>
                   <AdminRatings />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="admin/explore/:type"
+              element={
+                <ProtectedRoute admin>
+                  <AdminExplore />
                 </ProtectedRoute>
               }
             />

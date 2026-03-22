@@ -301,3 +301,7 @@ npm run fill-covers
 - **顶栏交互**：导航改为 **`position: fixed`**，`main` 增加 **`padding-top`** 避免内容被挡；**向下滚动**约 8px 以上时顶栏收起（`header--scroll-hidden`），**向上滚动**或回到页面顶部时重新显示。后端异常时的红条 **`api-status-banner`** 固定在最顶，顶栏在其下方（`:has` 调整 `padding-top` / `top`）。
 - **首页轮播**：比例改为约 **2.35:1** 电影宽画幅，限制 **`max-height`**；封面图请求 **`/movies/:id/cover?w=1600`**，后端优先经 **wsrv** 拉宽图以减轻模糊。
 - **观影平台图标**：国内常无法直连 `image.tmdb.org` / Clearbit，新增后端 **`GET /api/proxy-img?u=`**（仅允许白名单域名），前端 **`ProviderIcon`** 优先走代理，并增加 **Google favicon** 备用链；TMDB logo 尺寸改为 **w185**。
+- **影视库平台列表去重**：`STREAM_PROVIDERS` 由原始表经 **相同 logoPath、相同展示名** 去重后导出，减少界面重复项（如双 Amazon、同图多 ID）。
+- **详情顶栏遮挡**：后写的 `.detail-page` 负 margin 会覆盖浅色详情样式，已用 **`.main--movie-detail .detail-page.detail-page--tmdb-light { margin: 0 }`** 修正，并略增 **`main--movie-detail` 的 padding-top** 与 Hero 内容区上内边距。
+- **影视库浅色布局**：根节点增加 **`movie-list-page--tmdb`**，侧栏与主列表白底卡片、平台网格默认 **3 列**（更宽屏下略调）以贴近 TMDB 参考比例。
+- **详情加载**：`DetailPageLoading` 使用 **胶卷 + 旋转圈 + 星点** 动效替代纯骨架条。

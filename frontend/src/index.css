@@ -336,7 +336,8 @@ button { cursor: pointer; }
   max-width: none;
   width: 100%;
   padding: 0;
-  padding-top: var(--header-height);
+  /* 略大于顶栏高度，避免标题与 fixed 导航视觉重叠 */
+  padding-top: calc(var(--header-height) + var(--space-sm));
   background: #e8eaed;
   animation-duration: 0.18s;
 }
@@ -352,6 +353,73 @@ button { cursor: pointer; }
   padding: var(--space-xl) var(--space-xl) var(--space-2xl);
   max-width: 960px;
   margin: 0 auto;
+}
+/* 胶卷 + 旋转图标加载 */
+.detail-page--loading-icons {
+  min-height: 52vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(180deg, #0f172a 0%, #1e293b 100%);
+  border-radius: var(--radius-lg);
+  margin: var(--space-md) var(--space-md) 0;
+}
+.detail-loading-stage {
+  text-align: center;
+  padding: var(--space-2xl);
+}
+.detail-loading-icons {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-lg);
+  margin-bottom: var(--space-lg);
+  min-height: 88px;
+}
+.detail-loading-film {
+  color: var(--accent);
+  filter: drop-shadow(0 4px 12px rgba(1, 180, 228, 0.35));
+  animation: detail-film-pulse 1.5s ease-in-out infinite;
+}
+.detail-loading-spin {
+  color: #94a3b8;
+  animation: detail-spin 0.8s linear infinite;
+}
+.detail-loading-sparkle {
+  position: absolute;
+  top: -4px;
+  right: calc(50% - 88px);
+  color: #fbbf24;
+  animation: detail-sparkle 1.3s ease-in-out infinite;
+}
+@keyframes detail-spin {
+  to { transform: rotate(360deg); }
+}
+@keyframes detail-film-pulse {
+  0%, 100% { opacity: 0.88; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.04); }
+}
+@keyframes detail-sparkle {
+  0%, 100% { opacity: 0.5; transform: scale(1) rotate(0deg); }
+  50% { opacity: 1; transform: scale(1.15) rotate(12deg); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .detail-loading-film,
+  .detail-loading-spin,
+  .detail-loading-sparkle {
+    animation: none;
+  }
+}
+.detail-loading-title {
+  font-size: 1.15rem;
+  font-weight: 600;
+  color: #f1f5f9;
+  margin-bottom: var(--space-xs);
+}
+.detail-loading-sub {
+  font-size: 0.9rem;
+  color: #94a3b8;
 }
 .detail-skeleton-hero {
   height: 280px;
@@ -1141,6 +1209,71 @@ button { cursor: pointer; }
 }
 
 /* ========== 影视库 · TMDB 风格筛选布局 ========== */
+.movie-list-page--tmdb {
+  background: #eef1f5;
+  margin: calc(-1 * var(--space-xl)) calc(-1 * var(--space-xl)) 0;
+  margin-top: calc(-1 * var(--space-xl) + var(--space-sm));
+  padding: var(--space-lg) var(--space-xl) var(--space-2xl);
+  border-radius: var(--radius-lg);
+  min-height: min(100vh, 1200px);
+}
+.movie-list-page--tmdb .page-title {
+  color: #0f172a;
+}
+.movie-list-page--tmdb .movie-list-layout {
+  gap: var(--space-lg);
+}
+.movie-list-page--tmdb .filter-sidebar {
+  width: min(300px, 32vw);
+  background: #ffffff;
+  border-color: #e2e8f0;
+  box-shadow: 0 2px 16px rgba(15, 23, 42, 0.06);
+}
+.movie-list-page--tmdb .filter-sidebar__toggle {
+  background: #f8fafc;
+  color: #0f172a;
+  border-bottom: 1px solid #e2e8f0;
+}
+.movie-list-page--tmdb .movie-list-main {
+  background: #ffffff;
+  border-radius: var(--radius-lg);
+  border: 1px solid #e8ecf0;
+  padding: var(--space-lg);
+  box-shadow: 0 2px 16px rgba(15, 23, 42, 0.04);
+}
+.movie-list-page--tmdb .list-count {
+  color: #64748b;
+}
+.movie-list-page--tmdb .empty-hint {
+  color: #64748b;
+}
+.movie-list-page--tmdb .search-bar .form-input {
+  background: #f8fafc;
+  border-color: #e2e8f0;
+  color: #0f172a;
+}
+.movie-list-page--tmdb .provider-grid--scroll {
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.65rem;
+}
+@media (max-width: 1100px) {
+  .movie-list-page--tmdb .provider-grid--scroll {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+.movie-list-page--tmdb .filter-section__title,
+.movie-list-page--tmdb .filter-collapse-head__title {
+  color: #334155;
+}
+.movie-list-page--tmdb .filter-lang-row__label,
+.movie-list-page--tmdb .filter-radio,
+.movie-list-page--tmdb .filter-checkbox-row {
+  color: #475569;
+}
+.movie-list-page--tmdb .filter-sidebar__content {
+  background: #ffffff;
+}
+
 .movie-list-layout {
   display: flex;
   gap: var(--space-xl);
@@ -1156,7 +1289,7 @@ button { cursor: pointer; }
   border-radius: var(--radius-lg);
   overflow: hidden;
   position: sticky;
-  top: calc(64px + var(--space-md));
+  top: calc(var(--header-height) + var(--space-md));
 }
 .filter-sidebar:not(.open) { width: auto; min-width: 120px; }
 
@@ -2292,6 +2425,11 @@ button { cursor: pointer; }
   margin: calc(-1 * var(--space-xl)) calc(-1 * var(--space-xl)) 0;
 }
 
+/* 与 .detail-page 单类相比后写覆盖：避免负 margin 把 Hero 拉到 fixed 顶栏下造成标题被挡 */
+.main--movie-detail .detail-page.detail-page--tmdb-light {
+  margin: 0;
+}
+
 .detail-hero {
   position: relative;
   min-height: 540px;
@@ -2368,6 +2506,9 @@ button { cursor: pointer; }
   z-index: 1;
   width: 100%;
   padding: 0 var(--space-xl);
+}
+.main--movie-detail .detail-hero__content {
+  padding-top: var(--space-sm);
 }
 
 /* 评分旁表情：纯装饰，不可点击 */

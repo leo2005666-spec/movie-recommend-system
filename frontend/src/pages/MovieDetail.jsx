@@ -3,6 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import MovieCard, { getScoreColor } from '../components/MovieCard';
 import { useAuth } from '../context/AuthContext';
 import { api, getCoverUrl } from '../api/request';
+import DetailPageLoading from '../components/DetailPageLoading';
 
 const SCENE_SIMILAR = 'similar';
 
@@ -137,14 +138,7 @@ export default function MovieDetail() {
   };
 
   if (loading) {
-    return (
-      <div className="detail-page detail-page--tmdb-light detail-page--loading">
-        <div className="detail-skeleton-hero" aria-hidden />
-        <div className="detail-skeleton-line detail-skeleton-line--title" />
-        <div className="detail-skeleton-line detail-skeleton-line--short" />
-        <p className="detail-loading-hint">加载影片信息…</p>
-      </div>
-    );
+    return <DetailPageLoading />;
   }
   if (!movie) return <p>作品不存在</p>;
 

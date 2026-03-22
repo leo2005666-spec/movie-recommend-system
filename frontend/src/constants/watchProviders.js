@@ -1,5 +1,6 @@
 /**
  * TMDB watch provider_id + logo_path；clearbit 为图标加载失败时的备用
+ * 列表经去重：相同 logo 或相同展示名称只保留一条，避免界面重复（如双 Amazon、同图多 ID）
  */
 export const WATCH_REGIONS = [
   { code: 'CN', label: '中国', flag: '🇨🇳' },
@@ -12,7 +13,7 @@ export const WATCH_REGIONS = [
   { code: 'HK', label: '香港', flag: '🇭🇰' },
 ];
 
-export const STREAM_PROVIDERS = [
+const STREAM_PROVIDERS_RAW = [
   { id: 8, name: 'Netflix', logoPath: '/9A1JSVmS8AGHmnwRLHswLlKhlxA.jpg', clearbitDomain: 'netflix.com' },
   { id: 9, name: 'Amazon Prime Video', logoPath: '/kQFXrTbfVFB44dDNrIKZN944Svp.jpg', clearbitDomain: 'primevideo.com' },
   { id: 119, name: 'Amazon Prime Video', logoPath: '/emthp39XA2YScoYL1p0sdbAH2WA.jpg', clearbitDomain: 'primevideo.com' },
@@ -66,6 +67,30 @@ export const STREAM_PROVIDERS = [
   { id: 258, name: 'Apple TV+ Amazon', logoPath: '/6uhKBfmtzFqDkR8ZnVuIUsutXbj.jpg', clearbitDomain: 'apple.com' },
   { id: 564, name: 'Kino on Demand', logoPath: '/x6IedYxZWH6fVjByPj3cF0x7qMq.jpg' },
 ];
+
+/**
+ * 去重：1) 相同 logoPath 只保留先出现的一条 2) 相同展示名称只保留一条
+ */
+function dedupeStreamProviders(list) {
+  const seenLogo = new Set();
+  const seenName = new Set();
+  return list.filter((p) => {
+    const lp = (p.logoPath || '').trim();
+    if (lp) {
+      if (seenLogo.has(lp)) return false;
+      seenLogo.add(lp);
+    }
+    const n = (p.name || '').trim();
+    if (n) {
+      if (seenName.has(n)) return false;
+      seenName.add(n);
+    }
+    return true;
+  });
+}
+
+/** 筛选 UI 使用的平台列表（已去重） */
+export const STREAM_PROVIDERS = dedupeStreamProviders(STREAM_PROVIDERS_RAW);
 
 export const LS_WATCH_SUBSCRIBED = 'movie_watch_subscribed_ids';
 export const LS_WATCH_REGION = 'movie_watch_region';

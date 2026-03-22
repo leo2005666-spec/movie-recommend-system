@@ -195,7 +195,7 @@ export default function MovieList() {
   ];
 
   return (
-    <div className="movie-list-page">
+    <div className="movie-list-page movie-list-page--tmdb">
       <h1 className="page-title">
         <FilmStripIcon size={24} weight="regular" className="page-title__icon" />
         影视库

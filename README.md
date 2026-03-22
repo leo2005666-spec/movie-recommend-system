@@ -45,7 +45,7 @@
 ## 技术栈
 
 - **前端**：React 18 + Vite + React Router + Phosphor Icons（图标）
-- **界面风格**：全站浅色基调（白/浅灰画布 + 深色正文 + 青蓝强调色；列表/筛选/分页与 TMDB 浅色列表一致；影片详情 Hero 条可保留深色电影氛围）
+- **界面风格**：首页 / 个性推荐 / 影视库采用 **TMDB 风格深蓝 + 青绿渐变** 画布；首页顶部轮播为 **全宽高清底图 + 深色渐变遮罩（无磨砂模糊）**；影视库筛选含 **时长（0–360 分钟）双滑块**；列表卡片展示 **上映日期 + 片长**，不展示 TMDB 评分圆环（详情页仍可评分与查看 TMDB 信息）
 - **字体**：Plus Jakarta Sans + Noto Sans SC（Google Fonts，高级无衬线风格）
 - **后端**：Node.js + Express
 - **数据库**：sql.js（纯 JavaScript 实现的 SQLite，**无需 Visual Studio 编译**，Windows 可直接运行）
@@ -200,10 +200,10 @@ npm run fill-covers
 - `/api/users` - 用户信息管理
 - `/api/users/me/stats` - 当前用户统计（收藏、评分、影评数量）
 - `/api/logs` - 活动日志
-- `/api/movies` - 影视作品列表/CRUD；列表支持：`releaseStatus`、`typeKeys`（类型多选 AND）、`dateFrom`/`dateTo`、`country`（制片国家 ISO2，匹配 `origin_countries` 如 `|US|`）、`scoreMin`/`scoreMax`、`tasteType`（人群口味，分类∩标签 + 专用排序）
+- `/api/movies` - 影视作品列表/CRUD；列表支持：`releaseStatus`、`typeKeys`（类型多选 AND）、`dateFrom`/`dateTo`、`durationMin`/`durationMax`（片长分钟）、`scoreMin`/`scoreMax`、`country`（可选）、`tasteType`（人群口味）
 - `/api/categories` - 分类管理
 - `/api/tags` - 标签管理
-- `/api/recommend` - 个性化推荐（支持 `tasteType` 人群口味、`limit` 控制数量，最多 80 条）
+- `/api/recommend` - 个性化推荐（`tasteType`、`limit`≤80；**`prefer=popular`** 时固定按 TMDB 投票数/评分排序，供首页轮播）
 - `/api/recommend/tastes` - 人群口味预设列表（学生党、上班族、家庭、情侣、影迷等）
 - `/api/charts` - 榜单（`type=weekly|top|hot`：一周口碑榜、高分榜、热门榜）
 - `/api/charts/all` - 一次性获取全部榜单
@@ -292,18 +292,19 @@ npm run fill-covers
 - **问答社区**：顶部导航与 `/qa` 路由已移除；后端 `/api/qa` 未删，需要时可再挂回前端。
 - **评论删除**：`DELETE /api/comments/:id`，仅评论作者本人；详情页与首页热门影评对自己发的评论显示「删除」。
 - **反馈管理**：管理员 `GET /api/feedbacks` 始终返回全表，可重复刷新查看；`DELETE /api/feedbacks/:id` 物理删除单条反馈。
-- **影视库筛选**：「已上映/未上映」按 `release_year` 与当前年比较。**制片国家/地区**：下拉 `country`（ISO2），库字段 `origin_countries`（`|US|GB|` 形式）。**TMDB 同步**：`npm run crawler`（`movie-crawler-tmdb.js`）从影片详情写入 **production_countries**；已有库可 **`npm run backfill-origin`** 仅补全制片国等字段。**init** 仍为无 TMDB 数据时用语言粗映射。**已移除**：观看平台网格、语言筛选、最少投票滑块。
+- **影视库筛选**：「已上映/未上映」按 `release_year` 与当前年比较。**时长**：双滑块 **0–360 分钟**（`durationMin`/`durationMax`，对应库字段 `duration`）。**已从前台移除**：制片国家下拉、用户评分（TMDB）滑块（后端 `country`/`scoreMin`/`scoreMax` 仍可作为 API 兼容保留）。**TMDB 同步**：`npm run crawler` 写入制片国等；已有库可 **`npm run backfill-origin`**。**已移除**：观看平台网格、语言筛选、最少投票滑块。
+- **为何以前像「小众片」、现在更像 TMDB 热门**：库内若长期按 **`id` 新** 或 **站内评分少** 排序，会排到冷门老片。已改为 **热门/冷启动/补足** 统一优先 **`tmdb_vote_count` → `tmdb_rating` → 年份`**；协同过滤结果增加 **投票数加权**，避免全是低曝光片；**首页轮播** 单独请求 **`/api/recommend?prefer=popular`**，始终拉 TMDB 向热门作品。若仍偏冷：请运行 **`npm run crawler`** 同步更多 TMDB 热门数据并确保 **`tmdb_vote_count` 已写入**。
 - **人群口味（影视库 vs 个性推荐）**：同一套 `tasteType` 预设，但影视库列表改为 **须同时命中预设「分类之一」与「标签之一」**（AND），排序为 **TMDB 分 ↓、投票数 ↓、年份 ↑**，更易出现高分与经典感；个性推荐页在结果不足时仍会 **热门补足**。
 - **影视详情 Hero**：**TMDB 第二张参考**——左侧海报 + 右侧信息列，**横向渐变直接压在剧照上**（左深右浅），**白字 + 轻阴影**；**不用**整块圆角半透明「信息玻璃盒」（避免第三张参考那种装箱感）。剧照由后端 **`original` backdrop**；无横版时用封面 **`?w=1280`** 弱背景。评分旁装饰表情为纯展示（`pointer-events: none`）。
 - **演员阵容**：横向滚动，**上剧照下姓名/角色**，白底圆角卡片、轻阴影；演员头像接口使用 TMDB **`w342`** 以适配较大卡片。
 - **详情页版式（TMDB 式）**：顶部 Hero 仍为深色剧照条；**下方主内容区为白底**（`main--movie-detail` + `detail-page--tmdb-light`），评论/侧栏/关键词等为浅色主题，与全站浅色画布一致。
 - **前端性能**：路由 **`React.lazy` + `Suspense`** 按页拆包；`vite` 将 `react/react-dom/react-router-dom` 打入 **`vendor-react`** chunk；首页进入动画缩短；详情页评论/演职员/相似推荐改为 **`Promise.all` 并行**；首屏加载用轻量骨架占位。
 - **顶栏交互**：导航改为 **`position: fixed`**，`main` 增加 **`padding-top`** 避免内容被挡；**向下滚动**约 8px 以上时顶栏收起（`header--scroll-hidden`），**向上滚动**或回到页面顶部时重新显示。后端异常时的红条 **`api-status-banner`** 固定在最顶，顶栏在其下方（`:has` 调整 `padding-top` / `top`）。
-- **首页轮播**：**浅色磨砂编辑风**——封面低对比叠底 + **白雾渐变 + `backdrop-filter` 模糊**；**左对齐**标题/简介；顶栏 **胶囊标签 + 日期**；底栏 **左来源 / 右白底描边「查看详情」**；**白底圆箭头**；指示器 **底部居中**，当前项为 **横向深灰胶囊**、其余浅灰圆点。
+- **首页轮播（TMDB Hero）**：**全宽高清封面/剧照**、`object-fit: cover` 铺满、**无磨砂模糊**；**深蓝左向右渐变遮罩** + **白字**；CTA 为 **青绿渐变按钮**；轮播数据为 **`prefer=popular`** 热门片。首页/推荐/影视库外层使用 **`tmdb-page-theme`** 深蓝渐变画布。
 - **观影平台图标**：国内常无法直连 `image.tmdb.org` / Clearbit，新增后端 **`GET /api/proxy-img?u=`**（仅允许白名单域名），前端 **`ProviderIcon`** 优先走代理，并增加 **Google favicon** 备用链；TMDB logo 尺寸改为 **w185**。
 - **影视库平台列表去重**：`STREAM_PROVIDERS` 由原始表经 **相同 logoPath、相同展示名** 去重后导出，减少界面重复项（如双 Amazon、同图多 ID）。
 - **详情顶栏遮挡**：后写的 `.detail-page` 负 margin 会覆盖浅色详情样式，已用 **`.main--movie-detail .detail-page.detail-page--tmdb-light { margin: 0 }`** 修正，并略增 **`main--movie-detail` 的 padding-top** 与 Hero 内容区上内边距。
-- **影视库浅色布局**：根节点使用 **`movie-list-page--tmdb`**，侧栏与主列表白底卡片；外层与 **`--bg-canvas`** 全站统一。**分页**使用白底描边 **`btn-outline`**。
+- **影视库布局**：根节点 **`movie-list-page--tmdb tmdb-page-theme`**，深蓝渐变背景上的半透明侧栏/主区卡片；列表卡片信息区仍为白底。**分页**使用 **`btn-outline`**。
 - **详情加载**：`DetailPageLoading` 使用 **`position: fixed`** 铺满顶栏下方视口（**`100dvh`/`safe-area` 友好**），**flex 水平垂直居中**浅色卡片；有 **`api-status-banner`** 时同步下移顶边距；`main` 设 **`min-height`** 减轻结束加载时高度跳动。
 - **全站背景与详情画布**：`BackgroundFX` 渐变改为 **左右对称**、动画仅微缩放，遮罩用 **均匀 `--bg-canvas` 系**；**`main--movie-detail`** 背景改为 **`var(--bg-canvas)`**（不再单独 `#e8eaed`），避免与浏览器两侧 gutter 冷暖不一致。
 - **详情白区字体**：`detail-body` 与侧栏标题/正文 **字重与灰阶统一**（侧栏标签取消全大写），与首页区块标题层级一致。

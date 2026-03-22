@@ -1791,6 +1791,58 @@ button { cursor: pointer; }
   background: transparent;
 }
 
+/* 时长（0–360 分）：青蓝选中段 + 底轨刻度感 */
+.filter-range-dual--duration .filter-range-dual__label {
+  color: #334155;
+  font-weight: 700;
+}
+.filter-range-dual--duration .filter-range-dual__ticks {
+  color: #64748b;
+  font-weight: 500;
+}
+.filter-range-dual--duration .filter-range-dual__track-wrap::before {
+  height: 4px;
+  background: #e2e8f0;
+  box-shadow: inset 0 0 0 1px rgba(148, 163, 184, 0.35);
+}
+.filter-range-dual--duration .filter-range-dual__track-wrap {
+  margin-bottom: 0.35rem;
+}
+.filter-range-dual--duration .filter-range-dual__track-fill {
+  height: 4px;
+  background: linear-gradient(90deg, #01b4e4, #5eead4);
+}
+.filter-range-dual--duration .filter-range-dual__input::-webkit-slider-thumb,
+.filter-range-dual--duration .filter-range-dual__input::-moz-range-thumb {
+  background: #01b4e4;
+  border-color: #fff;
+  width: 18px;
+  height: 18px;
+}
+
+.movie-card__meta-col {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  align-items: flex-start;
+}
+.movie-card__date-line,
+.movie-card__runtime-line {
+  font-size: 0.8rem;
+  color: #64748b;
+  line-height: 1.3;
+}
+.tmdb-page-theme .movie-card__date-line,
+.tmdb-page-theme .movie-card__runtime-line {
+  color: #94a3b8;
+}
+.tmdb-page-theme .movie-card .info {
+  background: rgba(248, 250, 252, 0.98);
+}
+.tmdb-page-theme .movie-card .title {
+  color: #0f172a;
+}
+
 .movie-list-main {
   flex: 1;
   min-width: 0;
@@ -2146,7 +2198,77 @@ button { cursor: pointer; }
   overflow: hidden;
 }
 
-/* ========== 流动电影广告轮播 · 浅色磨砂编辑风（左对齐 / 底栏 CTA / 居中胶囊指示器） ========== */
+/* ========== TMDB 风格页面容器（首页 / 推荐 / 影视库） ========== */
+.tmdb-page-theme {
+  margin: calc(-1 * var(--space-xl)) calc(-1 * var(--space-xl)) 0;
+  padding: var(--space-xl);
+  padding-bottom: var(--space-2xl);
+  min-height: 48vh;
+  background: linear-gradient(165deg, #032541 0%, #0a3d5c 38%, #061f2e 100%);
+  color: #e8f4f8;
+  border-radius: 0;
+}
+@media (max-width: 640px) {
+  .tmdb-page-theme {
+    margin: calc(-1 * var(--space-md)) calc(-1 * var(--space-md)) 0;
+    padding: var(--space-md);
+    padding-bottom: var(--space-xl);
+  }
+}
+.tmdb-page-theme .page-title,
+.tmdb-page-theme .section-title {
+  color: #f8fafc;
+}
+.tmdb-page-theme .section-title::before {
+  background: linear-gradient(to bottom, #01b4e4, #90cea1);
+}
+.tmdb-page-theme .hero__title {
+  color: #f8fafc;
+}
+.tmdb-page-theme .hero__subtitle {
+  color: rgba(226, 232, 240, 0.88);
+}
+.tmdb-page-theme .empty-hint {
+  color: rgba(203, 213, 225, 0.92);
+}
+.tmdb-page-theme .link-more {
+  color: #67e8f9;
+}
+.tmdb-page-theme .link-more:hover {
+  color: #a5f3fc;
+}
+.tmdb-page-theme .taste-chip {
+  background: rgba(15, 23, 42, 0.35);
+  border-color: rgba(148, 163, 184, 0.35);
+  color: #e2e8f0;
+}
+.tmdb-page-theme .taste-chip:hover {
+  border-color: #01b4e4;
+  color: #fff;
+}
+.tmdb-page-theme .taste-chip.active {
+  background: linear-gradient(135deg, rgba(1, 180, 228, 0.35), rgba(144, 206, 161, 0.22));
+  border-color: #01b4e4;
+  color: #fff;
+}
+.tmdb-page-theme .movie-list-page--tmdb .filter-sidebar,
+.tmdb-page-theme .movie-list-page--tmdb .movie-list-main {
+  background: rgba(15, 23, 42, 0.45);
+  border-color: rgba(148, 163, 184, 0.2);
+  backdrop-filter: none;
+}
+.tmdb-page-theme .movie-list-page--tmdb .filter-sidebar__toggle {
+  background: rgba(30, 41, 59, 0.6);
+  color: #f1f5f9;
+  border-bottom-color: rgba(148, 163, 184, 0.2);
+}
+.tmdb-page-theme .movie-list-page--tmdb .search-bar .form-input {
+  background: rgba(15, 23, 42, 0.55);
+  border-color: rgba(148, 163, 184, 0.35);
+  color: #f8fafc;
+}
+
+/* ========== 流动电影广告轮播 · TMDB Hero：高清底图 + 深色渐变（无磨砂模糊） ========== */
 .movie-banner {
   position: relative;
   border-radius: 16px;
@@ -2155,6 +2277,29 @@ button { cursor: pointer; }
   box-shadow: 0 8px 32px rgba(15, 23, 42, 0.08);
   border: 1px solid var(--border);
   background: var(--bg-surface);
+}
+
+.movie-banner--fullbleed {
+  width: 100vw;
+  max-width: 100vw;
+  margin-left: calc(50% - 50vw);
+  margin-right: calc(50% - 50vw);
+  margin-bottom: var(--space-xl);
+  border-radius: 0;
+  border-left: none;
+  border-right: none;
+  box-shadow: none;
+  border: none;
+}
+
+.movie-banner--tmdb-hero {
+  min-height: min(52vh, 560px);
+}
+
+.movie-banner--tmdb-hero .movie-banner__track {
+  aspect-ratio: auto;
+  min-height: min(52vh, 560px);
+  max-height: none;
 }
 
 .movie-banner__track {
@@ -2194,12 +2339,18 @@ button { cursor: pointer; }
   height: 100%;
   object-fit: cover;
   object-position: center center;
-  transform: scale(1.03);
-  opacity: 0.42;
-  filter: saturate(0.85);
+  transform: scale(1.06);
+  opacity: 1;
+  filter: none;
 }
 
-/* 高亮磨砂层：浅色画布 + 轻微模糊，保证深字可读 */
+.movie-banner--tmdb-hero .movie-banner__bg img {
+  transform: scale(1.08);
+  min-width: 100%;
+  min-height: 100%;
+}
+
+/* 浅色磨砂（旧版，仅非 TMDB Hero 时使用） */
 .movie-banner__overlay--frost {
   position: absolute;
   inset: 0;
@@ -2212,6 +2363,24 @@ button { cursor: pointer; }
   );
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
+}
+
+/* TMDB：左侧深蓝实色 + 向右变淡，保证白字可读；无 backdrop-filter */
+.movie-banner__overlay--tmdb-gradient {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    rgba(3, 37, 65, 0.97) 0%,
+    rgba(3, 37, 65, 0.82) 28%,
+    rgba(3, 37, 65, 0.35) 55%,
+    rgba(3, 37, 65, 0.08) 100%
+  );
+  pointer-events: none;
+}
+
+.movie-banner--tmdb-hero .movie-banner__content--editorial {
+  min-height: 88%;
 }
 
 .movie-banner__content--editorial {
@@ -2255,10 +2424,20 @@ button { cursor: pointer; }
   border-radius: 999px;
 }
 
+.movie-banner--tmdb-hero .movie-banner__pill {
+  color: #e0f2fe;
+  background: rgba(1, 180, 228, 0.2);
+  border-color: rgba(1, 180, 228, 0.45);
+}
+
 .movie-banner__date {
   font-size: 0.85rem;
   color: #64748b;
   font-weight: 500;
+}
+
+.movie-banner--tmdb-hero .movie-banner__date {
+  color: rgba(226, 232, 240, 0.9);
 }
 
 .movie-banner__title {
@@ -2270,6 +2449,11 @@ button { cursor: pointer; }
   letter-spacing: -0.02em;
 }
 
+.movie-banner--tmdb-hero .movie-banner__title {
+  color: #ffffff;
+  text-shadow: 0 2px 24px rgba(0, 0, 0, 0.35);
+}
+
 .movie-banner__desc {
   font-size: 0.95rem;
   color: #475569;
@@ -2279,6 +2463,10 @@ button { cursor: pointer; }
   -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
   overflow: hidden;
+}
+
+.movie-banner--tmdb-hero .movie-banner__desc {
+  color: rgba(226, 232, 240, 0.92);
 }
 
 .movie-banner__bottom-row {
@@ -2295,6 +2483,10 @@ button { cursor: pointer; }
   color: #64748b;
 }
 
+.movie-banner--tmdb-hero .movie-banner__source {
+  color: rgba(203, 213, 225, 0.95);
+}
+
 .movie-banner__cta-pill {
   display: inline-flex;
   align-items: center;
@@ -2309,9 +2501,21 @@ button { cursor: pointer; }
   transition: border-color 0.2s, box-shadow 0.2s, transform 0.2s;
 }
 
+.movie-banner--tmdb-hero .movie-banner__cta-pill {
+  color: #032541;
+  background: linear-gradient(135deg, #01b4e4 0%, #90cea1 100%);
+  border: none;
+  font-weight: 700;
+  box-shadow: 0 4px 20px rgba(1, 180, 228, 0.35);
+}
+
 .movie-banner__slide:hover .movie-banner__cta-pill {
   border-color: var(--accent);
   box-shadow: 0 4px 16px rgba(1, 180, 228, 0.2);
+}
+
+.movie-banner--tmdb-hero .movie-banner__slide:hover .movie-banner__cta-pill {
+  filter: brightness(1.06);
 }
 
 /* 左右箭头：白底深色箭头 */
@@ -2333,9 +2537,18 @@ button { cursor: pointer; }
   box-shadow: 0 4px 20px rgba(15, 23, 42, 0.12);
   transition: background 0.2s, transform 0.2s, color 0.2s, box-shadow 0.2s;
 }
+.movie-banner--tmdb-hero .movie-banner__arrow {
+  background: rgba(15, 23, 42, 0.65);
+  color: #f8fafc;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.35);
+}
 .movie-banner__arrow:hover {
   color: var(--accent);
   box-shadow: 0 6px 24px rgba(15, 23, 42, 0.16);
+}
+.movie-banner--tmdb-hero .movie-banner__arrow:hover {
+  color: #67e8f9;
+  background: rgba(15, 23, 42, 0.85);
 }
 .movie-banner__arrow:active {
   transform: translateY(-50%) scale(0.96);

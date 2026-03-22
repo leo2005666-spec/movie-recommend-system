@@ -19,12 +19,31 @@ async function enrichMovies(movieIds) {
   if (!movieIds.length) return [];
   const placeholders = movieIds.map(() => '?').join(',');
   const rows = await db.prepare(`
-    SELECT id, title, cover, description, release_year
+    SELECT id, title, cover, description, release_year, release_date, duration, tmdb_vote_count, tmdb_rating
     FROM movies WHERE id IN (${placeholders})
   `).all(...movieIds);
   const byId = {};
   rows.forEach((r) => { byId[r.id] = r; });
   return movieIds.map((id) => byId[id]).filter(Boolean);
+}
+
+/**
+ * 协同过滤候选：在保留 CF 分数的前提下，用 TMDB 投票数做温和加权，减少「全是小众片」
+ */
+function rankCfMovies(cfItems, enrichedList) {
+  const byId = Object.fromEntries(enrichedList.map((m) => [m.id, m]));
+  const merged = cfItems
+    .map((c) => {
+      const m = byId[c.movieId];
+      if (!m) return null;
+      const votes = Math.max(0, m.tmdb_vote_count || 0);
+      const boost = 0.35 + 0.65 * (Math.log1p(votes) / Math.log1p(50000));
+      return { ...m, _rank: (c.score || 0) * boost };
+    })
+    .filter(Boolean);
+  merged.sort((a, b) => b._rank - a._rank);
+  merged.forEach((m) => { delete m._rank; });
+  return merged;
 }
 
 /**
@@ -40,7 +59,8 @@ async function coldStartPersonalized(userId, limit) {
 async function handleHomePersonalized(userId, limit) {
   const cf = await collabFilter.getCFPersonalized(userId, limit);
   if (cf && cf.length > 0) {
-    const movies = await enrichMovies(cf.map((r) => r.movieId));
+    const raw = await enrichMovies(cf.map((r) => r.movieId));
+    const movies = rankCfMovies(cf, raw);
     return { list: movies, source: 'collab_filter' };
   }
   return {

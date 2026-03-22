@@ -1,32 +1,37 @@
 /**
  * 电影卡片 · TMDB 风格
- * 封面左下角评分圆环（颜色编码）+ 右上角三点菜单
+ * 右上角三点菜单；信息区展示日期与片长（不展示评分圆环）
  */
 import { Link } from 'react-router-dom';
 import { getCoverUrl } from '../api/request';
 
-/** 根据百分比获取评分颜色：绿(>=70) / 黄(40-69) / 红(<40) */
+/** 根据百分比获取评分颜色：绿(>=70) / 黄(40-69) / 红(<40) — 详情页等仍可用 */
 export function getScoreColor(percent) {
   if (percent == null) return 'var(--text-tertiary)';
-  if (percent >= 70) return '#90EE90'; // 青绿
-  if (percent >= 40) return '#FFD700'; // 金黄
-  return '#FF6B6B'; // 红
+  if (percent >= 70) return '#90EE90';
+  if (percent >= 40) return '#FFD700';
+  return '#FF6B6B';
 }
 
-/** TMDB 风格 · 封面上的评分圆环（左下角，半重叠） */
-function ScoreCircle({ movie }) {
-  const percent = movie.tmdb_rating != null ? Math.round(movie.tmdb_rating * 10) : (movie.avg_score != null ? Math.round(movie.avg_score * 20) : null);
-  if (percent == null) return null;
-  const color = getScoreColor(percent);
-  return (
-    <div className="movie-card__score-ring" aria-hidden>
-      <svg viewBox="0 0 36 36">
-        <path className="movie-card__score-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
-        <path className="movie-card__score-fill" stroke={color} strokeDasharray={`${percent}, 100`} d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
-      </svg>
-      <span className="movie-card__score-value">{percent}%</span>
-    </div>
-  );
+/** 片长：分钟 → 1h 45m */
+export function formatRuntimeMinutes(mins) {
+  if (mins == null || mins === '' || Number(mins) < 1) return null;
+  const n = Number(mins);
+  if (Number.isNaN(n)) return null;
+  const h = Math.floor(n / 60);
+  const m = Math.round(n % 60);
+  if (h > 0 && m > 0) return `${h}小时${m}分`;
+  if (h > 0) return `${h}小时`;
+  return `${m}分`;
+}
+
+function formatReleaseLine(movie) {
+  if (movie.release_date && String(movie.release_date).trim()) {
+    const s = String(movie.release_date).slice(0, 10);
+    return s;
+  }
+  if (movie.release_year) return String(movie.release_year);
+  return null;
 }
 
 /** 右上角三点菜单 */
@@ -54,18 +59,12 @@ function PlayOverlay() {
   );
 }
 
-/** 年份图标 */
-function YearIcon() {
-  return (
-    <svg className="movie-card__meta-icon" viewBox="0 0 16 16" width="12" height="12">
-      <path fill="currentColor" d="M8 2a1 1 0 011 1v1h3a1 1 0 011 1v8a1 1 0 01-1 1H4a1 1 0 01-1-1V5a1 1 0 011-1h3V3a1 1 0 011-1zM6 6H4v2h2V6zm0 3H4v2h2V9zm4 0H8v2h2V9zm0-3H8v6h2V6z" />
-    </svg>
-  );
-}
-
 export default function MovieCard({ movie, onClick, showBadge = true, topRight, className }) {
   const coverUrl = getCoverUrl(movie);
   const fallbackSvg = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="150" fill="%232a2a35"><rect width="100" height="150"/><text x="50" y="75" dominant-baseline="middle" text-anchor="middle" fill="%238a8a9a" font-size="12">暂无封面</text></svg>';
+
+  const dateLine = formatReleaseLine(movie);
+  const runtimeLine = formatRuntimeMinutes(movie.duration);
 
   return (
     <Link
@@ -81,19 +80,14 @@ export default function MovieCard({ movie, onClick, showBadge = true, topRight, 
           className="cover"
           onError={(e) => { e.target.src = fallbackSvg; }}
         />
-        <ScoreCircle movie={movie} />
-        <MoreMenu />
+        {showBadge !== false && <MoreMenu />}
         <PlayOverlay />
       </div>
       <div className="info">
         <div className="title">{movie.title}</div>
-        <div className="meta">
-          {movie.release_year && (
-            <>
-              <YearIcon />
-              {movie.release_year}
-            </>
-          )}
+        <div className="meta movie-card__meta-col">
+          {dateLine && <span className="movie-card__date-line">{dateLine}</span>}
+          {runtimeLine && <span className="movie-card__runtime-line">{runtimeLine}</span>}
         </div>
       </div>
     </Link>

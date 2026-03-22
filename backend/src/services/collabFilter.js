@@ -220,10 +220,12 @@ async function getContentSimilar(movieId, limit = 12) {
  */
 async function getPopularMovies(limit = 12) {
   return await db.prepare(`
-    SELECT m.id, m.title, m.cover, m.description, m.release_year
+    SELECT m.id, m.title, m.cover, m.description, m.release_year, m.release_date, m.duration
     FROM movies m
-    LEFT JOIN (SELECT movie_id, AVG(score) as avg_score, COUNT(*) as cnt FROM ratings GROUP BY movie_id) r ON m.id = r.movie_id
-    ORDER BY COALESCE(r.cnt, 0) * COALESCE(r.avg_score, 0) DESC, m.id DESC
+    ORDER BY COALESCE(m.tmdb_vote_count, 0) DESC,
+      COALESCE(m.tmdb_rating, 0) DESC,
+      COALESCE(m.release_year, 0) DESC,
+      m.id DESC
     LIMIT ?
   `).all(limit);
 }

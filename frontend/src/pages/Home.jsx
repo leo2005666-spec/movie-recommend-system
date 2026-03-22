@@ -76,7 +76,7 @@ export default function Home() {
   }, [tasteType, user]);
 
   return (
-    <div>
+    <div className="home-page tmdb-page-theme">
       <MovieBanner />
       <section className="hero">
         <h1 className="hero__title">发现你喜欢的影视</h1>

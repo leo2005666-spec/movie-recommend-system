@@ -20,6 +20,8 @@ export default function FilterRangeDual({
   ticks,
   label,
   formatTick = (v) => String(v),
+  /** 例如 filter-range-dual--duration 用于刻度尺皮肤 */
+  className = '',
 }) {
   const clamp = useCallback(
     (v) => Math.min(max, Math.max(min, v)),
@@ -40,7 +42,7 @@ export default function FilterRangeDual({
   const hiPct = ((valueMax - min) / (max - min || 1)) * 100;
 
   return (
-    <div className="filter-range-dual">
+    <div className={`filter-range-dual ${className}`.trim()}>
       {label && <div className="filter-range-dual__label">{label}</div>}
       <div className="filter-range-dual__ticks">
         {(ticks || [min, max]).map((t) => (

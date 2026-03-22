@@ -4,7 +4,6 @@ import MovieCard from '../components/MovieCard';
 import Pagination from '../components/Pagination';
 import { api } from '../api/request';
 import FilterRangeDual from '../components/filter/FilterRangeDual';
-import { PRODUCTION_COUNTRIES } from '../constants/productionCountries';
 
 export default function MovieList() {
   const [list, setList] = useState([]);
@@ -23,15 +22,13 @@ export default function MovieList() {
   /** 类型多选：'c:1' | 't:2' */
   const [selectedTypes, setSelectedTypes] = useState([]);
 
-  /** 制片国家/地区（与后端 origin_countries / ?country= 一致） */
-  const [country, setCountry] = useState('');
-
   /** 发行日期 */
   const [searchAllReleases, setSearchAllReleases] = useState(true);
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
 
-  const [scoreRange, setScoreRange] = useState({ min: 0, max: 10 });
+  /** 片长（分钟）0–360 */
+  const [durationRange, setDurationRange] = useState({ min: 0, max: 360 });
 
   const toggleTypeKey = (key) => {
     setSelectedTypes((prev) => (prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key]));
@@ -57,10 +54,8 @@ export default function MovieList() {
       if (dateTo) params.dateTo = dateTo;
     }
 
-    if (country) params.country = country;
-
-    if (scoreRange.min > 0) params.scoreMin = Math.round(scoreRange.min * 10) / 10;
-    if (scoreRange.max < 10) params.scoreMax = Math.round(scoreRange.max * 10) / 10;
+    if (durationRange.min > 0) params.durationMin = durationRange.min;
+    if (durationRange.max < 360) params.durationMax = durationRange.max;
 
     api
       .get('/movies', params)
@@ -79,8 +74,7 @@ export default function MovieList() {
     searchAllReleases,
     dateFrom,
     dateTo,
-    country,
-    scoreRange,
+    durationRange,
   ]);
 
   useEffect(() => {
@@ -109,8 +103,7 @@ export default function MovieList() {
     setSearchAllReleases(true);
     setDateFrom('');
     setDateTo('');
-    setCountry('');
-    setScoreRange({ min: 0, max: 10 });
+    setDurationRange({ min: 0, max: 360 });
     setPage(1);
   };
 
@@ -122,7 +115,7 @@ export default function MovieList() {
   }, [categories, tags]);
 
   return (
-    <div className="movie-list-page movie-list-page--tmdb">
+    <div className="movie-list-page movie-list-page--tmdb tmdb-page-theme">
       <h1 className="page-title">
         <FilmStripIcon size={24} weight="regular" className="page-title__icon" />
         影视库
@@ -135,27 +128,6 @@ export default function MovieList() {
           </button>
           {filterOpen && (
             <div className="filter-sidebar__content">
-              <div className="filter-section">
-                <h3 className="filter-section__title filter-section__title--lg">制片国家/地区</h3>
-                <p className="filter-hint" style={{ marginBottom: '0.5rem', fontSize: '0.8rem', color: 'var(--text-tertiary)' }}>
-                  按影片制片国筛选（与库内数据一致；未选则不限）
-                </p>
-                <select
-                  className="form-input filter-region-select"
-                  value={country}
-                  onChange={(e) => {
-                    setCountry(e.target.value);
-                    setPage(1);
-                  }}
-                >
-                  {PRODUCTION_COUNTRIES.map((c) => (
-                    <option key={c.code || 'all'} value={c.code}>
-                      {c.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
               {/* 发行日期 */}
               <div className="filter-section">
                 <h3 className="filter-section__title filter-section__title--lg">发行日期</h3>
@@ -301,17 +273,18 @@ export default function MovieList() {
 
               <div className="filter-section filter-section--sliders">
                 <FilterRangeDual
-                  label="用户评分（TMDB）"
+                  className="filter-range-dual--duration"
+                  label="时长（分钟）"
                   min={0}
-                  max={10}
-                  step={0.1}
-                  valueMin={scoreRange.min}
-                  valueMax={scoreRange.max}
+                  max={360}
+                  step={1}
+                  valueMin={durationRange.min}
+                  valueMax={durationRange.max}
                   onChange={(r) => {
-                    setScoreRange(r);
+                    setDurationRange(r);
                     setPage(1);
                   }}
-                  ticks={[0, 5, 10]}
+                  ticks={[0, 120, 240, 360]}
                   formatTick={(v) => String(v)}
                 />
               </div>

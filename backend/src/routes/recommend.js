@@ -21,7 +21,7 @@ async function getTasteRecommendations(tasteType, limit = 24) {
   const tw = await buildTasteWhereSql(db, tasteType);
   if (!tw) return getPop(limit);
   const rows = await db.prepare(`
-    SELECT m.id, m.title, m.cover, m.description, m.release_year
+    SELECT m.id, m.title, m.cover, m.description, m.release_year, m.release_date, m.duration, m.tmdb_vote_count, m.tmdb_rating
     FROM movies m
     WHERE ${tw.sql}
     ORDER BY ${TASTE_ORDER_BY}
@@ -75,9 +75,13 @@ router.get('/tastes', asyncHandler(async (req, res) => {
 router.get('/', optionalAuth, asyncHandler(async (req, res) => {
   const limit = Math.min(80, Math.max(6, parseInt(req.query.limit) || 36));
   const tasteType = (req.query.tasteType || '').trim();
+  /** 首页轮播等场景固定要「大众热门」时传 prefer=popular（不按登录态走冷启动） */
+  const preferPopular = (req.query.prefer || '').trim().toLowerCase() === 'popular';
   let list;
 
-  if (tasteType && TASTE_PRESETS[tasteType]) {
+  if (preferPopular) {
+    list = await getPop(limit);
+  } else if (tasteType && TASTE_PRESETS[tasteType]) {
     list = await getTasteRecommendations(tasteType, limit);
   } else if (req.user) {
     list = await getColdStartRecommendations(req.user.id, limit);

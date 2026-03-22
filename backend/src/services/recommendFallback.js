@@ -1,8 +1,17 @@
 /**
  * 推荐 Fallback：原有个性化/热门逻辑，供 CF 冷启动或结果为空时使用
  * 新增：根据用户性别、年龄等画像进行 demographic 推荐
+ *
+ * 「热门」排序与 TMDB 一致：优先投票数、再评分、再年份，避免仅按 id 新排到冷门老片
  */
 const db = require('../db/db');
+
+const ORDER_BY_TMDB_POPULAR = `
+  COALESCE(m.tmdb_vote_count, 0) DESC,
+  COALESCE(m.tmdb_rating, 0) DESC,
+  COALESCE(m.release_year, 0) DESC,
+  m.id DESC
+`;
 
 /**
  * 根据用户画像推荐（已移除性别、年龄，直接走个性化/热门）
@@ -37,11 +46,11 @@ async function getPersonalizedRecommendations(userId, limit = 12) {
   const perSource = Math.ceil(limit / 3);
   for (const { category_id } of likedCategories) {
     const movies = await db.prepare(`
-      SELECT m.id, m.title, m.cover, m.description, m.release_year
+      SELECT m.id, m.title, m.cover, m.description, m.release_year, m.release_date, m.duration
       FROM movies m
       INNER JOIN movie_categories mc ON m.id = mc.movie_id AND mc.category_id = ?
       WHERE m.id NOT IN (SELECT movie_id FROM ratings WHERE user_id = ?)
-      ORDER BY m.id DESC LIMIT ?
+      ORDER BY ${ORDER_BY_TMDB_POPULAR} LIMIT ?
     `).all(category_id, userId, perSource);
     for (const m of movies) {
       if (!seen.has(m.id)) {
@@ -54,11 +63,11 @@ async function getPersonalizedRecommendations(userId, limit = 12) {
 
   for (const { tag_id } of likedTags) {
     const movies = await db.prepare(`
-      SELECT m.id, m.title, m.cover, m.description, m.release_year
+      SELECT m.id, m.title, m.cover, m.description, m.release_year, m.release_date, m.duration
       FROM movies m
       INNER JOIN movie_tags mt ON m.id = mt.movie_id AND mt.tag_id = ?
       WHERE m.id NOT IN (SELECT movie_id FROM ratings WHERE user_id = ?)
-      ORDER BY m.id DESC LIMIT ?
+      ORDER BY ${ORDER_BY_TMDB_POPULAR} LIMIT ?
     `).all(tag_id, userId, perSource);
     for (const m of movies) {
       if (!seen.has(m.id)) {
@@ -70,11 +79,11 @@ async function getPersonalizedRecommendations(userId, limit = 12) {
   }
 
   const popular = await db.prepare(`
-    SELECT m.id, m.title, m.cover, m.description, m.release_year
+    SELECT m.id, m.title, m.cover, m.description, m.release_year, m.release_date, m.duration
     FROM movies m
     LEFT JOIN (SELECT movie_id, AVG(score) as avg_score, COUNT(*) as cnt FROM ratings GROUP BY movie_id) r ON m.id = r.movie_id
     WHERE m.id NOT IN (SELECT movie_id FROM ratings WHERE user_id = ?)
-    ORDER BY COALESCE(r.cnt, 0) * COALESCE(r.avg_score, 0) DESC, m.id DESC
+    ORDER BY ${ORDER_BY_TMDB_POPULAR}
     LIMIT ?
   `).all(userId, limit - result.length);
 
@@ -95,10 +104,9 @@ async function getColdStartRecommendations(userId, limit = 12) {
 
 async function getPopularRecommendations(limit = 12) {
   return await db.prepare(`
-    SELECT m.id, m.title, m.cover, m.description, m.release_year
+    SELECT m.id, m.title, m.cover, m.description, m.release_year, m.release_date, m.duration, m.tmdb_vote_count, m.tmdb_rating
     FROM movies m
-    LEFT JOIN (SELECT movie_id, AVG(score) as avg_score, COUNT(*) as cnt FROM ratings GROUP BY movie_id) r ON m.id = r.movie_id
-    ORDER BY COALESCE(r.cnt, 0) * COALESCE(r.avg_score, 0) DESC, m.id DESC
+    ORDER BY ${ORDER_BY_TMDB_POPULAR}
     LIMIT ?
   `).all(limit);
 }

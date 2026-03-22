@@ -39,7 +39,7 @@ export default function MovieBanner() {
 
   useEffect(() => {
     let cancelled = false;
-    api.get('/recommend', { limit: 8 })
+    api.get('/recommend', { limit: 8, prefer: 'popular' })
       .then((r) => {
         if (!cancelled) setMovies(Array.isArray(r.data) ? r.data : []);
       })
@@ -95,7 +95,7 @@ export default function MovieBanner() {
 
   return (
     <div
-      className="movie-banner"
+      className="movie-banner movie-banner--fullbleed movie-banner--tmdb-hero"
       role="region"
       aria-roledescription="carousel"
       aria-label="精选电影推荐"
@@ -122,7 +122,7 @@ export default function MovieBanner() {
                   loading={i === index ? 'eager' : 'lazy'}
                   onError={(e) => { e.target.style.display = 'none'; }}
                 />
-                <div className="movie-banner__overlay movie-banner__overlay--frost" />
+                <div className="movie-banner__overlay movie-banner__overlay--tmdb-gradient" />
               </div>
               <div className="movie-banner__content movie-banner__content--editorial">
                 <div className="movie-banner__text-block">

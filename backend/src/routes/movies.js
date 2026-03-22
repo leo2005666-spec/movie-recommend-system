@@ -188,6 +188,10 @@ router.get('/', optionalAuth, asyncHandler(async (req, res) => {
   const scoreMin = req.query.scoreMin !== undefined && req.query.scoreMin !== '' ? parseFloat(req.query.scoreMin) : null;
   const scoreMax = req.query.scoreMax !== undefined && req.query.scoreMax !== '' ? parseFloat(req.query.scoreMax) : null;
 
+  /** 片长（分钟）区间，与前端时长滑块 0–360 一致；全范围时不传或 0/360 表示不限制 */
+  const durationMin = req.query.durationMin !== undefined && req.query.durationMin !== '' ? parseInt(req.query.durationMin, 10) : null;
+  const durationMax = req.query.durationMax !== undefined && req.query.durationMax !== '' ? parseInt(req.query.durationMax, 10) : null;
+
   /** 上映状态：released=已上映，unreleased=未上映（按发行年份与当前年比较；兼容旧参数 watched/unwatched） */
   let releaseStatus = (req.query.releaseStatus || '').trim().toLowerCase();
   if (!releaseStatus) {
@@ -201,7 +205,7 @@ router.get('/', optionalAuth, asyncHandler(async (req, res) => {
   const { categoryIds: typeCategoryIds, tagIds: typeTagIds } = parseTypeKeys(req.query.typeKeys || '');
 
   let sql = `
-    SELECT m.id, m.title, m.cover, m.description, m.release_year, m.director, m.duration, m.tmdb_rating, m.created_at
+    SELECT m.id, m.title, m.cover, m.description, m.release_year, m.release_date, m.director, m.duration, m.tmdb_rating, m.created_at
     FROM movies m
   `;
   const params = [];
@@ -283,6 +287,15 @@ router.get('/', optionalAuth, asyncHandler(async (req, res) => {
   if (scoreMax != null && !Number.isNaN(scoreMax)) {
     conditions.push('m.tmdb_rating IS NOT NULL AND m.tmdb_rating <= ?');
     params.push(scoreMax);
+  }
+
+  if (durationMin != null && !Number.isNaN(durationMin) && durationMin > 0) {
+    conditions.push('m.duration IS NOT NULL AND m.duration >= ?');
+    params.push(durationMin);
+  }
+  if (durationMax != null && !Number.isNaN(durationMax) && durationMax < 360) {
+    conditions.push('m.duration IS NOT NULL AND m.duration <= ?');
+    params.push(durationMax);
   }
 
   if (conditions.length) sql += ' WHERE ' + conditions.join(' AND ');

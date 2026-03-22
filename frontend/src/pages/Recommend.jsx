@@ -51,7 +51,7 @@ export default function Recommend() {
   }, [user, tasteType]);
 
   return (
-    <div>
+    <div className="recommend-page tmdb-page-theme">
       <h1 className="page-title">
         <SparkleIcon size={24} weight="regular" className="page-title__icon" />
         个性推荐

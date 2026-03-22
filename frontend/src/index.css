@@ -2205,30 +2205,52 @@ button { cursor: pointer; }
   background: linear-gradient(to top, rgba(13, 37, 63, 0.98) 0%, rgba(13, 37, 63, 0.7) 40%, rgba(13, 37, 63, 0.4) 100%);
 }
 
-/* 详情 Hero · 与 TMDB 图2：左深右浅剧照，每片背景图为该片 backdrop/封面 */
+/* 详情 Hero · 与 TMDB/流媒体：左侧压暗保证字可读，右侧清晰剧照（不用 scale/强滤镜，避免「重影」糊边） */
 .detail-hero--cinematic .detail-hero__bg {
   background-size: cover;
-  background-position: 78% center;
-  filter: saturate(0.55) brightness(0.5) contrast(1.05);
-  opacity: 0.62;
-  transform: scale(1.06);
+  background-position: center right;
+  background-repeat: no-repeat;
+  /* 剧照层保持清晰，明暗交给 overlay */
+  filter: none;
+  opacity: 1;
+  transform: none;
+  will-change: auto;
+}
+/* 无横版 backdrop、仅竖版封面时：弱氛围，不强行拉满清晰度（减轻糊成一团） */
+.detail-hero--cinematic.detail-hero--poster-fallback .detail-hero__bg {
+  background-position: center 20%;
+  opacity: 0.42;
 }
 .detail-hero--cinematic .detail-hero__overlay {
+  /* 左实黑 → 右渐显剧照，接近第二张参考图 */
   background: linear-gradient(
     90deg,
-    rgba(8, 18, 32, 0.98) 0%,
-    rgba(8, 18, 32, 0.94) 28%,
-    rgba(8, 18, 32, 0.72) 48%,
-    rgba(8, 18, 32, 0.35) 68%,
-    rgba(8, 18, 32, 0.12) 100%
+    rgba(0, 0, 0, 0.98) 0%,
+    rgba(0, 0, 0, 0.92) 18%,
+    rgba(0, 0, 0, 0.72) 36%,
+    rgba(0, 0, 0, 0.35) 55%,
+    rgba(0, 0, 0, 0.08) 72%,
+    rgba(0, 0, 0, 0) 88%
   );
 }
 .detail-hero--cinematic .detail-hero__overlay::after {
   content: '';
   position: absolute;
   inset: 0;
-  background: linear-gradient(to top, rgba(8, 18, 32, 0.92) 0%, transparent 45%);
+  /* 底部略压暗，避免与下方内容硬切；比双层深蓝更干净 */
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.55) 0%, transparent 38%);
   pointer-events: none;
+}
+.detail-hero--cinematic.detail-hero--poster-fallback .detail-hero__overlay {
+  /* 封面兜底时左侧遮罩更重 */
+  background: linear-gradient(
+    90deg,
+    rgba(0, 0, 0, 0.98) 0%,
+    rgba(0, 0, 0, 0.92) 24%,
+    rgba(0, 0, 0, 0.65) 45%,
+    rgba(0, 0, 0, 0.25) 65%,
+    rgba(0, 0, 0, 0) 85%
+  );
 }
 
 .detail-hero__content {

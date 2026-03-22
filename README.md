@@ -294,5 +294,5 @@ npm run fill-covers
 - **反馈管理**：管理员 `GET /api/feedbacks` 始终返回全表，可重复刷新查看；`DELETE /api/feedbacks/:id` 物理删除单条反馈。
 - **影视库筛选**：原「已观看/未观看」（按是否评分）已改为 **「已上映/未上映」**，按作品 `release_year` 与当前公历年比较；未登录也可筛选。
 - **影视库 TMDB 风格面板**：「在哪里观看」（平台多选、地区、仅订阅、本机记住订阅）、「发行日期」（勾选「搜索所有发行渠道」则不按日期筛；否则用日历选起止日）、**类型**（原分类+原标签合并为多选胶囊）、语言下拉、用户评分双滑块、最少投票单滑块（**已移除「时长（分钟）」筛选**）。库表含 `watch_provider_ids`、`original_language`、`tmdb_vote_count`、`release_date`（可选），启动时 `init` 会为旧数据补空字段以便筛选演示。
-- **影视详情 Hero**：与 TMDB 详情条类似——**左侧深色实色 + 右侧大面积半透明剧照**；背景图使用该片 **backdrop**（无则回退封面），每片不同；评分旁装饰表情为纯展示（`pointer-events: none`）。`hooks/usePosterAccent.js` 为旧版取色方案，当前详情页未使用，可保留作参考或删除。
+- **影视详情 Hero**：与 TMDB/流媒体类似——**左侧深色遮罩 + 右侧清晰横版剧照**；剧照由后端请求 TMDB **`original` 尺寸** `backdrop_path`，避免小图拉宽产生糊边、重影；CSS **不再对底图做 `scale` / 强 `filter` / 低透明度叠层**，明暗主要靠横向渐变。无横版剧照时仅用封面作弱背景并加 `detail-hero--poster-fallback` 样式。评分旁装饰表情为纯展示（`pointer-events: none`）。`hooks/usePosterAccent.js` 为旧版取色方案，当前详情页未使用。
 - **演员阵容**：横向滚动，**上剧照下姓名/角色**，白底圆角卡片、轻阴影（参考常见 TMDB 演员条样式）。

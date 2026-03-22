@@ -134,6 +134,8 @@ export default function MovieDetail() {
   if (loading) return <p className="empty-hint">加载中...</p>;
   if (!movie) return <p>作品不存在</p>;
 
+  /** 有 TMDB 横版剧照时优先用（高清）；否则才用封面代理作弱背景，避免竖图硬拉全屏发糊、重影 */
+  const hasBackdrop = Boolean(backdropPath);
   const bgImage = backdropPath || (movie?.id ? getCoverUrl(movie) : null);
   const scorePercent = movie.tmdb_rating != null ? Math.round(movie.tmdb_rating * 10) : (movie.myScore != null ? Math.round(movie.myScore * 20) : null);
   /** TMDB 风格：完整货币格式，如 $44,559,195.00 */
@@ -144,7 +146,9 @@ export default function MovieDetail() {
   return (
     <div className="detail-page">
       {/* TMDB 深色条：左侧实色 + 右侧半透明剧照（backdrop/封面随影片变化） */}
-      <div className="detail-hero detail-hero--cinematic">
+      <div
+        className={`detail-hero detail-hero--cinematic${hasBackdrop ? '' : ' detail-hero--poster-fallback'}`}
+      >
         <div
           className="detail-hero__bg"
           style={{ backgroundImage: bgImage ? `url(${bgImage})` : undefined }}

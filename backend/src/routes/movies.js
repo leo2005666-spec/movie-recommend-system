@@ -77,7 +77,8 @@ router.get('/:id/credits', asyncHandler(async (req, res) => {
         vote_average: m.vote_average,
       });
     }
-    const backdrop_path = details.backdrop_path ? `${TMDB_IMG}/w1280${details.backdrop_path}` : null;
+    /** 详情 Hero 用 original，避免 w1280 拉宽后出现糊边、重影感（TMDB 支持 original） */
+    const backdrop_path = details.backdrop_path ? `${TMDB_IMG}/original${details.backdrop_path}` : null;
     const tagline = details.tagline || null;
     const statusMap = { Released: '已上映', Rumored: '传闻中', Planned: '计划中', 'In Production': '制作中', 'Post Production': '后期制作' };
 

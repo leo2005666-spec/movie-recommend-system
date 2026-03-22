@@ -45,7 +45,7 @@
 ## 技术栈
 
 - **前端**：React 18 + Vite + React Router + Phosphor Icons（图标）
-- **界面风格**：全站 **浅灰画布（`--bg-canvas`）+ 白卡片**，与 **TMDB 热门列表页** 一致；首页轮播为 **与内容区等宽** 的高清 Hero（**不突破 `main` 边框**）+ 深色渐变遮罩；影视库筛选含 **时长（0–360 分钟）双滑块**；列表卡片展示 **上映日期 + 片长**，不展示评分圆环（详情页仍可评分）
+- **界面风格**：全站 **浅灰画布 + 白卡片**；**影视库** 主区域 **`main--movie-list` 加宽（约 1680px）**、筛选列靠左、网格 **更大海报 / 约 5 列**；卡片为 **TMDB 式左下角好评率圆环**（TMDB 分×10 或站内均分换算，悬停可看说明）+ **标题 + 上映日期**，**不展示片长**；首页轮播同宽 contained Hero；详情页仍可评分
 - **字体**：Plus Jakarta Sans + Noto Sans SC（Google Fonts，高级无衬线风格）
 - **后端**：Node.js + Express
 - **数据库**：sql.js（纯 JavaScript 实现的 SQLite，**无需 Visual Studio 编译**，Windows 可直接运行）

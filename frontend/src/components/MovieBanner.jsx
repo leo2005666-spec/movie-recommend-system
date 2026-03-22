@@ -95,7 +95,7 @@ export default function MovieBanner() {
           >
             <div className="movie-banner__bg">
               <img
-                src={getCoverUrl(movie, { w: 1600 })}
+                src={getCoverUrl(movie, { w: 1920 })}
                 alt=""
                 sizes="(max-width: 1200px) 100vw, 1200px"
                 decoding="async"

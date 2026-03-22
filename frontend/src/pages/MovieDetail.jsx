@@ -144,7 +144,8 @@ export default function MovieDetail() {
 
   /** 有 TMDB 横版剧照时优先用（高清）；否则才用封面代理作弱背景，避免竖图硬拉全屏发糊、重影 */
   const hasBackdrop = Boolean(backdropPath);
-  const bgImage = backdropPath || (movie?.id ? getCoverUrl(movie) : null);
+  /** 无横版剧照时用更宽的封面代理，减轻拉伸发糊 */
+  const bgImage = backdropPath || (movie?.id ? getCoverUrl(movie, { w: 1280 }) : null);
   const scorePercent = movie.tmdb_rating != null ? Math.round(movie.tmdb_rating * 10) : (movie.myScore != null ? Math.round(movie.myScore * 20) : null);
   /** TMDB 风格：完整货币格式，如 $44,559,195.00 */
   const formatMoney = (n) => (n != null && n > 0 ? `$${Number(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : null);
@@ -343,25 +344,30 @@ export default function MovieDetail() {
             const tmdbIdSet = new Set(tmdbLinked.map((m) => m.id));
             const similarExtra = similar.filter((m) => !tmdbIdSet.has(m.id));
             if (tmdbLinked.length === 0 && similarExtra.length === 0) return null;
+            /** 统一用 MovieCard + 固定宽度，避免 TMDB 链与相似推荐尺寸不一致 */
+            const rows = [
+              ...tmdbLinked.map((m) => ({
+                key: `tmdb-${m.tmdb_id}`,
+                movie: {
+                  id: m.id,
+                  title: m.title,
+                  tmdb_rating: m.vote_average,
+                  release_year: m.release_date ? parseInt(String(m.release_date).slice(0, 4), 10) : null,
+                },
+                onClick: undefined,
+              })),
+              ...similarExtra.map((m) => ({
+                key: `sim-${m.id}`,
+                movie: m,
+                onClick: () => api.post('/recommend/events', { scene: SCENE_SIMILAR, movieId: m.id, eventType: 'click' }).catch(() => {}),
+              })),
+            ];
             return (
               <section className="detail-section">
                 <h2 className="section-title">推荐观看</h2>
                 <div className="rec-carousel">
-                  {tmdbLinked.map((m) => (
-                    <Link key={`tmdb-${m.tmdb_id}`} to={`/movies/${m.id}`} className="rec-card">
-                      <img src={m.poster_path || ''} alt="" onError={(e) => { e.target.style.display = 'none'; }} />
-                      <div className="rec-info">
-                        <span className="rec-title">{m.title}</span>
-                        {m.vote_average != null && <span className="rec-score">★ {m.vote_average}</span>}
-                      </div>
-                    </Link>
-                  ))}
-                  {similarExtra.map((m) => (
-                    <MovieCard
-                      key={`sim-${m.id}`}
-                      movie={m}
-                      onClick={() => api.post('/recommend/events', { scene: SCENE_SIMILAR, movieId: m.id, eventType: 'click' }).catch(() => {})}
-                    />
+                  {rows.map(({ key, movie: recMovie, onClick }) => (
+                    <MovieCard key={key} movie={recMovie} className="rec-carousel__card" onClick={onClick} />
                   ))}
                 </div>
               </section>

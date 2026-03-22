@@ -8,9 +8,9 @@ export const API_BASE = import.meta.env.VITE_API_BASE || '/api';
 
 const BASE = API_BASE;
 
-/** 封面图片 URL：走后端代理（后端会尝试直连 + wsrv.nl 兜底）；opts.w 请求更宽像素利于轮播高清 */
+/** 封面图片 URL：走后端代理（后端会尝试直连 + wsrv.nl 兜底）；opts.w 请求更宽像素利于轮播高清。仅需本地 id 即可。 */
 export function getCoverUrl(movie, opts = {}) {
-  if (!movie?.cover || !movie?.id) return '';
+  if (!movie?.id) return '';
   let u = BASE + '/movies/' + movie.id + '/cover';
   if (opts.w && Number(opts.w) > 0) {
     u += '?w=' + Math.min(Number(opts.w), 1920);
@@ -19,10 +19,14 @@ export function getCoverUrl(movie, opts = {}) {
 }
 
 /** 仅按作品 id 拼封面代理地址（用于取色等，不依赖是否已加载 movie 对象） */
-export function getCoverProxyById(id) {
+export function getCoverProxyById(id, opts = {}) {
   const n = typeof id === 'string' ? parseInt(id, 10) : id;
   if (n == null || Number.isNaN(n)) return '';
-  return `${BASE}/movies/${n}/cover`;
+  let u = `${BASE}/movies/${n}/cover`;
+  if (opts.w && Number(opts.w) > 0) {
+    u += '?w=' + Math.min(Number(opts.w), 1920);
+  }
+  return u;
 }
 
 function getToken() {

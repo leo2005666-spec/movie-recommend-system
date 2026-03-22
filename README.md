@@ -294,14 +294,16 @@ npm run fill-covers
 - **反馈管理**：管理员 `GET /api/feedbacks` 始终返回全表，可重复刷新查看；`DELETE /api/feedbacks/:id` 物理删除单条反馈。
 - **影视库筛选**：原「已观看/未观看」（按是否评分）已改为 **「已上映/未上映」**，按作品 `release_year` 与当前公历年比较；未登录也可筛选。
 - **影视库 TMDB 风格面板**：「在哪里观看」（平台多选、地区、仅订阅、本机记住订阅）、「发行日期」（勾选「搜索所有发行渠道」则不按日期筛；否则用日历选起止日）、**类型**（原分类+原标签合并为多选胶囊）、语言下拉、用户评分双滑块、最少投票单滑块（**已移除「时长（分钟）」筛选**）。库表含 `watch_provider_ids`、`original_language`、`tmdb_vote_count`、`release_date`（可选），启动时 `init` 会为旧数据补空字段以便筛选演示。
-- **影视详情 Hero**：与 TMDB/流媒体类似——**左侧深色遮罩 + 右侧清晰横版剧照**；剧照由后端请求 TMDB **`original` 尺寸** `backdrop_path`，避免小图拉宽产生糊边、重影；CSS **不再对底图做 `scale` / 强 `filter` / 低透明度叠层**，明暗主要靠横向渐变。无横版剧照时仅用封面作弱背景并加 `detail-hero--poster-fallback` 样式。评分旁装饰表情为纯展示（`pointer-events: none`）。`hooks/usePosterAccent.js` 为旧版取色方案，当前详情页未使用。
+- **影视详情 Hero**：与 TMDB/流媒体类似——**左侧深色遮罩 + 清晰横版剧照**；剧照由后端请求 TMDB **`original` 尺寸** `backdrop_path`；背景 **`background-position: center`**、`cover` 铺满不留白。无横版剧照时用本地封面代理 **`?w=1280`** 作弱背景（`detail-hero--poster-fallback`）。**文案区**（标题/简介/演职员等）在 Hero 内使用 **半透明深色玻璃底 + 白字 + 文字阴影**，避免深蓝正文贴在剧照暗部上无法阅读（不逐片取色，靠统一对比度策略）。评分旁装饰表情为纯展示（`pointer-events: none`）。
 - **演员阵容**：横向滚动，**上剧照下姓名/角色**，白底圆角卡片、轻阴影；演员头像接口使用 TMDB **`w342`** 以适配较大卡片。
 - **详情页版式（TMDB 式）**：顶部 Hero 仍为深色剧照条；**下方主内容区为白底**（`main--movie-detail` + `detail-page--tmdb-light`），评论/侧栏/关键词等为浅色主题，与全站浅色画布一致。
 - **前端性能**：路由 **`React.lazy` + `Suspense`** 按页拆包；`vite` 将 `react/react-dom/react-router-dom` 打入 **`vendor-react`** chunk；首页进入动画缩短；详情页评论/演职员/相似推荐改为 **`Promise.all` 并行**；首屏加载用轻量骨架占位。
 - **顶栏交互**：导航改为 **`position: fixed`**，`main` 增加 **`padding-top`** 避免内容被挡；**向下滚动**约 8px 以上时顶栏收起（`header--scroll-hidden`），**向上滚动**或回到页面顶部时重新显示。后端异常时的红条 **`api-status-banner`** 固定在最顶，顶栏在其下方（`:has` 调整 `padding-top` / `top`）。
-- **首页轮播**：比例改为约 **2.35:1** 电影宽画幅，限制 **`max-height`**；封面图请求 **`/movies/:id/cover?w=1600`**，后端优先经 **wsrv** 拉宽图以减轻模糊。
+- **首页轮播**：约 **2.35:1** 宽画幅；封面 **`?w=1920`**；`object-fit: cover` + 居中；**文案区居中**；指示点加描边/阴影避免浅色底上不可见。
 - **观影平台图标**：国内常无法直连 `image.tmdb.org` / Clearbit，新增后端 **`GET /api/proxy-img?u=`**（仅允许白名单域名），前端 **`ProviderIcon`** 优先走代理，并增加 **Google favicon** 备用链；TMDB logo 尺寸改为 **w185**。
 - **影视库平台列表去重**：`STREAM_PROVIDERS` 由原始表经 **相同 logoPath、相同展示名** 去重后导出，减少界面重复项（如双 Amazon、同图多 ID）。
 - **详情顶栏遮挡**：后写的 `.detail-page` 负 margin 会覆盖浅色详情样式，已用 **`.main--movie-detail .detail-page.detail-page--tmdb-light { margin: 0 }`** 修正，并略增 **`main--movie-detail` 的 padding-top** 与 Hero 内容区上内边距。
 - **影视库浅色布局**：根节点使用 **`movie-list-page--tmdb`**，侧栏与主列表白底卡片、平台网格默认 **3 列**（更宽屏下略调）；外层不再单独铺灰底，与 **`--bg-canvas`** 全站统一。**分页**（上一页/下一页/跳转）使用白底描边 **`btn-outline`**，避免深色块。
-- **详情加载**：`DetailPageLoading` 使用 **胶卷 + 旋转圈 + 星点** 动效替代纯骨架条。
+- **详情加载**：`DetailPageLoading` 为 **浅色卡片 + 胶卷/旋转/星点**，在 **`main` 内水平垂直居中**（全宽 flex），不再挤在左上角。
+- **推荐观看**：TMDB 链与相似推荐 **统一为 `MovieCard`**，横向 **`rec-carousel` 固定约 148px 宽**，标题/年份用 **深灰字**，避免浅灰字贴在白底海报下看不清。
+- **封面 URL**：`getCoverUrl(movie)` **仅需 `movie.id`**（不再要求 `cover` 字段有值），便于推荐卡片只带 id 即可走后端代理。

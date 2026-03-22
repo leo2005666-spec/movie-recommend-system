@@ -28,4 +28,35 @@ router.get('/ratings', asyncHandler(async (req, res) => {
   res.json({ code: 0, data: list });
 }));
 
+/**
+ * GET /api/admin/stats
+ * 数据概览仪表盘：用户、影视、评分、评论、收藏等汇总数据
+ */
+router.get('/stats', asyncHandler(async (req, res) => {
+  const [users, movies, ratings, comments, favorites,
+    todayRatings, todayComments, todayNewUsers] = await Promise.all([
+    db.prepare('SELECT COUNT(*) as n FROM users').get(),
+    db.prepare('SELECT COUNT(*) as n FROM movies').get(),
+    db.prepare('SELECT COUNT(*) as n FROM ratings').get(),
+    db.prepare('SELECT COUNT(*) as n FROM comments').get(),
+    db.prepare('SELECT COUNT(*) as n FROM favorites').get(),
+    db.prepare("SELECT COUNT(*) as n FROM ratings WHERE date(created_at) = date('now')").get(),
+    db.prepare("SELECT COUNT(*) as n FROM comments WHERE date(created_at) = date('now')").get(),
+    db.prepare("SELECT COUNT(*) as n FROM users WHERE date(created_at) = date('now')").get(),
+  ]);
+  res.json({
+    code: 0,
+    data: {
+      totalUsers: users.n,
+      totalMovies: movies.n,
+      totalRatings: ratings.n,
+      totalComments: comments.n,
+      totalFavorites: favorites.n,
+      todayRatings: todayRatings.n,
+      todayComments: todayComments.n,
+      todayNewUsers: todayNewUsers.n,
+    },
+  });
+}));
+
 module.exports = router;

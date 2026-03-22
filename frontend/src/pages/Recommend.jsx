@@ -13,6 +13,7 @@ export default function Recommend() {
   const [list, setList] = useState([]);
   const [tastes, setTastes] = useState([]);
   const [tasteType, setTasteType] = useState('');
+  const [source, setSource] = useState('');
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -25,7 +26,7 @@ export default function Recommend() {
 
     if (tasteType) {
       api.get('/recommend', { ...params, tasteType })
-        .then((r) => setList(r.data || []))
+        .then((r) => { setList(r.data || []); setSource('taste'); })
         .catch(() => setList([]))
         .finally(() => setLoading(false));
       return;
@@ -37,16 +38,17 @@ export default function Recommend() {
         const data = Array.isArray(r.data) ? r.data : [];
         if (data.length > 0) {
           setList(data);
+          setSource(r.source || 'fallback');
           if (user) {
             data.slice(0, 48).forEach((m) => {
               api.post('/recommend/events', { scene: SCENE_RECOMMEND, movieId: m.id, eventType: 'exposure' }).catch(() => {});
             });
           }
         } else {
-          return api.get('/recommend', params).then((res) => setList(res.data || []));
+          return api.get('/recommend', params).then((res) => { setList(res.data || []); setSource('fallback'); });
         }
       })
-      .catch(() => api.get('/recommend', params).then((r) => setList(r.data || [])).catch(() => setList([])))
+      .catch(() => api.get('/recommend', params).then((r) => { setList(r.data || []); setSource('fallback'); }).catch(() => setList([])))
       .finally(() => setLoading(false));
   }, [user, tasteType]);
 
@@ -97,17 +99,25 @@ export default function Recommend() {
         </div>
       ) : list.length ? (
         <div className="movie-grid">
-          {list.map((m) => (
-            <MovieCard
-              key={m.id}
-              movie={m}
-              onClick={() => {
-                if (!tasteType) {
-                  api.post('/recommend/events', { scene: SCENE_RECOMMEND, movieId: m.id, eventType: 'click' }).catch(() => {});
-                }
-              }}
-            />
-          ))}
+          {list.map((m) => {
+            const reasonLabel = tasteType
+              ? `✦ 人群口味推荐`
+              : source === 'collab_filter'
+                ? '✦ 根据你的偏好推荐'
+                : '✦ 热门推荐';
+            return (
+              <MovieCard
+                key={m.id}
+                movie={m}
+                reasonLabel={reasonLabel}
+                onClick={() => {
+                  if (!tasteType) {
+                    api.post('/recommend/events', { scene: SCENE_RECOMMEND, movieId: m.id, eventType: 'click' }).catch(() => {});
+                  }
+                }}
+              />
+            );
+          })}
         </div>
       ) : (
         <p className="empty-hint">

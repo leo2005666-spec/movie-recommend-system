@@ -25,6 +25,9 @@ export default function MovieDetail() {
   const [tagline, setTagline] = useState(null);
   const [tmdbDetails, setTmdbDetails] = useState(null);
   const [comments, setComments] = useState([]);
+  const [commentTotal, setCommentTotal] = useState(0);
+  const [commentPage, setCommentPage] = useState(1);
+  const [commentLoading, setCommentLoading] = useState(false);
   const [commentContent, setCommentContent] = useState('');
   const [score, setScore] = useState(0);
   const [submitting, setSubmitting] = useState(false);
@@ -50,12 +53,14 @@ export default function MovieDetail() {
     if (!id) return;
     let cancelled = false;
     Promise.all([
-      api.get(`/comments/movie/${id}`).catch(() => ({ data: { list: [] } })),
+      api.get(`/comments/movie/${id}?page=1&limit=10`).catch(() => ({ data: { list: [], total: 0 } })),
       api.get(`/movies/${id}/credits`).catch(() => ({ data: {} })),
       api.get('/recommendations', { scene: SCENE_SIMILAR, movieId: id, limit: 8 }).catch(() => ({ data: [] })),
     ]).then(([commentsRes, creditsRes, recRes]) => {
       if (cancelled) return;
       setComments(commentsRes.data?.list || []);
+      setCommentTotal(commentsRes.data?.total ?? 0);
+      setCommentPage(1);
       const cd = creditsRes.data || {};
       setCast(cd.cast || []);
       setTmdbRecs(cd.recommendations || []);
@@ -118,7 +123,11 @@ export default function MovieDetail() {
     try {
       await api.post('/comments', { movieId: parseInt(id), content: commentContent.trim() });
       setCommentContent('');
-      api.get(`/comments/movie/${id}`).then((r) => setComments(r.data?.list || []));
+      api.get(`/comments/movie/${id}?page=1&limit=10`).then((r) => {
+        setComments(r.data?.list || []);
+        setCommentTotal(r.data?.total ?? 0);
+        setCommentPage(1);
+      });
     } catch (e) {
       setErr(e.message);
     }
@@ -131,8 +140,25 @@ export default function MovieDetail() {
     try {
       await api.delete(`/comments/${commentId}`);
       setComments((prev) => prev.filter((c) => c.id !== commentId));
+      setCommentTotal((prev) => Math.max(0, prev - 1));
     } catch (e) {
       setErr(e.message || '删除失败');
+    }
+  };
+
+  const handleLoadMoreComments = async () => {
+    if (commentLoading) return;
+    setCommentLoading(true);
+    try {
+      const nextPage = commentPage + 1;
+      const r = await api.get(`/comments/movie/${id}?page=${nextPage}&limit=10`);
+      setComments((prev) => [...prev, ...(r.data?.list || [])]);
+      setCommentTotal(r.data?.total ?? commentTotal);
+      setCommentPage(nextPage);
+    } catch (e) {
+      setErr(e.message || '加载评论失败，请稍后重试');
+    } finally {
+      setCommentLoading(false);
     }
   };
 
@@ -304,7 +330,7 @@ export default function MovieDetail() {
 
           {/* 用户评论（原「评价/讨论」为同一列表，合并为一栏） */}
           <section className="detail-section">
-            <h2 className="section-title">评论 {comments.length > 0 ? `(${comments.length})` : ''}</h2>
+            <h2 className="section-title">评论 {commentTotal > 0 ? `(${commentTotal})` : ''}</h2>
             {user && (
               <form onSubmit={handleComment} className="social-form">
                 <textarea className="form-textarea form-input" value={commentContent} onChange={(e) => setCommentContent(e.target.value)} placeholder="写下你的影评…" rows={3} maxLength={2000} />
@@ -341,6 +367,17 @@ export default function MovieDetail() {
               ))}
             </div>
             {comments.length === 0 && <p className="empty-hint">暂无评论</p>}
+            {comments.length < commentTotal && (
+              <button
+                type="button"
+                className="btn btn-outline"
+                style={{ margin: '1rem auto', display: 'block' }}
+                onClick={handleLoadMoreComments}
+                disabled={commentLoading}
+              >
+                {commentLoading ? '加载中…' : '加载更多评论'}
+              </button>
+            )}
           </section>
 
           {/* 推荐观看：TMDB 推荐仅展示已入库（有本地 id）的项；其余用相似推荐补足，避免「有海报但点不进去」 */}

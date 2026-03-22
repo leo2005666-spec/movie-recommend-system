@@ -63,7 +63,7 @@ function YearIcon() {
   );
 }
 
-export default function MovieCard({ movie, onClick, showBadge = true, topRight, className }) {
+export default function MovieCard({ movie, onClick, showBadge = true, topRight, className, reasonLabel }) {
   const coverUrl = getCoverUrl(movie);
   const fallbackSvg = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="150" fill="%232a2a35"><rect width="100" height="150"/><text x="50" y="75" dominant-baseline="middle" text-anchor="middle" fill="%238a8a9a" font-size="12">暂无封面</text></svg>';
 
@@ -95,6 +95,7 @@ export default function MovieCard({ movie, onClick, showBadge = true, topRight, 
             </>
           )}
         </div>
+        {reasonLabel && <div className="movie-card__reason">{reasonLabel}</div>}
       </div>
     </Link>
   );

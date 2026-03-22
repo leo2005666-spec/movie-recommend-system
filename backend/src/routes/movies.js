@@ -243,9 +243,9 @@ router.get('/', optionalAuth, asyncHandler(async (req, res) => {
     params.push(tagId);
   }
   if (keyword) {
-    conditions.push('(m.title LIKE ? OR m.description LIKE ? OR m.director LIKE ?)');
+    conditions.push('(m.title LIKE ? OR m.description LIKE ? OR m.director LIKE ? OR m.actors LIKE ?)');
     const kw = `%${keyword}%`;
-    params.push(kw, kw, kw);
+    params.push(kw, kw, kw, kw);
   }
   if (yearFrom != null && !Number.isNaN(yearFrom)) {
     conditions.push('m.release_year >= ?');

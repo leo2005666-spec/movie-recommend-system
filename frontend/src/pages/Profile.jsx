@@ -10,6 +10,7 @@ export default function Profile() {
   const [stats, setStats] = useState(null);
   const [username, setUsername] = useState('');
   const [nickname, setNickname] = useState('');
+  const [avatar, setAvatar] = useState('');
   const [password, setPassword] = useState('');
   const [msg, setMsg] = useState('');
 
@@ -19,6 +20,7 @@ export default function Profile() {
         setProfile(r.data);
         setUsername(r.data?.username || '');
         setNickname(r.data?.nickname || '');
+        setAvatar(r.data?.avatar || '');
       })
       .catch(() => setProfile(null));
     api.get('/users/me/stats').then((r) => setStats(r.data)).catch(() => setStats({ favorites: 0, ratings: 0, comments: 0 }));
@@ -31,6 +33,7 @@ export default function Profile() {
       username: username?.trim() || undefined,
       nickname: nickname || undefined,
     };
+    if (avatar.trim()) body.avatar = avatar.trim();
     if (password) body.password = password;
     try {
       await api.put('/users/me', body);
@@ -39,6 +42,7 @@ export default function Profile() {
       api.get('/users/me').then((r) => {
         setProfile(r.data);
         setUsername(r.data?.username || '');
+        setAvatar(r.data?.avatar || '');
         updateUser({ username: r.data?.username, nickname: r.data?.nickname });
       });
     } catch (e) {
@@ -60,7 +64,22 @@ export default function Profile() {
 
       {/* 用户概览卡片 */}
       <div className="profile-overview card">
-        <div className="profile-overview__avatar">{initial}</div>
+        <div className="profile-overview__avatar">
+          {profile.avatar
+            ? (
+              <img
+                src={profile.avatar}
+                alt=""
+                style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }}
+                onError={(e) => {
+                  e.target.style.display = 'none';
+                  e.target.parentNode.setAttribute('data-initial', initial);
+                  e.target.parentNode.classList.add('profile-overview__avatar--text');
+                }}
+              />
+            )
+            : initial}
+        </div>
         <div className="profile-overview__info">
           <div className="profile-overview__name">{displayName}</div>
           <span className="profile-overview__tag">用户</span>
@@ -103,6 +122,15 @@ export default function Profile() {
         <div className="form-group">
           <label>昵称</label>
           <input className="form-input" value={nickname} onChange={(e) => setNickname(e.target.value)} />
+        </div>
+        <div className="form-group">
+          <label>头像 URL（选填，粘贴图片链接）</label>
+          <input
+            className="form-input"
+            value={avatar}
+            onChange={(e) => setAvatar(e.target.value)}
+            placeholder="https://..."
+          />
         </div>
         <div className="form-group">
           <label>新密码（不修改留空）</label>

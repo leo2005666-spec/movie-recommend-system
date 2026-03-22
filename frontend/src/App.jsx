@@ -1,26 +1,36 @@
+import { lazy, Suspense } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import Layout from './components/Layout';
 
-// 页面
-import Home from './pages/Home';
-import Login from './pages/Login';
-import Register from './pages/Register';
-import MovieList from './pages/MovieList';
-import MovieDetail from './pages/MovieDetail';
-import Recommend from './pages/Recommend';
-import Charts from './pages/Charts';
-import Profile from './pages/Profile';
-import MyFavorites from './pages/MyFavorites';
-import MyLogs from './pages/MyLogs';
-import Feedback from './pages/Feedback';
-import AdminMovies from './pages/admin/Movies';
-import AdminCategories from './pages/admin/Categories';
-import AdminTags from './pages/admin/Tags';
-import AdminUsers from './pages/admin/Users';
-import AdminLogs from './pages/admin/Logs';
-import AdminFeedbacks from './pages/admin/Feedbacks';
-import AdminRatings from './pages/admin/Ratings';
+/** 路由级懒加载：减小首包、加快首页打开；进入子页再拉对应 chunk */
+const Home = lazy(() => import('./pages/Home'));
+const Login = lazy(() => import('./pages/Login'));
+const Register = lazy(() => import('./pages/Register'));
+const MovieList = lazy(() => import('./pages/MovieList'));
+const MovieDetail = lazy(() => import('./pages/MovieDetail'));
+const Recommend = lazy(() => import('./pages/Recommend'));
+const Charts = lazy(() => import('./pages/Charts'));
+const Profile = lazy(() => import('./pages/Profile'));
+const MyFavorites = lazy(() => import('./pages/MyFavorites'));
+const MyLogs = lazy(() => import('./pages/MyLogs'));
+const Feedback = lazy(() => import('./pages/Feedback'));
+const AdminMovies = lazy(() => import('./pages/admin/Movies'));
+const AdminCategories = lazy(() => import('./pages/admin/Categories'));
+const AdminTags = lazy(() => import('./pages/admin/Tags'));
+const AdminUsers = lazy(() => import('./pages/admin/Users'));
+const AdminLogs = lazy(() => import('./pages/admin/Logs'));
+const AdminFeedbacks = lazy(() => import('./pages/admin/Feedbacks'));
+const AdminRatings = lazy(() => import('./pages/admin/Ratings'));
+
+function RouteFallback() {
+  return (
+    <div className="route-fallback" role="status" aria-live="polite">
+      <span className="route-fallback__spinner" aria-hidden />
+      <span className="route-fallback__text">加载中…</span>
+    </div>
+  );
+}
 
 function ProtectedRoute({ children, admin }) {
   const user = JSON.parse(localStorage.getItem('user') || 'null');
@@ -32,100 +42,102 @@ function ProtectedRoute({ children, admin }) {
 export default function App() {
   return (
     <AuthProvider>
-      <Routes>
-        <Route path="/" element={<Layout />}>
-          <Route index element={<Home />} />
-          <Route path="login" element={<Login />} />
-          <Route path="register" element={<Register />} />
-          <Route path="movies" element={<MovieList />} />
-          <Route path="movies/:id" element={<MovieDetail />} />
-          <Route path="recommend" element={<Recommend />} />
-          <Route path="charts" element={<Charts />} />
-          <Route path="feedback" element={<Feedback />} />
+      <Suspense fallback={<RouteFallback />}>
+        <Routes>
+          <Route path="/" element={<Layout />}>
+            <Route index element={<Home />} />
+            <Route path="login" element={<Login />} />
+            <Route path="register" element={<Register />} />
+            <Route path="movies" element={<MovieList />} />
+            <Route path="movies/:id" element={<MovieDetail />} />
+            <Route path="recommend" element={<Recommend />} />
+            <Route path="charts" element={<Charts />} />
+            <Route path="feedback" element={<Feedback />} />
 
-          <Route
-            path="profile"
-            element={
-              <ProtectedRoute>
-                <Profile />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="favorites"
-            element={
-              <ProtectedRoute>
-                <MyFavorites />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="logs"
-            element={
-              <ProtectedRoute>
-                <MyLogs />
-              </ProtectedRoute>
-            }
-          />
+            <Route
+              path="profile"
+              element={
+                <ProtectedRoute>
+                  <Profile />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="favorites"
+              element={
+                <ProtectedRoute>
+                  <MyFavorites />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="logs"
+              element={
+                <ProtectedRoute>
+                  <MyLogs />
+                </ProtectedRoute>
+              }
+            />
 
-          <Route
-            path="admin/movies"
-            element={
-              <ProtectedRoute admin>
-                <AdminMovies />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="admin/categories"
-            element={
-              <ProtectedRoute admin>
-                <AdminCategories />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="admin/tags"
-            element={
-              <ProtectedRoute admin>
-                <AdminTags />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="admin/users"
-            element={
-              <ProtectedRoute admin>
-                <AdminUsers />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="admin/ratings"
-            element={
-              <ProtectedRoute admin>
-                <AdminRatings />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="admin/logs"
-            element={
-              <ProtectedRoute admin>
-                <AdminLogs />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="admin/feedbacks"
-            element={
-              <ProtectedRoute admin>
-                <AdminFeedbacks />
-              </ProtectedRoute>
-            }
-          />
-        </Route>
-      </Routes>
+            <Route
+              path="admin/movies"
+              element={
+                <ProtectedRoute admin>
+                  <AdminMovies />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="admin/categories"
+              element={
+                <ProtectedRoute admin>
+                  <AdminCategories />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="admin/tags"
+              element={
+                <ProtectedRoute admin>
+                  <AdminTags />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="admin/users"
+              element={
+                <ProtectedRoute admin>
+                  <AdminUsers />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="admin/ratings"
+              element={
+                <ProtectedRoute admin>
+                  <AdminRatings />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="admin/logs"
+              element={
+                <ProtectedRoute admin>
+                  <AdminLogs />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="admin/feedbacks"
+              element={
+                <ProtectedRoute admin>
+                  <AdminFeedbacks />
+                </ProtectedRoute>
+              }
+            />
+          </Route>
+        </Routes>
+      </Suspense>
     </AuthProvider>
   );
 }

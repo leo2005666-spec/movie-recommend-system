@@ -40,36 +40,41 @@ export default function MovieDetail() {
       .finally(() => setLoading(false));
   };
 
-  useEffect(() => { load(); }, [id]);
-
   useEffect(() => {
-    if (id) api.get(`/comments/movie/${id}`).then((r) => setComments(r.data?.list || [])).catch(() => {});
+    setLoading(true);
+    load();
   }, [id]);
 
+  /** 详情页次要数据并行请求，减少串行等待；相似推荐曝光异步不打断首屏 */
   useEffect(() => {
-    if (id) {
-      api.get(`/movies/${id}/credits`).then((r) => {
-        setCast(r.data?.cast || []);
-        setTmdbRecs(r.data?.recommendations || []);
-        setBackdropPath(r.data?.backdrop_path || null);
-        setTagline(r.data?.tagline || null);
-        setTmdbDetails(r.data?.tmdb_details || null);
-      }).catch(() => {});
-    }
-  }, [id]);
-
-  useEffect(() => {
-    if (id) {
-      api.get('/recommendations', { scene: SCENE_SIMILAR, movieId: id, limit: 8 })
-        .then((r) => {
-          const list = Array.isArray(r.data) ? r.data : [];
-          setSimilar(list);
-          if (list.length > 0 && user) {
-            list.forEach((m) => api.post('/recommend/events', { scene: SCENE_SIMILAR, movieId: m.id, eventType: 'exposure' }).catch(() => {}));
-          }
-        })
-        .catch(() => setSimilar([]));
-    }
+    if (!id) return;
+    let cancelled = false;
+    Promise.all([
+      api.get(`/comments/movie/${id}`).catch(() => ({ data: { list: [] } })),
+      api.get(`/movies/${id}/credits`).catch(() => ({ data: {} })),
+      api.get('/recommendations', { scene: SCENE_SIMILAR, movieId: id, limit: 8 }).catch(() => ({ data: [] })),
+    ]).then(([commentsRes, creditsRes, recRes]) => {
+      if (cancelled) return;
+      setComments(commentsRes.data?.list || []);
+      const cd = creditsRes.data || {};
+      setCast(cd.cast || []);
+      setTmdbRecs(cd.recommendations || []);
+      setBackdropPath(cd.backdrop_path || null);
+      setTagline(cd.tagline || null);
+      setTmdbDetails(cd.tmdb_details || null);
+      const list = Array.isArray(recRes.data) ? recRes.data : [];
+      setSimilar(list);
+      if (list.length > 0 && user) {
+        queueMicrotask(() => {
+          list.forEach((m) =>
+            api.post('/recommend/events', { scene: SCENE_SIMILAR, movieId: m.id, eventType: 'exposure' }).catch(() => {})
+          );
+        });
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
   }, [id, user]);
 
   const handleRate = async () => {
@@ -131,7 +136,16 @@ export default function MovieDetail() {
     }
   };
 
-  if (loading) return <p className="empty-hint">加载中...</p>;
+  if (loading) {
+    return (
+      <div className="detail-page detail-page--tmdb-light detail-page--loading">
+        <div className="detail-skeleton-hero" aria-hidden />
+        <div className="detail-skeleton-line detail-skeleton-line--title" />
+        <div className="detail-skeleton-line detail-skeleton-line--short" />
+        <p className="detail-loading-hint">加载影片信息…</p>
+      </div>
+    );
+  }
   if (!movie) return <p>作品不存在</p>;
 
   /** 有 TMDB 横版剧照时优先用（高清）；否则才用封面代理作弱背景，避免竖图硬拉全屏发糊、重影 */
@@ -144,7 +158,7 @@ export default function MovieDetail() {
   const hasSidebar = tmdbDetails && (hasSocial || tmdbDetails.original_title || tmdbDetails.status || tmdbDetails.original_language || tmdbDetails.budget || tmdbDetails.revenue || (tmdbDetails.keywords?.length > 0));
 
   return (
-    <div className="detail-page">
+    <div className="detail-page detail-page--tmdb-light">
       {/* TMDB 深色条：左侧实色 + 右侧半透明剧照（backdrop/封面随影片变化） */}
       <div
         className={`detail-hero detail-hero--cinematic${hasBackdrop ? '' : ' detail-hero--poster-fallback'}`}

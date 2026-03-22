@@ -29,6 +29,9 @@ export default function Layout() {
   const { user, logout, isAdmin } = useAuth();
   const loc = useLocation();
 
+  /** 影视详情页：全宽内容 + 下方白底区（与 TMDB 一致） */
+  const isMovieDetail = /^\/movies\/\d+\/?$/.test(loc.pathname);
+
   const isActive = (to) =>
     loc.pathname === to || (to !== '/' && loc.pathname.startsWith(to + '/'));
 
@@ -91,7 +94,7 @@ export default function Layout() {
           )}
         </div>
       </header>
-      <main className="main">
+      <main className={`main${isMovieDetail ? ' main--movie-detail' : ''}`}>
         <Outlet />
       </main>
     </div>

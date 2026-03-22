@@ -61,7 +61,8 @@ router.get('/:id/credits', asyncHandler(async (req, res) => {
     const cast = (credits.cast || []).slice(0, 20).map((c) => ({
       name: c.name,
       character: c.character,
-      profile_path: c.profile_path ? `${TMDB_IMG}/w185${c.profile_path}` : null,
+      /** 详情页演员卡用较大尺寸，避免糊脸 */
+      profile_path: c.profile_path ? `${TMDB_IMG}/w342${c.profile_path}` : null,
       order: c.order,
     }));
     const recList = (rec.results || []).slice(0, 12);

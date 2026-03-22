@@ -1832,17 +1832,6 @@ button { cursor: pointer; }
   color: #64748b;
   line-height: 1.3;
 }
-.tmdb-page-theme .movie-card__date-line,
-.tmdb-page-theme .movie-card__runtime-line {
-  color: #94a3b8;
-}
-.tmdb-page-theme .movie-card .info {
-  background: rgba(248, 250, 252, 0.98);
-}
-.tmdb-page-theme .movie-card .title {
-  color: #0f172a;
-}
-
 .movie-list-main {
   flex: 1;
   min-width: 0;
@@ -1876,32 +1865,33 @@ button { cursor: pointer; }
   margin-bottom: var(--space-lg);
 }
 
-/* ========== 电影卡片 ========== */
+/* ========== 电影卡片 · TMDB 热门列表式（约 5 列铺满，减少两侧留白） ========== */
 .movie-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-  gap: var(--space-lg);
+  gap: 1.25rem;
+  grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
 }
 
-@media (max-width: 640px) {
-  .movie-grid {
-    grid-template-columns: repeat(2, 1fr);
-    gap: var(--space-md);
+/** 首页 / 推荐 / 影视库统一用：大屏固定 5 列，与 TMDB Popular 密度接近 */
+.movie-grid--tmdb-list {
+  grid-template-columns: repeat(auto-fill, minmax(175px, 1fr));
+}
+@media (min-width: 1100px) {
+  .movie-grid--tmdb-list {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+}
+@media (max-width: 900px) {
+  .movie-grid--tmdb-list {
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
   }
 }
 
-/* 首页推荐：卡片略小，海报更清晰 */
-.movie-grid--home {
-  grid-template-columns: repeat(auto-fill, minmax(125px, 1fr));
-  gap: var(--space-md);
-}
-.movie-grid--home .movie-card .cover {
-  image-rendering: -webkit-optimize-contrast;
-}
-
 @media (max-width: 640px) {
-  .movie-grid--home {
+  .movie-grid,
+  .movie-grid--tmdb-list {
     grid-template-columns: repeat(2, 1fr);
+    gap: var(--space-md);
   }
 }
 
@@ -2198,74 +2188,10 @@ button { cursor: pointer; }
   overflow: hidden;
 }
 
-/* ========== TMDB 风格页面容器（首页 / 推荐 / 影视库） ========== */
-.tmdb-page-theme {
-  margin: calc(-1 * var(--space-xl)) calc(-1 * var(--space-xl)) 0;
-  padding: var(--space-xl);
-  padding-bottom: var(--space-2xl);
-  min-height: 48vh;
-  background: linear-gradient(165deg, #032541 0%, #0a3d5c 38%, #061f2e 100%);
-  color: #e8f4f8;
-  border-radius: 0;
-}
-@media (max-width: 640px) {
-  .tmdb-page-theme {
-    margin: calc(-1 * var(--space-md)) calc(-1 * var(--space-md)) 0;
-    padding: var(--space-md);
-    padding-bottom: var(--space-xl);
-  }
-}
-.tmdb-page-theme .page-title,
-.tmdb-page-theme .section-title {
-  color: #f8fafc;
-}
-.tmdb-page-theme .section-title::before {
-  background: linear-gradient(to bottom, #01b4e4, #90cea1);
-}
-.tmdb-page-theme .hero__title {
-  color: #f8fafc;
-}
-.tmdb-page-theme .hero__subtitle {
-  color: rgba(226, 232, 240, 0.88);
-}
-.tmdb-page-theme .empty-hint {
-  color: rgba(203, 213, 225, 0.92);
-}
-.tmdb-page-theme .link-more {
-  color: #67e8f9;
-}
-.tmdb-page-theme .link-more:hover {
-  color: #a5f3fc;
-}
-.tmdb-page-theme .taste-chip {
-  background: rgba(15, 23, 42, 0.35);
-  border-color: rgba(148, 163, 184, 0.35);
-  color: #e2e8f0;
-}
-.tmdb-page-theme .taste-chip:hover {
-  border-color: #01b4e4;
-  color: #fff;
-}
-.tmdb-page-theme .taste-chip.active {
-  background: linear-gradient(135deg, rgba(1, 180, 228, 0.35), rgba(144, 206, 161, 0.22));
-  border-color: #01b4e4;
-  color: #fff;
-}
-.tmdb-page-theme .movie-list-page--tmdb .filter-sidebar,
-.tmdb-page-theme .movie-list-page--tmdb .movie-list-main {
-  background: rgba(15, 23, 42, 0.45);
-  border-color: rgba(148, 163, 184, 0.2);
-  backdrop-filter: none;
-}
-.tmdb-page-theme .movie-list-page--tmdb .filter-sidebar__toggle {
-  background: rgba(30, 41, 59, 0.6);
-  color: #f1f5f9;
-  border-bottom-color: rgba(148, 163, 184, 0.2);
-}
-.tmdb-page-theme .movie-list-page--tmdb .search-bar .form-input {
-  background: rgba(15, 23, 42, 0.55);
-  border-color: rgba(148, 163, 184, 0.35);
-  color: #f8fafc;
+/* 首页 / 推荐：与全站浅色画布一致（参考 TMDB 热门列表页浅灰底） */
+.home-page,
+.recommend-page {
+  padding-bottom: var(--space-xl);
 }
 
 /* ========== 流动电影广告轮播 · TMDB Hero：高清底图 + 深色渐变（无磨砂模糊） ========== */
@@ -2279,27 +2205,26 @@ button { cursor: pointer; }
   background: var(--bg-surface);
 }
 
-.movie-banner--fullbleed {
-  width: 100vw;
-  max-width: 100vw;
-  margin-left: calc(50% - 50vw);
-  margin-right: calc(50% - 50vw);
-  margin-bottom: var(--space-xl);
-  border-radius: 0;
-  border-left: none;
-  border-right: none;
-  box-shadow: none;
-  border: none;
+/** 与 main 同宽（max-width:1200px），不突破边框、不出现横向滚动 */
+.movie-banner--contained {
+  width: 100%;
+  max-width: 100%;
+  margin-left: 0;
+  margin-right: 0;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-sizing: border-box;
 }
 
 .movie-banner--tmdb-hero {
-  min-height: min(52vh, 560px);
+  min-height: min(42vh, 440px);
+  max-height: min(48vh, 520px);
 }
 
 .movie-banner--tmdb-hero .movie-banner__track {
   aspect-ratio: auto;
-  min-height: min(52vh, 560px);
-  max-height: none;
+  min-height: min(42vh, 440px);
+  max-height: min(48vh, 520px);
 }
 
 .movie-banner__track {

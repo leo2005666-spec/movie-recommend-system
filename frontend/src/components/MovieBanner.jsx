@@ -95,7 +95,7 @@ export default function MovieBanner() {
 
   return (
     <div
-      className="movie-banner movie-banner--fullbleed movie-banner--tmdb-hero"
+      className="movie-banner movie-banner--contained movie-banner--tmdb-hero"
       role="region"
       aria-roledescription="carousel"
       aria-label="精选电影推荐"

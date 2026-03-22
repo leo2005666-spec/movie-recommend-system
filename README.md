@@ -45,7 +45,7 @@
 ## 技术栈
 
 - **前端**：React 18 + Vite + React Router + Phosphor Icons（图标）
-- **界面风格**：首页 / 个性推荐 / 影视库采用 **TMDB 风格深蓝 + 青绿渐变** 画布；首页顶部轮播为 **全宽高清底图 + 深色渐变遮罩（无磨砂模糊）**；影视库筛选含 **时长（0–360 分钟）双滑块**；列表卡片展示 **上映日期 + 片长**，不展示 TMDB 评分圆环（详情页仍可评分与查看 TMDB 信息）
+- **界面风格**：全站 **浅灰画布（`--bg-canvas`）+ 白卡片**，与 **TMDB 热门列表页** 一致；首页轮播为 **与内容区等宽** 的高清 Hero（**不突破 `main` 边框**）+ 深色渐变遮罩；影视库筛选含 **时长（0–360 分钟）双滑块**；列表卡片展示 **上映日期 + 片长**，不展示评分圆环（详情页仍可评分）
 - **字体**：Plus Jakarta Sans + Noto Sans SC（Google Fonts，高级无衬线风格）
 - **后端**：Node.js + Express
 - **数据库**：sql.js（纯 JavaScript 实现的 SQLite，**无需 Visual Studio 编译**，Windows 可直接运行）
@@ -300,11 +300,11 @@ npm run fill-covers
 - **详情页版式（TMDB 式）**：顶部 Hero 仍为深色剧照条；**下方主内容区为白底**（`main--movie-detail` + `detail-page--tmdb-light`），评论/侧栏/关键词等为浅色主题，与全站浅色画布一致。
 - **前端性能**：路由 **`React.lazy` + `Suspense`** 按页拆包；`vite` 将 `react/react-dom/react-router-dom` 打入 **`vendor-react`** chunk；首页进入动画缩短；详情页评论/演职员/相似推荐改为 **`Promise.all` 并行**；首屏加载用轻量骨架占位。
 - **顶栏交互**：导航改为 **`position: fixed`**，`main` 增加 **`padding-top`** 避免内容被挡；**向下滚动**约 8px 以上时顶栏收起（`header--scroll-hidden`），**向上滚动**或回到页面顶部时重新显示。后端异常时的红条 **`api-status-banner`** 固定在最顶，顶栏在其下方（`:has` 调整 `padding-top` / `top`）。
-- **首页轮播（TMDB Hero）**：**全宽高清封面/剧照**、`object-fit: cover` 铺满、**无磨砂模糊**；**深蓝左向右渐变遮罩** + **白字**；CTA 为 **青绿渐变按钮**；轮播数据为 **`prefer=popular`** 热门片。首页/推荐/影视库外层使用 **`tmdb-page-theme`** 深蓝渐变画布。
+- **首页轮播（TMDB Hero）**：**与主内容区同宽**（`movie-banner--contained`）、**无横向溢出**；高清封面 `cover` 铺满、**无磨砂模糊**；**深蓝左向右渐变遮罩** + **白字**；数据 **`prefer=popular`**。首页「为你推荐」与影视库、个性推荐共用 **`movie-grid--tmdb-list`**（大屏约 **5 列**铺满，减少两侧留白）。
 - **观影平台图标**：国内常无法直连 `image.tmdb.org` / Clearbit，新增后端 **`GET /api/proxy-img?u=`**（仅允许白名单域名），前端 **`ProviderIcon`** 优先走代理，并增加 **Google favicon** 备用链；TMDB logo 尺寸改为 **w185**。
 - **影视库平台列表去重**：`STREAM_PROVIDERS` 由原始表经 **相同 logoPath、相同展示名** 去重后导出，减少界面重复项（如双 Amazon、同图多 ID）。
 - **详情顶栏遮挡**：后写的 `.detail-page` 负 margin 会覆盖浅色详情样式，已用 **`.main--movie-detail .detail-page.detail-page--tmdb-light { margin: 0 }`** 修正，并略增 **`main--movie-detail` 的 padding-top** 与 Hero 内容区上内边距。
-- **影视库布局**：根节点 **`movie-list-page--tmdb tmdb-page-theme`**，深蓝渐变背景上的半透明侧栏/主区卡片；列表卡片信息区仍为白底。**分页**使用 **`btn-outline`**。
+- **影视库布局**：根节点 **`movie-list-page--tmdb`**，浅灰底上的 **白侧栏 + 白主列表区**（与 TMDB 列表页协调）。**分页**使用 **`btn-outline`**。
 - **详情加载**：`DetailPageLoading` 使用 **`position: fixed`** 铺满顶栏下方视口（**`100dvh`/`safe-area` 友好**），**flex 水平垂直居中**浅色卡片；有 **`api-status-banner`** 时同步下移顶边距；`main` 设 **`min-height`** 减轻结束加载时高度跳动。
 - **全站背景与详情画布**：`BackgroundFX` 渐变改为 **左右对称**、动画仅微缩放，遮罩用 **均匀 `--bg-canvas` 系**；**`main--movie-detail`** 背景改为 **`var(--bg-canvas)`**（不再单独 `#e8eaed`），避免与浏览器两侧 gutter 冷暖不一致。
 - **详情白区字体**：`detail-body` 与侧栏标题/正文 **字重与灰阶统一**（侧栏标签取消全大写），与首页区块标题层级一致。

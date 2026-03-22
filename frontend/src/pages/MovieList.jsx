@@ -115,7 +115,7 @@ export default function MovieList() {
   }, [categories, tags]);
 
   return (
-    <div className="movie-list-page movie-list-page--tmdb tmdb-page-theme">
+    <div className="movie-list-page movie-list-page--tmdb">
       <h1 className="page-title">
         <FilmStripIcon size={24} weight="regular" className="page-title__icon" />
         影视库
@@ -312,7 +312,7 @@ export default function MovieList() {
           </div>
 
           {loading ? (
-            <div className="movie-grid">
+            <div className="movie-grid movie-grid--tmdb-list">
               {Array.from({ length: 12 }).map((_, i) => (
                 <div key={i} className="skeleton-card movie-card" style={{ pointerEvents: 'none' }}>
                   <div className="skeleton skeleton-cover" />
@@ -324,7 +324,7 @@ export default function MovieList() {
           ) : list.length ? (
             <>
               <p className="list-count">共 {total} 部影视</p>
-              <div className="movie-grid">
+              <div className="movie-grid movie-grid--tmdb-list">
                 {list.map((m) => (
                   <MovieCard key={m.id} movie={m} />
                 ))}

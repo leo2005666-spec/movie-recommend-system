@@ -76,7 +76,7 @@ export default function Home() {
   }, [tasteType, user]);
 
   return (
-    <div className="home-page tmdb-page-theme">
+    <div className="home-page">
       <MovieBanner />
       <section className="hero">
         <h1 className="hero__title">发现你喜欢的影视</h1>
@@ -117,7 +117,7 @@ export default function Home() {
         {loading ? (
           <MovieLoading count={12} />
         ) : recommend.length ? (
-          <div className="movie-grid movie-grid--home">
+          <div className="movie-grid movie-grid--tmdb-list">
             {recommend.map((m) => (
               <MovieCard
                 key={m.id}
@@ -163,9 +163,6 @@ export default function Home() {
                           {m.release_year && <span className="chart-year">{m.release_year}</span>}
                         </div>
                       </Link>
-                    </td>
-                    <td style={{ width: 70, padding: 'var(--space-sm) var(--space-md)' }}>
-                      <span className="chart-score">{m.avg_score}</span>
                     </td>
                   </tr>
                 ))}

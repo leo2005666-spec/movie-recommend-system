@@ -51,7 +51,7 @@ export default function Recommend() {
   }, [user, tasteType]);
 
   return (
-    <div className="recommend-page tmdb-page-theme">
+    <div className="recommend-page">
       <h1 className="page-title">
         <SparkleIcon size={24} weight="regular" className="page-title__icon" />
         个性推荐
@@ -86,7 +86,7 @@ export default function Recommend() {
         </div>
       )}
       {loading ? (
-        <div className="movie-grid">
+        <div className="movie-grid movie-grid--tmdb-list">
           {Array.from({ length: 24 }).map((_, i) => (
             <div key={i} className="skeleton-card movie-card" style={{ pointerEvents: 'none' }}>
               <div className="skeleton skeleton-cover" />
@@ -96,7 +96,7 @@ export default function Recommend() {
           ))}
         </div>
       ) : list.length ? (
-        <div className="movie-grid">
+        <div className="movie-grid movie-grid--tmdb-list">
           {list.map((m) => (
             <MovieCard
               key={m.id}

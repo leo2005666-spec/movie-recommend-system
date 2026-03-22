@@ -7,69 +7,36 @@
 const express = require('express');
 const db = require('../db/db');
 const { optionalAuth } = require('../middleware/auth');
-const { TASTE_PRESETS, getIdsByNames } = require('../utils/taste-presets');
+const { TASTE_PRESETS, buildTasteWhereSql, TASTE_ORDER_BY } = require('../utils/taste-presets');
 const { getColdStartRecommendations, getPopularRecommendations: getPop } = require('../services/recommendFallback');
 const { asyncHandler } = require('../utils/asyncHandler');
 
 const router = express.Router();
 
-async function getIds(table, names) {
-  return getIdsByNames(db, table, names);
-}
-
 /**
- * 按人群口味推荐：匹配预设分类/标签的电影，按热门度排序
+ * 按人群口味推荐：与影视库相同条件（分类∩标签）+ 偏经典/高分的排序，与「仅按 id 新」区分
  */
 async function getTasteRecommendations(tasteType, limit = 24) {
-  const preset = TASTE_PRESETS[tasteType];
-  if (!preset) return getPop(limit);
-
-  const categoryIds = await getIds('categories', preset.categoryNames);
-  const tagIds = await getIds('tags', preset.tagNames);
-
-  const seen = new Set();
-  const result = [];
-
-  // 按分类推荐
-  for (const cid of categoryIds) {
-    const movies = await db.prepare(`
-      SELECT m.id, m.title, m.cover, m.description, m.release_year
-      FROM movies m
-      INNER JOIN movie_categories mc ON m.id = mc.movie_id AND mc.category_id = ?
-      ORDER BY m.id DESC LIMIT ?
-    `).all(cid, Math.ceil(limit / 2));
-    for (const m of movies) {
-      if (!seen.has(m.id)) {
-        seen.add(m.id);
-        result.push(m);
-        if (result.length >= limit) return result;
-      }
-    }
-  }
-
-  // 按标签推荐
-  for (const tid of tagIds) {
-    const movies = await db.prepare(`
-      SELECT m.id, m.title, m.cover, m.description, m.release_year
-      FROM movies m
-      INNER JOIN movie_tags mt ON m.id = mt.movie_id AND mt.tag_id = ?
-      ORDER BY m.id DESC LIMIT ?
-    `).all(tid, Math.ceil(limit / 2));
-    for (const m of movies) {
-      if (!seen.has(m.id)) {
-        seen.add(m.id);
-        result.push(m);
-        if (result.length >= limit) return result;
-      }
-    }
-  }
-
-  // 不足时用热门补足
+  if (!TASTE_PRESETS[tasteType]) return getPop(limit);
+  const tw = await buildTasteWhereSql(db, tasteType);
+  if (!tw) return getPop(limit);
+  const rows = await db.prepare(`
+    SELECT m.id, m.title, m.cover, m.description, m.release_year
+    FROM movies m
+    WHERE ${tw.sql}
+    ORDER BY ${TASTE_ORDER_BY}
+    LIMIT ?
+  `).all(...tw.params, limit);
+  if (rows.length >= Math.min(12, limit)) return rows;
+  const seen = new Set(rows.map((r) => r.id));
   const popular = await getPop(limit);
   for (const m of popular) {
-    if (!seen.has(m.id) && result.length < limit) result.push(m);
+    if (!seen.has(m.id) && rows.length < limit) {
+      seen.add(m.id);
+      rows.push(m);
+    }
   }
-  return result;
+  return rows;
 }
 
 /** 埋点：曝光/点击/收藏 (scene, movieId, eventType) */

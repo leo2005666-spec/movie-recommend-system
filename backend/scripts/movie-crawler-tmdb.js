@@ -4,7 +4,8 @@
  * 使用 TMDB 官方 API，数据完整稳定，支持中文。
  * 豆瓣无公开 API，爬虫易被封且违反 ToS，不推荐。
  *
- * 字段：电影名、评分(tmdb_rating)、海报、简介、导演、演员、年份、片长
+ * 字段：电影名、评分(tmdb_rating)、海报、简介、导演、演员、年份、片长、
+ *       制片国 origin_countries（TMDB production_countries）、original_language、release_date、tmdb_vote_count
  *
  * 使用方法：
  *   set TMDB_API_KEY=你的key
@@ -65,10 +66,13 @@ async function fetchJson(url) {
 }
 
 async function ensureSchema(db) {
-  // SQLite 不支持 ADD COLUMN 时直接加 UNIQUE
   for (const col of [
     'ALTER TABLE movies ADD COLUMN tmdb_id INTEGER',
     'ALTER TABLE movies ADD COLUMN tmdb_rating REAL',
+    'ALTER TABLE movies ADD COLUMN origin_countries TEXT',
+    'ALTER TABLE movies ADD COLUMN original_language TEXT',
+    'ALTER TABLE movies ADD COLUMN release_date TEXT',
+    'ALTER TABLE movies ADD COLUMN tmdb_vote_count INTEGER',
   ]) {
     try {
       await db.exec(col);
@@ -77,6 +81,24 @@ async function ensureSchema(db) {
       if (!/duplicate column name/i.test(e.message)) console.warn('  列可能已存在:', e.message);
     }
   }
+}
+
+/** TMDB /movie/{id} → 库存储格式 |US|GB| */
+function formatOriginCountries(detail) {
+  if (!detail || typeof detail !== 'object') return null;
+  const raw = detail.production_countries;
+  if (Array.isArray(raw) && raw.length) {
+    const codes = raw
+      .map((x) => (x && x.iso_3166_1 ? String(x.iso_3166_1).toUpperCase() : ''))
+      .filter(Boolean);
+    if (codes.length) return `|${codes.join('|')}|`;
+  }
+  const oc = detail.origin_country;
+  if (Array.isArray(oc) && oc.length) {
+    const codes = oc.map((c) => String(c).toUpperCase()).filter(Boolean);
+    if (codes.length) return `|${codes.join('|')}|`;
+  }
+  return null;
 }
 
 async function runCrawler() {
@@ -150,6 +172,10 @@ async function runCrawler() {
     let director = null;
     let actors = null;
     let duration = null;
+    let originCountries = null;
+    let originalLanguage = null;
+    let releaseDate = null;
+    let tmdbVoteCount = null;
 
     try {
       const detail = await fetchJson(
@@ -163,6 +189,12 @@ async function runCrawler() {
         actors = detail.credits.cast.slice(0, 5).map((c) => c.name).join(', ');
       }
       if (detail.runtime) duration = detail.runtime;
+      originCountries = formatOriginCountries(detail);
+      originalLanguage = detail.original_language ? String(detail.original_language).toLowerCase() : null;
+      releaseDate = detail.release_date || null;
+      if (detail.vote_count != null && !Number.isNaN(Number(detail.vote_count))) {
+        tmdbVoteCount = Math.round(Number(detail.vote_count));
+      }
     } catch (e) {
       console.warn(`  详情 ${title} 失败:`, e.message);
     }
@@ -173,16 +205,49 @@ async function runCrawler() {
     if (existing) {
       await db
         .prepare(
-          `UPDATE movies SET title=?, cover=?, description=?, release_year=?, director=?, actors=?, duration=?, tmdb_rating=?, updated_at=CURRENT_TIMESTAMP WHERE id=?`
+          `UPDATE movies SET title=?, cover=?, description=?, release_year=?, director=?, actors=?, duration=?, tmdb_rating=?,
+            origin_countries=COALESCE(?, origin_countries), original_language=COALESCE(?, original_language),
+            release_date=COALESCE(?, release_date), tmdb_vote_count=COALESCE(?, tmdb_vote_count),
+            updated_at=CURRENT_TIMESTAMP WHERE id=?`
         )
-        .run(title, cover, description, releaseYear, director, actors, duration, rating, existing.id);
+        .run(
+          title,
+          cover,
+          description,
+          releaseYear,
+          director,
+          actors,
+          duration,
+          rating,
+          originCountries,
+          originalLanguage,
+          releaseDate,
+          tmdbVoteCount,
+          existing.id
+        );
       updated++;
     } else {
       await db
         .prepare(
-          `INSERT INTO movies (title, cover, description, release_year, director, actors, duration, tmdb_id, tmdb_rating) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
+          `INSERT INTO movies (title, cover, description, release_year, director, actors, duration, tmdb_id, tmdb_rating,
+            origin_countries, original_language, release_date, tmdb_vote_count)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
         )
-        .run(title, cover, description, releaseYear, director, actors, duration, m.id, rating);
+        .run(
+          title,
+          cover,
+          description,
+          releaseYear,
+          director,
+          actors,
+          duration,
+          m.id,
+          rating,
+          originCountries,
+          originalLanguage,
+          releaseDate,
+          tmdbVoteCount
+        );
       const row = await db.prepare('SELECT id FROM movies WHERE tmdb_id = ?').get(m.id);
       const mid = row?.id;
 

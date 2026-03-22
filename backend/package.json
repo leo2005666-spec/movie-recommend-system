@@ -14,7 +14,8 @@
     "crawler:cron": "node scripts/movie-crawler-tmdb.js --cron",
     "translate-chinese": "node scripts/translate-to-chinese.js",
     "fill-covers": "node scripts/fill-missing-covers.js",
-    "remove-no-cover": "node scripts/remove-no-cover.js"
+    "remove-no-cover": "node scripts/remove-no-cover.js",
+    "backfill-origin": "node scripts/backfill-origin-countries.js"
   },
   "dependencies": {
     "@libsql/client": "^0.17.0",

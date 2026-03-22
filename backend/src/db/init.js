@@ -195,6 +195,9 @@ async function run() {
   try {
     await db.exec('ALTER TABLE movies ADD COLUMN watch_provider_ids TEXT');
   } catch (_) {}
+  try {
+    await db.exec('ALTER TABLE movies ADD COLUMN origin_countries TEXT');
+  } catch (_) {}
 
   // 旧库补全：便于「在哪里观看 / 语言 / 投票数」筛选有数据（不覆盖已有非空值）
   try {
@@ -213,6 +216,27 @@ async function run() {
     }
   } catch (e) {
     console.warn('[init] 补全 watch_provider / language / vote_count 跳过:', e.message);
+  }
+
+  // 制片国家/地区：|ISO2| 形式；由 original_language 粗映射（可后续由爬虫覆盖）
+  try {
+    const LANG_TO_CC = {
+      en: 'US', zh: 'CN', 'zh-cn': 'CN', ja: 'JP', ko: 'KR', fr: 'FR', es: 'ES', de: 'DE', it: 'IT',
+      pt: 'BR', ru: 'RU', hi: 'IN', th: 'TH', vi: 'VN', tr: 'TR', pl: 'PL', nl: 'NL', sv: 'SE',
+      da: 'DK', fi: 'FI', no: 'NO', cs: 'CZ', hu: 'HU', el: 'GR', he: 'IL', fa: 'IR', ar: 'EG',
+      uk: 'UA', id: 'ID', ro: 'RO', bn: 'BD', ta: 'IN', te: 'IN', ml: 'IN',
+    };
+    const need = await db.prepare(
+      "SELECT id, original_language FROM movies WHERE origin_countries IS NULL OR TRIM(origin_countries) = ''"
+    ).all();
+    for (const row of need) {
+      const raw = String(row.original_language || 'en').toLowerCase();
+      const key = raw.split('-')[0];
+      const cc = LANG_TO_CC[raw] || LANG_TO_CC[key] || 'US';
+      await db.prepare('UPDATE movies SET origin_countries = ? WHERE id = ?').run(`|${cc}|`, row.id);
+    }
+  } catch (e) {
+    console.warn('[init] origin_countries 补全跳过:', e.message);
   }
 
   const movieCount = (await db.prepare('SELECT COUNT(*) as n FROM movies').get()).n;

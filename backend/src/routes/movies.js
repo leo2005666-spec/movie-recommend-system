@@ -7,7 +7,7 @@ const { body, validationResult } = require('express-validator');
 const db = require('../db/db');
 const { authMiddleware, requireAdmin, optionalAuth } = require('../middleware/auth');
 const { logActivity } = require('../middleware/log');
-const { getTasteFilterIds } = require('../utils/taste-presets');
+const { buildTasteWhereSql, TASTE_ORDER_BY } = require('../utils/taste-presets');
 const { asyncHandler } = require('../utils/asyncHandler');
 
 const router = express.Router();
@@ -170,7 +170,7 @@ router.get('/:id/cover', asyncHandler(async (req, res) => {
   res.status(502).send('Failed to fetch cover');
 }));
 
-// 获取影视列表（分页、类型多选、发行日期、语言、评分/投票滑块、观看平台等）
+// 获取影视列表（分页、类型、发行日期、制片国家、评分、人群口味等）
 router.get('/', optionalAuth, asyncHandler(async (req, res) => {
   const page = Math.max(1, parseInt(req.query.page) || 1);
   const limit = Math.min(500, Math.max(10, parseInt(req.query.limit) || 12));
@@ -182,16 +182,11 @@ router.get('/', optionalAuth, asyncHandler(async (req, res) => {
   const yearTo = req.query.yearTo ? parseInt(req.query.yearTo, 10) : null;
   const dateFrom = (req.query.dateFrom || '').trim();
   const dateTo = (req.query.dateTo || '').trim();
-  const language = (req.query.language || '').trim().toLowerCase();
-  const searchAllChannels = req.query.searchAllChannels === '1' || req.query.searchAllChannels === 'true';
-  const providerIdsRaw = (req.query.providerIds || '').trim();
-  const providerIds = providerIdsRaw
-    ? providerIdsRaw.split(',').map((x) => parseInt(x.trim(), 10)).filter((n) => !Number.isNaN(n))
-    : [];
+  /** 制片国家/地区 ISO 3166-1 alpha-2，与库字段 origin_countries（如 |US|）匹配 */
+  const country = (req.query.country || '').trim().toUpperCase();
 
   const scoreMin = req.query.scoreMin !== undefined && req.query.scoreMin !== '' ? parseFloat(req.query.scoreMin) : null;
   const scoreMax = req.query.scoreMax !== undefined && req.query.scoreMax !== '' ? parseFloat(req.query.scoreMax) : null;
-  const minVotes = req.query.minVotes !== undefined && req.query.minVotes !== '' ? parseInt(req.query.minVotes, 10) : null;
 
   /** 上映状态：released=已上映，unreleased=未上映（按发行年份与当前年比较；兼容旧参数 watched/unwatched） */
   let releaseStatus = (req.query.releaseStatus || '').trim().toLowerCase();
@@ -212,24 +207,13 @@ router.get('/', optionalAuth, asyncHandler(async (req, res) => {
   const params = [];
   const conditions = [];
 
-  // 人群口味：匹配预设分类或标签的影视
-  const { categoryIds: tasteCategoryIds, tagIds: tasteTagIds } = tasteType
-    ? await getTasteFilterIds(db, tasteType)
-    : { categoryIds: [], tagIds: [] };
-
-  if (tasteCategoryIds.length > 0 || tasteTagIds.length > 0) {
-    const subQueries = [];
-    if (tasteCategoryIds.length > 0) {
-      const ph = tasteCategoryIds.map(() => '?').join(',');
-      subQueries.push(`m.id IN (SELECT movie_id FROM movie_categories WHERE category_id IN (${ph}))`);
-      params.push(...tasteCategoryIds);
+  // 人群口味：分类 ∩ 标签（见 taste-presets）
+  if (tasteType) {
+    const tw = await buildTasteWhereSql(db, tasteType);
+    if (tw) {
+      conditions.push(tw.sql);
+      params.push(...tw.params);
     }
-    if (tasteTagIds.length > 0) {
-      const ph = tasteTagIds.map(() => '?').join(',');
-      subQueries.push(`m.id IN (SELECT movie_id FROM movie_tags WHERE tag_id IN (${ph}))`);
-      params.push(...tasteTagIds);
-    }
-    conditions.push('(' + subQueries.join(' OR ') + ')');
   }
 
   // 类型多选（AND）：每个分类 / 标签都必须命中
@@ -287,9 +271,9 @@ router.get('/', optionalAuth, asyncHandler(async (req, res) => {
     params.push(currentYear);
   }
 
-  if (language) {
-    conditions.push('LOWER(TRIM(m.original_language)) = ?');
-    params.push(language);
+  if (country && /^[A-Z]{2}$/.test(country)) {
+    conditions.push('(m.origin_countries IS NOT NULL AND INSTR(m.origin_countries, ?) > 0)');
+    params.push(`|${country}|`);
   }
 
   if (scoreMin != null && !Number.isNaN(scoreMin)) {
@@ -301,19 +285,9 @@ router.get('/', optionalAuth, asyncHandler(async (req, res) => {
     params.push(scoreMax);
   }
 
-  if (minVotes != null && !Number.isNaN(minVotes) && minVotes > 0) {
-    conditions.push('COALESCE(m.tmdb_vote_count, 0) >= ?');
-    params.push(minVotes);
-  }
-
-  if (providerIds.length > 0 && !searchAllChannels) {
-    const ors = providerIds.map(() => '(m.watch_provider_ids LIKE ?)');
-    conditions.push(`(m.watch_provider_ids IS NOT NULL AND TRIM(m.watch_provider_ids) != '' AND (${ors.join(' OR ')}))`);
-    providerIds.forEach((pid) => params.push(`%|${pid}|%`));
-  }
-
   if (conditions.length) sql += ' WHERE ' + conditions.join(' AND ');
-  sql += ' GROUP BY m.id ORDER BY m.id DESC';
+  const orderBy = tasteType ? TASTE_ORDER_BY : 'm.id DESC';
+  sql += ` GROUP BY m.id ORDER BY ${orderBy}`;
   const countSql = 'SELECT COUNT(*) as n FROM (' + sql + ') t';
   const total = (await db.prepare(countSql).get(...params))?.n ?? 0;
 

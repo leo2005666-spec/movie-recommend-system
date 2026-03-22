@@ -1,12 +1,18 @@
 /**
- * 影视详情首屏加载：胶卷 + 旋转图标，替代纯文字骨架
+ * 影视详情首屏加载：胶卷 + 旋转图标
+ * fixed 全屏（顶栏下）居中，任意视口尺寸下保持居中
  */
 import { FilmStrip, CircleNotch, Sparkle } from '@phosphor-icons/react';
 
 export default function DetailPageLoading() {
   return (
-    <div className="detail-page detail-page--tmdb-light detail-page--loading detail-page--loading-icons">
-      <div className="detail-loading-stage" role="status" aria-live="polite" aria-busy="true">
+    <div
+      className="detail-loading-fullscreen"
+      role="status"
+      aria-live="polite"
+      aria-busy="true"
+    >
+      <div className="detail-loading-card">
         <div className="detail-loading-icons" aria-hidden>
           <FilmStrip size={52} weight="duotone" className="detail-loading-film" />
           <CircleNotch size={40} weight="bold" className="detail-loading-spin" />

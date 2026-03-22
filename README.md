@@ -304,6 +304,8 @@ npm run fill-covers
 - **影视库平台列表去重**：`STREAM_PROVIDERS` 由原始表经 **相同 logoPath、相同展示名** 去重后导出，减少界面重复项（如双 Amazon、同图多 ID）。
 - **详情顶栏遮挡**：后写的 `.detail-page` 负 margin 会覆盖浅色详情样式，已用 **`.main--movie-detail .detail-page.detail-page--tmdb-light { margin: 0 }`** 修正，并略增 **`main--movie-detail` 的 padding-top** 与 Hero 内容区上内边距。
 - **影视库浅色布局**：根节点使用 **`movie-list-page--tmdb`**，侧栏与主列表白底卡片、平台网格默认 **3 列**（更宽屏下略调）；外层不再单独铺灰底，与 **`--bg-canvas`** 全站统一。**分页**（上一页/下一页/跳转）使用白底描边 **`btn-outline`**，避免深色块。
-- **详情加载**：`DetailPageLoading` 为 **浅色卡片 + 胶卷/旋转/星点**，在 **`main` 内水平垂直居中**（全宽 flex），不再挤在左上角。
+- **详情加载**：`DetailPageLoading` 使用 **`position: fixed`** 铺满顶栏下方视口（**`100dvh`/`safe-area` 友好**），**flex 水平垂直居中**浅色卡片；有 **`api-status-banner`** 时同步下移顶边距；`main` 设 **`min-height`** 减轻结束加载时高度跳动。
+- **全站背景与详情画布**：`BackgroundFX` 渐变改为 **左右对称**、动画仅微缩放，遮罩用 **均匀 `--bg-canvas` 系**；**`main--movie-detail`** 背景改为 **`var(--bg-canvas)`**（不再单独 `#e8eaed`），避免与浏览器两侧 gutter 冷暖不一致。
+- **详情白区字体**：`detail-body` 与侧栏标题/正文 **字重与灰阶统一**（侧栏标签取消全大写），与首页区块标题层级一致。
 - **推荐观看**：TMDB 链与相似推荐 **统一为 `MovieCard`**，横向 **`rec-carousel` 固定约 148px 宽**，标题/年份用 **深灰字**，避免浅灰字贴在白底海报下看不清。
 - **封面 URL**：`getCoverUrl(movie)` **仅需 `movie.id`**（不再要求 `cover` 字段有值），便于推荐卡片只带 id 即可走后端代理。

@@ -10,6 +10,23 @@ import { api, getCoverUrl } from '../api/request';
 
 const BANNER_INTERVAL_MS = 5000;
 
+/** 轮播顶部日期展示 */
+function bannerDateLabel(movie) {
+  if (movie.release_date) {
+    try {
+      return new Date(movie.release_date).toLocaleDateString('zh-CN', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+      });
+    } catch {
+      /* ignore */
+    }
+  }
+  if (movie.release_year) return `${movie.release_year}年`;
+  return '';
+}
+
 export default function MovieBanner() {
   const [movies, setMovies] = useState([]);
   const [index, setIndex] = useState(0);
@@ -86,37 +103,48 @@ export default function MovieBanner() {
       onMouseLeave={() => setHoverPaused(false)}
     >
       <div className="movie-banner__track">
-        {movies.map((movie, i) => (
-          <Link
-            key={movie.id}
-            to={`/movies/${movie.id}`}
-            className={`movie-banner__slide ${i === index ? 'active' : ''}`}
-            style={{ '--banner-index': i - index }}
-          >
-            <div className="movie-banner__bg">
-              <img
-                src={getCoverUrl(movie, { w: 1920 })}
-                alt=""
-                sizes="(max-width: 1200px) 100vw, 1200px"
-                decoding="async"
-                fetchPriority={i === index ? 'high' : 'auto'}
-                loading={i === index ? 'eager' : 'lazy'}
-                onError={(e) => { e.target.style.display = 'none'; }}
-              />
-              <div className="movie-banner__overlay" />
-            </div>
-            <div className="movie-banner__content">
-              <h2 className="movie-banner__title">{movie.title}</h2>
-              {movie.description && (
-                <p className="movie-banner__desc">
-                  {movie.description.length > 80 ? movie.description.slice(0, 80) + '…' : movie.description}
-                </p>
-              )}
-              {movie.release_year && <span className="movie-banner__year">{movie.release_year}</span>}
-              <span className="movie-banner__cta">查看详情 →</span>
-            </div>
-          </Link>
-        ))}
+        {movies.map((movie, i) => {
+          const dateStr = bannerDateLabel(movie);
+          return (
+            <Link
+              key={movie.id}
+              to={`/movies/${movie.id}`}
+              className={`movie-banner__slide ${i === index ? 'active' : ''}`}
+              style={{ '--banner-index': i - index }}
+            >
+              <div className="movie-banner__bg">
+                <img
+                  src={getCoverUrl(movie, { w: 1920 })}
+                  alt=""
+                  sizes="(max-width: 1200px) 100vw, 1200px"
+                  decoding="async"
+                  fetchPriority={i === index ? 'high' : 'auto'}
+                  loading={i === index ? 'eager' : 'lazy'}
+                  onError={(e) => { e.target.style.display = 'none'; }}
+                />
+                <div className="movie-banner__overlay movie-banner__overlay--frost" />
+              </div>
+              <div className="movie-banner__content movie-banner__content--editorial">
+                <div className="movie-banner__text-block">
+                  <div className="movie-banner__meta-row">
+                    <span className="movie-banner__pill">🎬 精选推荐</span>
+                    {dateStr ? <span className="movie-banner__date">{dateStr}</span> : null}
+                  </div>
+                  <h2 className="movie-banner__title">{movie.title}</h2>
+                  {movie.description && (
+                    <p className="movie-banner__desc">
+                      {movie.description.length > 120 ? movie.description.slice(0, 120) + '…' : movie.description}
+                    </p>
+                  )}
+                </div>
+                <div className="movie-banner__bottom-row">
+                  <span className="movie-banner__source">为你个性化推荐</span>
+                  <span className="movie-banner__cta-pill">查看详情 →</span>
+                </div>
+              </div>
+            </Link>
+          );
+        })}
       </div>
 
       {len > 1 && (

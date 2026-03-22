@@ -11,6 +11,28 @@ const router = express.Router();
 router.use(authMiddleware, requireAdmin);
 
 /**
+ * GET /api/admin/dashboard
+ * 数据概览：用户数、影片数、评分数、评论数、收藏数、反馈数
+ */
+router.get('/dashboard', asyncHandler(async (req, res) => {
+  const users = (await db.prepare('SELECT COUNT(*) as n FROM users').get())?.n ?? 0;
+  const movies = (await db.prepare('SELECT COUNT(*) as n FROM movies').get())?.n ?? 0;
+  const ratings = (await db.prepare('SELECT COUNT(*) as n FROM ratings').get())?.n ?? 0;
+  const comments = (await db.prepare('SELECT COUNT(*) as n FROM comments').get())?.n ?? 0;
+  const favorites = (await db.prepare('SELECT COUNT(*) as n FROM favorites').get())?.n ?? 0;
+  let feedbacks = 0;
+  try {
+    feedbacks = (await db.prepare('SELECT COUNT(*) as n FROM feedbacks').get())?.n ?? 0;
+  } catch (_) {
+    /* 表不存在时忽略 */
+  }
+  res.json({
+    code: 0,
+    data: { users, movies, ratings, comments, favorites, feedbacks },
+  });
+}));
+
+/**
  * GET /api/admin/ratings
  * 管理员查看所有用户评分（普通用户评分上交到管理员处）
  * 用于了解推荐系统依赖的评分数据

@@ -56,6 +56,7 @@ export default function MyFavorites() {
             <MovieCard
               key={m.id}
               movie={m}
+              showRecommendReason={false}
               showBadge={false}
               topRight={
                 <button

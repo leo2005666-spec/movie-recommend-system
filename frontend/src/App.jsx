@@ -15,6 +15,7 @@ const Profile = lazy(() => import('./pages/Profile'));
 const MyFavorites = lazy(() => import('./pages/MyFavorites'));
 const MyLogs = lazy(() => import('./pages/MyLogs'));
 const Feedback = lazy(() => import('./pages/Feedback'));
+const AdminDashboard = lazy(() => import('./pages/admin/Dashboard'));
 const AdminMovies = lazy(() => import('./pages/admin/Movies'));
 const AdminCategories = lazy(() => import('./pages/admin/Categories'));
 const AdminTags = lazy(() => import('./pages/admin/Tags'));
@@ -79,6 +80,14 @@ export default function App() {
               }
             />
 
+            <Route
+              path="admin/dashboard"
+              element={
+                <ProtectedRoute admin>
+                  <AdminDashboard />
+                </ProtectedRoute>
+              }
+            />
             <Route
               path="admin/movies"
               element={

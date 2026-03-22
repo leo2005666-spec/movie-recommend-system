@@ -36,7 +36,11 @@ router.put(
   [
     body('username').optional().trim().isLength({ min: 2, max: 20 }).withMessage('用户名2-20字符'),
     body('nickname').optional().trim().isLength({ max: 50 }),
-    body('avatar').optional().trim().isURL(),
+    body('avatar').optional({ values: 'falsy' }).trim().custom((v) => {
+      if (v == null || v === '') return true;
+      if (String(v).length > 2048) throw new Error('头像链接过长');
+      return /^https?:\/\/.+/i.test(String(v).trim());
+    }).withMessage('头像需为 http(s) 开头的有效链接'),
     body('password').optional().isLength({ min: 6 }).withMessage('密码至少6位'),
   ],
   asyncHandler(async (req, res) => {

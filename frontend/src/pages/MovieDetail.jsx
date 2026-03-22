@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import MovieCard, { getScoreColor } from '../components/MovieCard';
 import { useAuth } from '../context/AuthContext';
@@ -26,6 +26,9 @@ export default function MovieDetail() {
   const [tagline, setTagline] = useState(null);
   const [tmdbDetails, setTmdbDetails] = useState(null);
   const [comments, setComments] = useState([]);
+  const [commentTotal, setCommentTotal] = useState(0);
+  const [commentPage, setCommentPage] = useState(1);
+  const [commentsBusy, setCommentsBusy] = useState(false);
   const [commentContent, setCommentContent] = useState('');
   const [score, setScore] = useState(0);
   const [submitting, setSubmitting] = useState(false);
@@ -46,17 +49,38 @@ export default function MovieDetail() {
     load();
   }, [id]);
 
-  /** 详情页次要数据并行请求，减少串行等待；相似推荐曝光异步不打断首屏 */
+  const loadCommentsPage = useCallback(
+    (page, append) => {
+      if (!id) return;
+      setCommentsBusy(true);
+      api
+        .get(`/comments/movie/${id}`, { page, limit: 10 })
+        .then((res) => {
+          const d = res.data || {};
+          setCommentTotal(d.total ?? 0);
+          const list = d.list || [];
+          if (append) setComments((prev) => [...prev, ...list]);
+          else setComments(list);
+        })
+        .catch(() => {
+          if (!append) setComments([]);
+        })
+        .finally(() => setCommentsBusy(false));
+    },
+    [id]
+  );
+
+  /** 评论首页 + 演职员与相似推荐 */
   useEffect(() => {
     if (!id) return;
     let cancelled = false;
+    setCommentPage(1);
+    loadCommentsPage(1, false);
     Promise.all([
-      api.get(`/comments/movie/${id}`).catch(() => ({ data: { list: [] } })),
       api.get(`/movies/${id}/credits`).catch(() => ({ data: {} })),
       api.get('/recommendations', { scene: SCENE_SIMILAR, movieId: id, limit: 8 }).catch(() => ({ data: [] })),
-    ]).then(([commentsRes, creditsRes, recRes]) => {
+    ]).then(([creditsRes, recRes]) => {
       if (cancelled) return;
-      setComments(commentsRes.data?.list || []);
       const cd = creditsRes.data || {};
       setCast(cd.cast || []);
       setTmdbRecs(cd.recommendations || []);
@@ -76,7 +100,7 @@ export default function MovieDetail() {
     return () => {
       cancelled = true;
     };
-  }, [id, user]);
+  }, [id, user, loadCommentsPage]);
 
   const handleRate = async () => {
     if (!user) return;
@@ -119,7 +143,8 @@ export default function MovieDetail() {
     try {
       await api.post('/comments', { movieId: parseInt(id), content: commentContent.trim() });
       setCommentContent('');
-      api.get(`/comments/movie/${id}`).then((r) => setComments(r.data?.list || []));
+      setCommentPage(1);
+      loadCommentsPage(1, false);
     } catch (e) {
       setErr(e.message);
     }
@@ -132,6 +157,7 @@ export default function MovieDetail() {
     try {
       await api.delete(`/comments/${commentId}`);
       setComments((prev) => prev.filter((c) => c.id !== commentId));
+      setCommentTotal((t) => Math.max(0, t - 1));
     } catch (e) {
       setErr(e.message || '删除失败');
     }
@@ -299,7 +325,9 @@ export default function MovieDetail() {
 
           {/* 用户评论（原「评价/讨论」为同一列表，合并为一栏） */}
           <section className="detail-section">
-            <h2 className="section-title">评论 {comments.length > 0 ? `(${comments.length})` : ''}</h2>
+            <h2 className="section-title">
+              评论 {commentTotal > 0 ? `(${commentTotal})` : comments.length > 0 ? `(${comments.length})` : ''}
+            </h2>
             {user && (
               <form onSubmit={handleComment} className="social-form">
                 <textarea className="form-textarea form-input" value={commentContent} onChange={(e) => setCommentContent(e.target.value)} placeholder="写下你的影评…" rows={3} maxLength={2000} />
@@ -335,7 +363,23 @@ export default function MovieDetail() {
                 </div>
               ))}
             </div>
-            {comments.length === 0 && <p className="empty-hint">暂无评论</p>}
+            {comments.length === 0 && !commentsBusy && <p className="empty-hint">暂无评论</p>}
+            {commentTotal > comments.length && (
+              <div style={{ marginTop: 'var(--space-md)', textAlign: 'center' }}>
+                <button
+                  type="button"
+                  className="btn btn-outline"
+                  disabled={commentsBusy}
+                  onClick={() => {
+                    const next = commentPage + 1;
+                    setCommentPage(next);
+                    loadCommentsPage(next, true);
+                  }}
+                >
+                  {commentsBusy ? '加载中…' : `加载更多（${comments.length}/${commentTotal}）`}
+                </button>
+              </div>
+            )}
           </section>
 
           {/* 推荐观看：TMDB 推荐仅展示已入库（有本地 id）的项；其余用相似推荐补足，避免「有海报但点不进去」 */}
@@ -367,7 +411,7 @@ export default function MovieDetail() {
                 <h2 className="section-title">推荐观看</h2>
                 <div className="rec-carousel">
                   {rows.map(({ key, movie: recMovie, onClick }) => (
-                    <MovieCard key={key} movie={recMovie} className="rec-carousel__card" onClick={onClick} />
+                    <MovieCard key={key} movie={recMovie} className="rec-carousel__card" showRecommendReason={false} onClick={onClick} />
                   ))}
                 </div>
               </section>

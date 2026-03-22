@@ -122,6 +122,7 @@ export default function Home() {
               <MovieCard
                 key={m.id}
                 movie={m}
+                showRecommendReason={false}
                 onClick={() => {
                   if (!tasteType) {
                     api.post('/recommend/events', { scene: SCENE_HOME, movieId: m.id, eventType: 'click' }).catch(() => {});

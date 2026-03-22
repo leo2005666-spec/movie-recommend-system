@@ -84,7 +84,7 @@ export default function Layout() {
           {user ? (
             <>
               {isAdmin && (
-                <Link to="/admin/movies" className="admin-link">
+                <Link to="/admin/dashboard" className="admin-link">
                   <GearIcon size={18} weight="regular" className="nav-icon" />
                   管理
                 </Link>

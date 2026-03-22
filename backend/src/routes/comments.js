@@ -30,7 +30,7 @@ router.get('/hot', optionalAuth, asyncHandler(async (req, res) => {
 router.get('/movie/:movieId', optionalAuth, asyncHandler(async (req, res) => {
   const movieId = parseInt(req.params.movieId);
   const page = Math.max(1, parseInt(req.query.page) || 1);
-  const limit = Math.min(50, parseInt(req.query.limit) || 20);
+  const limit = Math.min(50, parseInt(req.query.limit) || 10);
   const offset = (page - 1) * limit;
 
   const list = await db.prepare(`

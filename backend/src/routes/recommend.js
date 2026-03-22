@@ -17,9 +17,17 @@ const router = express.Router();
  * 按人群口味推荐：与影视库相同条件（分类∩标签）+ 偏经典/高分的排序，与「仅按 id 新」区分
  */
 async function getTasteRecommendations(tasteType, limit = 24) {
-  if (!TASTE_PRESETS[tasteType]) return getPop(limit);
+  if (!TASTE_PRESETS[tasteType]) {
+    const pop = await getPop(limit);
+    return pop.map((m) => ({ ...m, recommendReason: '热门推荐' }));
+  }
   const tw = await buildTasteWhereSql(db, tasteType);
-  if (!tw) return getPop(limit);
+  if (!tw) {
+    const pop = await getPop(limit);
+    return pop.map((m) => ({ ...m, recommendReason: '热门推荐' }));
+  }
+  const preset = TASTE_PRESETS[tasteType];
+  const reasonTag = `${preset.label}·精选`;
   const rows = await db.prepare(`
     SELECT m.id, m.title, m.cover, m.description, m.release_year, m.release_date, m.duration, m.tmdb_vote_count, m.tmdb_rating
     FROM movies m
@@ -27,16 +35,17 @@ async function getTasteRecommendations(tasteType, limit = 24) {
     ORDER BY ${TASTE_ORDER_BY}
     LIMIT ?
   `).all(...tw.params, limit);
-  if (rows.length >= Math.min(12, limit)) return rows;
-  const seen = new Set(rows.map((r) => r.id));
+  const out = rows.map((m) => ({ ...m, recommendReason: reasonTag }));
+  if (out.length >= Math.min(12, limit)) return out;
+  const seen = new Set(out.map((r) => r.id));
   const popular = await getPop(limit);
   for (const m of popular) {
-    if (!seen.has(m.id) && rows.length < limit) {
+    if (!seen.has(m.id) && out.length < limit) {
       seen.add(m.id);
-      rows.push(m);
+      out.push({ ...m, recommendReason: '热门推荐' });
     }
   }
-  return rows;
+  return out;
 }
 
 /** 埋点：曝光/点击/收藏 (scene, movieId, eventType) */
@@ -80,13 +89,16 @@ router.get('/', optionalAuth, asyncHandler(async (req, res) => {
   let list;
 
   if (preferPopular) {
-    list = await getPop(limit);
+    list = (await getPop(limit)).map((m) => ({ ...m, recommendReason: '热门推荐' }));
   } else if (tasteType && TASTE_PRESETS[tasteType]) {
     list = await getTasteRecommendations(tasteType, limit);
   } else if (req.user) {
-    list = await getColdStartRecommendations(req.user.id, limit);
+    list = (await getColdStartRecommendations(req.user.id, limit)).map((m) => ({
+      ...m,
+      recommendReason: '猜你喜欢',
+    }));
   } else {
-    list = await getPop(limit);
+    list = (await getPop(limit)).map((m) => ({ ...m, recommendReason: '热门推荐' }));
   }
   res.json({ code: 0, data: list });
 }));

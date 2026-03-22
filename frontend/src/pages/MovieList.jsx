@@ -326,7 +326,7 @@ export default function MovieList() {
               <p className="list-count">共 {total} 部影视</p>
               <div className="movie-grid movie-grid--tmdb-list">
                 {list.map((m) => (
-                  <MovieCard key={m.id} movie={m} />
+                  <MovieCard key={m.id} movie={m} showRecommendReason={false} />
                 ))}
               </div>
               <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />

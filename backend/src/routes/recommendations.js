@@ -9,6 +9,7 @@ const { optionalAuth } = require('../middleware/auth');
 const collabFilter = require('../services/collabFilter');
 const { getPersonalizedRecommendations, getPopularRecommendations, getColdStartRecommendations } = require('../services/recommendFallback');
 const { asyncHandler } = require('../utils/asyncHandler');
+const { reasonToLabel } = require('../utils/recommendLabels');
 
 const router = express.Router();
 
@@ -61,10 +62,17 @@ async function handleHomePersonalized(userId, limit) {
   if (cf && cf.length > 0) {
     const raw = await enrichMovies(cf.map((r) => r.movieId));
     const movies = rankCfMovies(cf, raw);
-    return { list: movies, source: 'collab_filter' };
+    const reasonById = Object.fromEntries(cf.map((c) => [c.movieId, reasonToLabel(c.reason)]));
+    const withLabels = movies.map((m) => ({
+      ...m,
+      recommendReason: reasonById[m.id] || '口味相近',
+    }));
+    return { list: withLabels, source: 'collab_filter' };
   }
+  const rawList = userId ? await coldStartPersonalized(userId, limit) : await getPopularRecommendations(limit);
+  const tag = userId ? '猜你喜欢' : '热门推荐';
   return {
-    list: userId ? await coldStartPersonalized(userId, limit) : await getPopularRecommendations(limit),
+    list: rawList.map((m) => ({ ...m, recommendReason: tag })),
     source: 'fallback',
   };
 }
@@ -81,8 +89,12 @@ async function handleSimilar(movieId, userId, limit) {
     const popular = await collabFilter.getPopularMovies(limit);
     items = popular.map((m) => ({ movieId: m.id, score: 1, reason: 'popular' }));
   }
+  const reasonById = Object.fromEntries(items.map((i) => [i.movieId, reasonToLabel(i.reason)]));
   const movies = await enrichMovies(items.map((r) => r.movieId));
-  return { list: movies, source: items[0]?.reason || 'fallback' };
+  return {
+    list: movies.map((m) => ({ ...m, recommendReason: reasonById[m.id] || '推荐' })),
+    source: items[0]?.reason || 'fallback',
+  };
 }
 
 router.get('/', optionalAuth, asyncHandler(async (req, res) => {
@@ -102,7 +114,9 @@ router.get('/', optionalAuth, asyncHandler(async (req, res) => {
   } catch (err) {
     console.error('[recommendations]', err.message);
     const fallback = userId ? await getPersonalizedRecommendations(userId, limit) : await getPopularRecommendations(limit);
-    res.json({ code: 0, data: fallback, source: 'fallback_error' });
+    const tag = userId ? '猜你喜欢' : '热门推荐';
+    const withR = fallback.map((m) => ({ ...m, recommendReason: tag }));
+    res.json({ code: 0, data: withR, source: 'fallback_error' });
   }
 }));
 

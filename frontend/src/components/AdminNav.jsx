@@ -1,6 +1,7 @@
 import { Link, useLocation } from 'react-router-dom';
 
 const links = [
+  { to: '/admin/dashboard', label: '数据概览' },
   { to: '/admin/movies', label: '影视管理' },
   { to: '/admin/categories', label: '分类管理' },
   { to: '/admin/tags', label: '标签管理' },

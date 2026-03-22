@@ -623,6 +623,13 @@ button { cursor: pointer; }
   font-size: 1.5rem;
   font-weight: var(--fw-semibold);
   flex-shrink: 0;
+  overflow: hidden;
+}
+.profile-overview__avatar-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
 }
 
 .profile-overview__name {
@@ -2292,6 +2299,64 @@ button { cursor: pointer; }
 .movie-list-page--tmdb .movie-card__date-line {
   font-size: 0.82rem;
   color: #64748b;
+}
+
+/* 个性推荐页 · 推荐理由小标签（非 TMDB 商标，本站文案） */
+.movie-card__reason-tag {
+  display: inline-block;
+  align-self: flex-start;
+  max-width: 100%;
+  margin-bottom: 0.35rem;
+  padding: 0.2rem 0.5rem;
+  font-size: 0.68rem;
+  font-weight: 600;
+  line-height: 1.2;
+  color: #0369a1;
+  background: rgba(1, 180, 228, 0.12);
+  border: 1px solid rgba(1, 180, 228, 0.35);
+  border-radius: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.recommend-page .movie-card .info {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+}
+
+/* 管理后台 · 数据概览 */
+.admin-dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: var(--space-lg);
+  margin-bottom: var(--space-xl);
+}
+.admin-dashboard-card {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  padding: var(--space-lg);
+}
+.admin-dashboard-card__icon {
+  width: 52px;
+  height: 52px;
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.admin-dashboard-card__value {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1.2;
+}
+.admin-dashboard-card__label {
+  font-size: 0.85rem;
+  color: var(--text-tertiary);
+  margin-top: 0.15rem;
 }
 
 /* 首页 / 推荐：与全站浅色画布一致（参考 TMDB 热门列表页浅灰底） */

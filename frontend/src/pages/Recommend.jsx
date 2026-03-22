@@ -101,6 +101,7 @@ export default function Recommend() {
             <MovieCard
               key={m.id}
               movie={m}
+              showRecommendReason
               onClick={() => {
                 if (!tasteType) {
                   api.post('/recommend/events', { scene: SCENE_RECOMMEND, movieId: m.id, eventType: 'click' }).catch(() => {});

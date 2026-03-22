@@ -10,8 +10,11 @@ export default function Profile() {
   const [stats, setStats] = useState(null);
   const [username, setUsername] = useState('');
   const [nickname, setNickname] = useState('');
+  const [avatar, setAvatar] = useState('');
   const [password, setPassword] = useState('');
   const [msg, setMsg] = useState('');
+  /** 头像图加载失败时回退为首字母 */
+  const [avatarLoadErr, setAvatarLoadErr] = useState(false);
 
   useEffect(() => {
     api.get('/users/me')
@@ -19,6 +22,8 @@ export default function Profile() {
         setProfile(r.data);
         setUsername(r.data?.username || '');
         setNickname(r.data?.nickname || '');
+        setAvatar(r.data?.avatar || '');
+        setAvatarLoadErr(false);
       })
       .catch(() => setProfile(null));
     api.get('/users/me/stats').then((r) => setStats(r.data)).catch(() => setStats({ favorites: 0, ratings: 0, comments: 0 }));
@@ -30,6 +35,7 @@ export default function Profile() {
     const body = {
       username: username?.trim() || undefined,
       nickname: nickname || undefined,
+      avatar: avatar?.trim() ? avatar.trim() : '',
     };
     if (password) body.password = password;
     try {
@@ -39,7 +45,13 @@ export default function Profile() {
       api.get('/users/me').then((r) => {
         setProfile(r.data);
         setUsername(r.data?.username || '');
-        updateUser({ username: r.data?.username, nickname: r.data?.nickname });
+        setAvatar(r.data?.avatar || '');
+        setAvatarLoadErr(false);
+        updateUser({
+          username: r.data?.username,
+          nickname: r.data?.nickname,
+          avatar: r.data?.avatar || null,
+        });
       });
     } catch (e) {
       setMsg(e.message || '更新失败');
@@ -60,7 +72,18 @@ export default function Profile() {
 
       {/* 用户概览卡片 */}
       <div className="profile-overview card">
-        <div className="profile-overview__avatar">{initial}</div>
+        <div className="profile-overview__avatar">
+          {profile.avatar && !avatarLoadErr ? (
+            <img
+              src={profile.avatar}
+              alt=""
+              className="profile-overview__avatar-img"
+              onError={() => setAvatarLoadErr(true)}
+            />
+          ) : (
+            initial
+          )}
+        </div>
         <div className="profile-overview__info">
           <div className="profile-overview__name">{displayName}</div>
           <span className="profile-overview__tag">用户</span>
@@ -103,6 +126,21 @@ export default function Profile() {
         <div className="form-group">
           <label>昵称</label>
           <input className="form-input" value={nickname} onChange={(e) => setNickname(e.target.value)} />
+        </div>
+        <div className="form-group">
+          <label>头像链接（http/https 图片地址，留空则显示首字母）</label>
+          <input
+            className="form-input"
+            type="url"
+            inputMode="url"
+            value={avatar}
+            onChange={(e) => {
+              setAvatar(e.target.value);
+              setAvatarLoadErr(false);
+            }}
+            placeholder="https://example.com/avatar.jpg"
+            maxLength={2048}
+          />
         </div>
         <div className="form-group">
           <label>新密码（不修改留空）</label>

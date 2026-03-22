@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from 'react';
 import { Outlet, Link, useLocation } from 'react-router-dom';
 import {
   HouseIcon,
@@ -28,6 +29,9 @@ const navItems = [
 export default function Layout() {
   const { user, logout, isAdmin } = useAuth();
   const loc = useLocation();
+  /** 向下滚动时收起顶栏，向上滚动时展开，减少遮挡海报/Hero */
+  const [headerScrollHidden, setHeaderScrollHidden] = useState(false);
+  const lastScrollY = useRef(0);
 
   /** 影视详情页：全宽内容 + 下方白底区（与 TMDB 一致） */
   const isMovieDetail = /^\/movies\/\d+\/?$/.test(loc.pathname);
@@ -35,11 +39,32 @@ export default function Layout() {
   const isActive = (to) =>
     loc.pathname === to || (to !== '/' && loc.pathname.startsWith(to + '/'));
 
+  useEffect(() => {
+    lastScrollY.current = typeof window !== 'undefined' ? window.scrollY : 0;
+    setHeaderScrollHidden(false);
+  }, [loc.pathname]);
+
+  useEffect(() => {
+    const onScroll = () => {
+      const y = window.scrollY || 0;
+      const delta = y - lastScrollY.current;
+      lastScrollY.current = y;
+      if (y < 56) {
+        setHeaderScrollHidden(false);
+        return;
+      }
+      if (delta > 8) setHeaderScrollHidden(true);
+      else if (delta < -8) setHeaderScrollHidden(false);
+    };
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+
   return (
     <div className="layout">
       <BackgroundFX />
       <ApiStatus />
-      <header className="header">
+      <header className={`header${headerScrollHidden ? ' header--scroll-hidden' : ''}`}>
         <Link to="/" className="logo">影视推荐</Link>
         <nav className="nav">
           {navItems.map(({ to, label, Icon }) => (

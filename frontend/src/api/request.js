@@ -4,12 +4,18 @@
  * 生产环境：VITE_API_BASE 指向后端地址，如 https://xxx.onrender.com
  * 开发环境：/api 通过 Vite 代理到 localhost:3001
  */
-const BASE = import.meta.env.VITE_API_BASE || '/api';
+export const API_BASE = import.meta.env.VITE_API_BASE || '/api';
 
-/** 封面图片 URL：走后端代理（后端会尝试直连 + wsrv.nl 兜底） */
-export function getCoverUrl(movie) {
+const BASE = API_BASE;
+
+/** 封面图片 URL：走后端代理（后端会尝试直连 + wsrv.nl 兜底）；opts.w 请求更宽像素利于轮播高清 */
+export function getCoverUrl(movie, opts = {}) {
   if (!movie?.cover || !movie?.id) return '';
-  return BASE + '/movies/' + movie.id + '/cover';
+  let u = BASE + '/movies/' + movie.id + '/cover';
+  if (opts.w && Number(opts.w) > 0) {
+    u += '?w=' + Math.min(Number(opts.w), 1920);
+  }
+  return u;
 }
 
 /** 仅按作品 id 拼封面代理地址（用于取色等，不依赖是否已加载 movie 对象） */

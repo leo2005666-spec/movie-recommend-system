@@ -38,6 +38,7 @@ async function start() {
   const qaRouter = require('./routes/qa');
   const feedbacksRouter = require('./routes/feedbacks');
   const adminRouter = require('./routes/admin');
+  const proxyImgRouter = require('./routes/proxyImg');
 
   app.use('/api/auth', authRouter);
   app.use('/api/users', usersRouter);
@@ -54,6 +55,8 @@ async function start() {
   app.use('/api/qa', qaRouter);
   app.use('/api/feedbacks', feedbacksRouter);
   app.use('/api/admin', adminRouter);
+
+  app.use('/api/proxy-img', proxyImgRouter);
 
   app.get('/api/health', (req, res) => {
     res.json({ ok: true, message: '服务正常' });

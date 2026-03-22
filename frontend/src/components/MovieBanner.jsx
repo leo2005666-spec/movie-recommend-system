@@ -95,8 +95,12 @@ export default function MovieBanner() {
           >
             <div className="movie-banner__bg">
               <img
-                src={getCoverUrl(movie)}
+                src={getCoverUrl(movie, { w: 1600 })}
                 alt=""
+                sizes="(max-width: 1200px) 100vw, 1200px"
+                decoding="async"
+                fetchPriority={i === index ? 'high' : 'auto'}
+                loading={i === index ? 'eager' : 'lazy'}
                 onError={(e) => { e.target.style.display = 'none'; }}
               />
               <div className="movie-banner__overlay" />

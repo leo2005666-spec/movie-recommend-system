@@ -298,3 +298,6 @@ npm run fill-covers
 - **演员阵容**：横向滚动，**上剧照下姓名/角色**，白底圆角卡片、轻阴影；演员头像接口使用 TMDB **`w342`** 以适配较大卡片。
 - **详情页版式（TMDB 式）**：顶部 Hero 仍为深色剧照条；**下方主内容区为白底**（`main--movie-detail` + `detail-page--tmdb-light`），评论/侧栏/关键词等为浅色主题，与首页深蓝全局背景区分。
 - **前端性能**：路由 **`React.lazy` + `Suspense`** 按页拆包；`vite` 将 `react/react-dom/react-router-dom` 打入 **`vendor-react`** chunk；首页进入动画缩短；详情页评论/演职员/相似推荐改为 **`Promise.all` 并行**；首屏加载用轻量骨架占位。
+- **顶栏交互**：导航改为 **`position: fixed`**，`main` 增加 **`padding-top`** 避免内容被挡；**向下滚动**约 8px 以上时顶栏收起（`header--scroll-hidden`），**向上滚动**或回到页面顶部时重新显示。后端异常时的红条 **`api-status-banner`** 固定在最顶，顶栏在其下方（`:has` 调整 `padding-top` / `top`）。
+- **首页轮播**：比例改为约 **2.35:1** 电影宽画幅，限制 **`max-height`**；封面图请求 **`/movies/:id/cover?w=1600`**，后端优先经 **wsrv** 拉宽图以减轻模糊。
+- **观影平台图标**：国内常无法直连 `image.tmdb.org` / Clearbit，新增后端 **`GET /api/proxy-img?u=`**（仅允许白名单域名），前端 **`ProviderIcon`** 优先走代理，并增加 **Google favicon** 备用链；TMDB logo 尺寸改为 **w185**。

@@ -139,6 +139,8 @@ router.get('/:id/cover', asyncHandler(async (req, res) => {
     return res.status(404).send('No cover');
   }
   const src = row.cover;
+  /** 轮播大图：?w= 通过 wsrv 拉更大尺寸，减少糊感（上限 1920） */
+  const wParam = req.query.w ? Math.min(Math.max(parseInt(req.query.w, 10) || 0, 0), 1920) : 0;
 
   async function tryFetch(url) {
     const r = await fetch(url, {
@@ -149,7 +151,13 @@ router.get('/:id/cover', asyncHandler(async (req, res) => {
     return { buf: Buffer.from(await r.arrayBuffer()), ct: r.headers.get('content-type') || 'image/jpeg' };
   }
 
-  for (const url of [src, 'https://wsrv.nl/?url=' + encodeURIComponent(src)]) {
+  const urls = [];
+  if (wParam >= 400) {
+    urls.push(`https://wsrv.nl/?url=${encodeURIComponent(src)}&w=${wParam}&q=90&fit=cover&output=webp`);
+  }
+  urls.push(src, `https://wsrv.nl/?url=${encodeURIComponent(src)}`);
+
+  for (const url of urls) {
     try {
       const { buf, ct } = await tryFetch(url);
       res.set('Content-Type', ct);

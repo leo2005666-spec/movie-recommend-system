@@ -878,13 +878,10 @@ button { cursor: pointer; }
   overflow: hidden;
 }
 
-/** ========== TMDB 同步双轨：热门 + 可免费观看（与 tmdb.org 布局接近） ========== */
+/** ========== TMDB 同步：首页「热门」横条 ========== */
 .home-tmdb-rail-section {
   background: #ffffff;
   border-top: 1px solid #e2e8f0;
-}
-.home-tmdb-rail-section--free {
-  background: #f8fafc;
 }
 .home-tmdb-rail-section__inner {
   padding: var(--space-xl) 0;
@@ -917,9 +914,6 @@ button { cursor: pointer; }
   margin-left: auto;
   justify-content: flex-end;
   max-width: 100%;
-}
-.home-tmdb-rail-pill-row--free {
-  background: #e2e8f0;
 }
 .home-tmdb-rail-pill {
   border: none;

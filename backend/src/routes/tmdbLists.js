@@ -1,7 +1,7 @@
 /**
  * TMDB 公开数据（实时拉取 + 短缓存）
  * GET /api/tmdb/lists?kind=upcoming|now_playing|popular&region=CN
- * GET /api/tmdb/rail?type=trending|free&tab=...
+ * GET /api/tmdb/rail?type=trending|free&tab=...（首页仅展示 trending）
  * GET /api/tmdb/trailer-row?tab=hot|streaming|tv|rent|theaters&region=CN
  */
 const express = require('express');
@@ -230,7 +230,9 @@ router.get('/rail', asyncHandler(async (req, res) => {
 }));
 
 /**
- * 「最新预告片」横条：与 TMDB 各 Tab 一致的数据源
+ * 「最新预告片」横条：**全部为未上映**（与 TMDB「即将上映」片单一致，不含已上映/在映）
+ * - 电影类 Tab：均用 `movie/upcoming` 不同分页，避免 discover/now_playing 混入已上映
+ * - 电视 Tab：`discover/tv` + `first_air_date.gte=今天`（尚未首播或即将开播的剧集）
  */
 router.get('/trailer-row', asyncHandler(async (req, res) => {
   const tab = (req.query.tab || 'hot').trim().toLowerCase();
@@ -240,23 +242,29 @@ router.get('/trailer-row', asyncHandler(async (req, res) => {
     return res.json({ code: 0, data: { list: [], message: '未配置 TMDB_API_KEY', source: 'none' } });
   }
 
-  const cacheKey = `trailer:${tab}:${region}`;
+  /** v2：全部为 upcoming/discover 未上映，与旧缓存区分 */
+  const cacheKey = `trailer:v2:${tab}:${region}`;
   const cached = getCached(cacheKey);
   if (cached) {
     return res.json({ code: 0, data: { ...cached, cached: true } });
   }
 
+  const upcomingMovie = (page) =>
+    `https://api.themoviedb.org/3/movie/upcoming?api_key=${TMDB_API_KEY}&language=zh-CN&page=${page}&region=${encodeURIComponent(region)}`;
+
   let url;
   if (tab === 'hot') {
-    url = `https://api.themoviedb.org/3/movie/upcoming?api_key=${TMDB_API_KEY}&language=zh-CN&page=1&region=${encodeURIComponent(region)}`;
+    url = upcomingMovie(1);
   } else if (tab === 'streaming') {
-    url = `https://api.themoviedb.org/3/discover/movie?api_key=${TMDB_API_KEY}&language=zh-CN&watch_region=${region}&region=${region}&with_watch_monetization_types=flatrate&sort_by=popularity.desc&page=1`;
+    url = upcomingMovie(2);
   } else if (tab === 'tv') {
-    url = `https://api.themoviedb.org/3/tv/airing_today?api_key=${TMDB_API_KEY}&language=zh-CN&page=1`;
+    const today = new Date().toISOString().slice(0, 10);
+    url = `https://api.themoviedb.org/3/discover/tv?api_key=${TMDB_API_KEY}&language=zh-CN&sort_by=popularity.desc&first_air_date.gte=${today}&page=1`;
   } else if (tab === 'rent') {
-    url = `https://api.themoviedb.org/3/discover/movie?api_key=${TMDB_API_KEY}&language=zh-CN&watch_region=${region}&region=${region}&with_watch_monetization_types=rent&sort_by=popularity.desc&page=1`;
+    url = upcomingMovie(3);
   } else if (tab === 'theaters') {
-    url = `https://api.themoviedb.org/3/movie/now_playing?api_key=${TMDB_API_KEY}&language=zh-CN&page=1&region=${encodeURIComponent(region)}`;
+    /** 与「影院上映中」文案区分：此处数据仍为即将上映第 4 页，不含 now_playing */
+    url = upcomingMovie(4);
   } else {
     return res.status(400).json({ code: 400, message: 'tab 须为 hot | streaming | tv | rent | theaters' });
   }
@@ -286,6 +294,7 @@ router.get('/trailer-row', asyncHandler(async (req, res) => {
     source: 'tmdb',
     tab,
     region,
+    upcomingOnly: true,
     cached: false,
   };
   setCached(cacheKey, payload);

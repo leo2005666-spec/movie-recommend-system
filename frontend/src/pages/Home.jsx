@@ -16,12 +16,13 @@ const SCENE_HOME = 'home_personalized';
 const TMDB_REGION = import.meta.env.VITE_TMDB_REGION || 'CN';
 
 /** 最新预告片 · 与 TMDB 各 Tab 同源（GET /api/tmdb/trailer-row） */
+/** 与 TMDB「即将上映」片单一致（均为未上映）；最后一项为 upcoming 第 4 页，非在映榜 */
 const TRAILER_TABS = [
   { key: 'hot', label: '热门', trailerTab: 'hot' },
   { key: 'streaming', label: '流媒体', trailerTab: 'streaming' },
   { key: 'tv', label: '电视播出', trailerTab: 'tv' },
   { key: 'rent', label: '可供租借', trailerTab: 'rent' },
-  { key: 'theaters', label: '影院上映中', trailerTab: 'theaters' },
+  { key: 'theaters', label: '即将上映', trailerTab: 'theaters' },
 ];
 
 function movieRowKey(m) {

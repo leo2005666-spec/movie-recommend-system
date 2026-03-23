@@ -4324,131 +4324,396 @@ a.admin-dashboard-card--link:hover {
   font-weight: 500;
 }
 
-/* ========== 演员详情页（TMDB 式双栏） ========== */
-.actor-page {
-  max-width: min(1200px, 100%);
-  margin: 0 auto;
-  padding: 0 var(--space-md);
+/* ========== 演员详情页（宽幅铺满 + TMDB 式片单） ========== */
+.main:has(.actor-page--fullbleed) {
+  max-width: min(1680px, 100%);
+  width: 100%;
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: clamp(0.75rem, 2.2vw, 2rem);
+  padding-right: clamp(0.75rem, 2.2vw, 2rem);
 }
+
+.actor-page--fullbleed {
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  padding: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial,
+    'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  color: #0f172a;
+}
+
 .actor-page__subnav {
   display: flex;
-  gap: var(--space-lg);
-  margin-bottom: var(--space-lg);
-  padding-bottom: var(--space-sm);
-  border-bottom: 1px solid var(--border);
-  font-size: 0.95rem;
-  color: var(--text-secondary);
+  gap: 1.75rem;
+  margin-bottom: 1.25rem;
+  padding-bottom: 0.65rem;
+  border-bottom: 1px solid #e2e8f0;
+  font-size: 0.9375rem;
+  color: #64748b;
 }
 .actor-page__subnav-item {
   cursor: default;
-  opacity: 0.7;
+  opacity: 0.75;
 }
 .actor-page__subnav-item--active {
-  color: var(--accent);
-  font-weight: var(--fw-semibold);
+  color: #0ea5e9;
+  font-weight: 600;
   opacity: 1;
 }
-.actor-page__layout {
+
+.actor-page__shell {
   display: grid;
-  grid-template-columns: minmax(220px, 280px) 1fr;
-  gap: var(--space-xl);
-  padding: var(--space-xl);
+  grid-template-columns: minmax(240px, 300px) minmax(0, 1fr);
+  gap: clamp(1rem, 2.5vw, 2.5rem);
   align-items: start;
+  width: 100%;
 }
-@media (max-width: 900px) {
-  .actor-page__layout {
+@media (max-width: 960px) {
+  .actor-page__shell {
     grid-template-columns: 1fr;
   }
+  .main:has(.actor-page--fullbleed) {
+    padding-left: var(--space-md);
+    padding-right: var(--space-md);
+  }
 }
+
+.actor-page__card {
+  border: 1px solid #e8ecf0;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
+}
+
 .actor-page__sidebar {
   position: sticky;
-  top: calc(var(--header-height) + var(--space-md));
+  top: calc(var(--header-height) + 0.75rem);
+  padding: 1.25rem 1.15rem;
+}
+.actor-page__sidebar-name {
+  font-size: 1.125rem;
+  font-weight: 700;
+  margin: 0 0 1rem;
+  letter-spacing: -0.02em;
+  color: #0f172a;
 }
 .actor-page__photo-wrap {
-  margin-bottom: var(--space-lg);
+  margin-bottom: 1.25rem;
 }
 .actor-page__photo {
   width: 100%;
-  max-width: 280px;
-  border-radius: var(--radius-md);
+  border-radius: 10px;
   display: block;
-  box-shadow: var(--shadow-sm);
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.12);
 }
 .actor-page__photo--placeholder {
   aspect-ratio: 2/3;
-  max-width: 280px;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--bg-muted);
-  color: var(--text-tertiary);
+  background: linear-gradient(145deg, #f1f5f9, #e2e8f0);
+  color: #94a3b8;
 }
-.actor-page__meta-title {
+
+.actor-page__dl--sidebar dt {
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #64748b;
+  margin-top: 0.85rem;
+}
+.actor-page__dl--sidebar dt:first-of-type {
+  margin-top: 0;
+}
+.actor-page__dl--sidebar dd {
+  margin: 0.2rem 0 0;
   font-size: 0.9rem;
-  font-weight: var(--fw-semibold);
-  margin-bottom: var(--space-sm);
-  color: var(--text-primary);
+  font-weight: 500;
+  color: #1e293b;
+  line-height: 1.45;
 }
-.actor-page__dl dt {
-  font-size: 0.75rem;
-  color: var(--text-tertiary);
-  margin-top: var(--space-sm);
+.actor-page__aliases {
+  font-size: 0.82rem !important;
+  font-weight: 400 !important;
+  color: #475569 !important;
 }
-.actor-page__dl dd {
-  margin: 0.15rem 0 0;
-  font-size: 0.9rem;
-  color: var(--text-primary);
+
+.actor-page__profile-meter {
+  margin-top: 1.25rem;
+  padding: 0.75rem;
+  background: #f8fafc;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
 }
-.actor-page__name {
-  font-size: 1.75rem;
-  font-weight: var(--fw-bold);
-  margin: 0 0 var(--space-lg);
-  color: #0f172a;
+.actor-page__profile-meter-bar {
+  height: 6px;
+  border-radius: 4px;
+  background: #e2e8f0;
+  overflow: hidden;
 }
-.actor-page__section {
-  margin-bottom: var(--space-xl);
+.actor-page__profile-meter-bar span {
+  display: block;
+  height: 100%;
+  border-radius: 4px;
+  background: linear-gradient(90deg, #0ea5e9, #22c55e);
+  transition: width 0.3s ease;
 }
-.actor-page__section .section-title {
+.actor-page__profile-meter-text {
+  margin: 0.5rem 0 0;
+  font-size: 0.78rem;
+  color: #64748b;
+}
+
+.actor-page__actions {
+  margin-top: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.actor-page__btn-tmdb {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  width: 100%;
+  padding: 0.55rem 0.75rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  border-radius: 999px;
+  border: none;
+  cursor: pointer;
+  background: linear-gradient(180deg, #22d3ee 0%, #06b6d4 100%);
+  color: #fff;
+  text-decoration: none;
+  box-shadow: 0 2px 8px rgba(6, 182, 212, 0.35);
+}
+.actor-page__btn-tmdb:hover {
+  filter: brightness(1.05);
+  color: #fff;
+}
+.actor-page__link-sub {
+  font-size: 0.82rem;
+  color: #64748b;
+  text-align: center;
+}
+.actor-page__link-sub:hover {
+  color: #0ea5e9;
+}
+
+.actor-page__sidebar-foot {
+  margin: 1rem 0 0;
+  font-size: 0.78rem;
+  color: #94a3b8;
+  line-height: 1.5;
+}
+.actor-page__sidebar-foot strong {
+  color: #475569;
+}
+
+.actor-page__main {
+  min-width: 0;
+  width: 100%;
+}
+
+.actor-page__awards-banner {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 0.35rem;
+  gap: 0.65rem 1rem;
+  padding: 0.85rem 1.15rem;
+  margin-bottom: 1.5rem;
+  text-decoration: none;
+  border-radius: 10px;
+  background: linear-gradient(105deg, #0f766e 0%, #134e4a 50%, #0f172a 100%);
+  color: #ecfdf5;
+  box-shadow: 0 8px 28px rgba(15, 23, 42, 0.18);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
-.actor-page__section-hint {
-  font-size: 0.8rem;
-  font-weight: var(--fw-medium);
-  color: var(--text-muted);
+.actor-page__awards-banner:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.22);
+  color: #fff;
 }
+.actor-page__awards-stars {
+  font-size: 1.1rem;
+  opacity: 0.95;
+}
+.actor-page__awards-title {
+  font-family: Georgia, 'Times New Roman', serif;
+  font-weight: 700;
+  font-size: 1rem;
+  letter-spacing: 0.06em;
+}
+.actor-page__awards-desc {
+  flex: 1;
+  font-size: 0.88rem;
+  opacity: 0.92;
+  min-width: 200px;
+}
+.actor-page__awards-arrow {
+  font-size: 1.25rem;
+  font-weight: 300;
+  opacity: 0.85;
+}
+
+.actor-page__name {
+  font-size: clamp(1.65rem, 2.8vw, 2.15rem);
+  font-weight: 800;
+  margin: 0 0 1.25rem;
+  color: #020617;
+  letter-spacing: -0.03em;
+}
+
+.actor-page__section {
+  margin-bottom: 1.5rem;
+}
+.actor-page__h2 {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 1.05rem;
+  font-weight: 700;
+  margin: 0 0 1rem;
+  color: #0f172a;
+}
+.actor-page__h2-icon {
+  color: #0ea5e9;
+  flex-shrink: 0;
+}
+
 .actor-page__bio p {
-  line-height: 1.7;
-  color: var(--text-secondary);
-  margin: 0 0 var(--space-sm);
+  line-height: 1.75;
+  color: #334155;
+  margin: 0 0 0.65rem;
   white-space: pre-wrap;
+  font-size: 0.9375rem;
 }
 .actor-page__bio-toggle {
   background: none;
   border: none;
-  color: var(--accent);
+  color: #0ea5e9;
   cursor: pointer;
   font-size: 0.9rem;
+  font-weight: 500;
   padding: 0;
   display: inline-flex;
   align-items: center;
   gap: 0.25rem;
 }
-.actor-page__filmstrip {
+
+.actor-page__film-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+.actor-page__film-head .actor-page__h2 {
+  margin-bottom: 0;
+}
+.actor-page__film-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  align-items: center;
+}
+.actor-page__select {
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: #334155;
+  padding: 0.4rem 2rem 0.4rem 0.65rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%2364748b'%3E%3Cpath d='M3 4.5L6 8l3-3.5'/%3E%3C/svg%3E") no-repeat right 0.5rem center;
+  appearance: none;
+  cursor: pointer;
+}
+.actor-page__empty {
+  padding: 1rem 0;
+}
+
+.actor-page__film-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border-top: 1px solid #e8ecf0;
+}
+.actor-page__film-row {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-  gap: var(--space-md);
+  grid-template-columns: 52px 16px minmax(0, 1fr);
+  gap: 0.5rem 0.75rem;
+  align-items: start;
+  padding: 1rem 0.25rem;
+  border-bottom: 1px solid #f1f5f9;
+  transition: background 0.12s ease;
 }
-.actor-page__film-item .movie-card {
-  max-width: 100%;
+.actor-page__film-row:hover {
+  background: #fafbfc;
 }
-.actor-page__character {
-  font-size: 0.78rem;
-  color: var(--text-tertiary);
-  margin-top: 0.35rem;
-  text-align: center;
+.actor-page__film-year {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #64748b;
+  text-align: right;
+  padding-top: 0.15rem;
+  font-variant-numeric: tabular-nums;
+}
+.actor-page__film-dot {
+  width: 8px;
+  height: 8px;
+  margin-top: 0.45rem;
+  border: 2px solid #cbd5e1;
+  border-radius: 50%;
+  background: #fff;
+  justify-self: center;
+}
+.actor-page__film-body {
+  min-width: 0;
+}
+.actor-page__film-title {
+  font-size: 0.98rem;
+  font-weight: 700;
+  color: #0f172a;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  line-height: 1.35;
+}
+.actor-page__film-title:hover {
+  color: #0ea5e9;
+}
+.actor-page__film-title--external {
+  color: #1e293b;
+}
+.actor-page__ext-ico {
+  opacity: 0.55;
+  flex-shrink: 0;
+}
+.actor-page__film-role {
+  font-size: 0.84rem;
+  color: #64748b;
+  margin-top: 0.3rem;
+  font-weight: 400;
+}
+.actor-page__film-role--muted {
+  opacity: 0.6;
+}
+.actor-page__film-badge {
+  display: inline-block;
+  margin-top: 0.45rem;
+  font-size: 0.68rem;
+  font-weight: 600;
+  padding: 0.12rem 0.45rem;
+  border-radius: 4px;
+  background: #ecfdf5;
+  color: #047857;
+  letter-spacing: 0.02em;
 }
 
 /* 个人中心 · 评分 / 影评 子页 */

@@ -29,6 +29,11 @@ router.get('/:tmdbPersonId', asyncHandler(async (req, res) => {
   }
 
   const p = await pRes.json();
+  /** TMDB gender: 0 未设 1 女 2 男 */
+  let genderLabel = null;
+  if (p.gender === 1) genderLabel = '女';
+  else if (p.gender === 2) genderLabel = '男';
+
   const person = {
     tmdb_id: p.id,
     name: p.name,
@@ -39,6 +44,10 @@ router.get('/:tmdbPersonId', asyncHandler(async (req, res) => {
     place_of_birth: p.place_of_birth || null,
     profile_path: p.profile_path ? `${TMDB_IMG}/w500${p.profile_path}` : null,
     known_for_department: p.known_for_department || null,
+    gender: genderLabel,
+    homepage: p.homepage || null,
+    imdb_id: p.imdb_id || null,
+    popularity: typeof p.popularity === 'number' ? p.popularity : null,
   };
 
   let tmdbCast = [];
@@ -51,7 +60,7 @@ router.get('/:tmdbPersonId', asyncHandler(async (req, res) => {
         title: m.title || m.original_title,
         release_date: m.release_date || null,
         character: m.character || '',
-        poster_path: m.poster_path ? `${TMDB_IMG}/w300${m.poster_path}` : null,
+        poster_path: m.poster_path ? `${TMDB_IMG}/w92${m.poster_path}` : null,
       }));
   }
 
@@ -61,43 +70,68 @@ router.get('/:tmdbPersonId', asyncHandler(async (req, res) => {
     if (!metaByTmdb[row.tmdb_id]) metaByTmdb[row.tmdb_id] = row;
   }
 
-  let ourMovies = [];
+  let byTmdb = {};
   if (tmdbIds.length) {
     const placeholders = tmdbIds.map(() => '?').join(',');
     const rows = await db.prepare(`
       SELECT id, title, cover, release_year, release_date, tmdb_id, description
       FROM movies WHERE tmdb_id IN (${placeholders})
     `).all(...tmdbIds);
-    const byTmdb = Object.fromEntries(rows.map((r) => [r.tmdb_id, r]));
+    byTmdb = Object.fromEntries(rows.map((r) => [r.tmdb_id, r]));
+  }
 
-    ourMovies = tmdbIds
-      .map((tid) => {
-        const local = byTmdb[tid];
-        const tm = metaByTmdb[tid];
-        if (!local) return null;
-        return {
-          ...local,
-          character: tm?.character || '',
-          tmdb_poster_path: tm?.poster_path || null,
-        };
-      })
-      .filter(Boolean);
+  let ourMovies = tmdbIds
+    .map((tid) => {
+      const local = byTmdb[tid];
+      const tm = metaByTmdb[tid];
+      if (!local) return null;
+      return {
+        ...local,
+        character: tm?.character || '',
+        tmdb_poster_path: tm?.poster_path || null,
+      };
+    })
+    .filter(Boolean);
 
-    ourMovies.sort((a, b) => {
-      const da = String(a.release_date || `${a.release_year || 0}-01-01`);
-      const db = String(b.release_date || `${b.release_year || 0}-01-01`);
-      return db.localeCompare(da);
+  ourMovies.sort((a, b) => {
+    const da = String(a.release_date || `${a.release_year || 0}-01-01`);
+    const db = String(b.release_date || `${b.release_year || 0}-01-01`);
+    return db.localeCompare(da);
+  });
+
+  /** 完整参演片单（与 TMDB 电影 credits 一致），标注是否已入库 */
+  const seen = new Set();
+  const filmography = [];
+  for (const m of tmdbCast) {
+    if (seen.has(m.tmdb_id)) continue;
+    seen.add(m.tmdb_id);
+    const local = byTmdb[m.tmdb_id];
+    const y = m.release_date && m.release_date.length >= 4 ? m.release_date.slice(0, 4) : '—';
+    filmography.push({
+      tmdb_id: m.tmdb_id,
+      title: m.title,
+      release_date: m.release_date,
+      release_year_label: y,
+      character: m.character || '',
+      poster_thumb: m.poster_path,
+      in_library: !!local,
+      local_id: local ? local.id : null,
     });
   }
+  filmography.sort((a, b) => {
+    const da = a.release_date || '0000-01-01';
+    const db = b.release_date || '0000-01-01';
+    return db.localeCompare(da);
+  });
 
   res.json({
     code: 0,
     data: {
       person,
-      /** 本站片库中已收录、且 TMDB  credits 中出现的电影 */
       movies: ourMovies,
-      /** TMDB 中参演电影总数（含未入库） */
+      filmography,
       tmdb_movie_credits_count: tmdbCast.length,
+      tmdb_person_url: `https://www.themoviedb.org/person/${p.id}`,
     },
   });
 }));

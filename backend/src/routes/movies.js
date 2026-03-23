@@ -271,8 +271,12 @@ router.get('/', optionalAuth, asyncHandler(async (req, res) => {
     conditions.push('(m.release_year IS NULL OR m.release_year <= ?)');
     params.push(currentYear);
   }
+  /** 未上映：未来年份，或今年/明年等已填具体日期且晚于今天 */
   if (releaseStatus === 'unreleased') {
-    conditions.push('(m.release_year IS NOT NULL AND m.release_year > ?)');
+    conditions.push(`(
+      (m.release_year IS NOT NULL AND m.release_year > ?)
+      OR (NULLIF(TRIM(m.release_date), '') IS NOT NULL AND date(m.release_date) > date('now'))
+    )`);
     params.push(currentYear);
   }
 
@@ -300,8 +304,14 @@ router.get('/', optionalAuth, asyncHandler(async (req, res) => {
   }
 
   if (conditions.length) sql += ' WHERE ' + conditions.join(' AND ');
-  const orderBy = tasteType ? TASTE_ORDER_BY : 'm.id DESC';
-  sql += ` GROUP BY m.id ORDER BY ${orderBy}`;
+  const orderByParam = (req.query.orderBy || '').trim().toLowerCase();
+  let orderBySql = tasteType ? TASTE_ORDER_BY : 'm.id DESC';
+  /** 即将上映列表：按发行日升序（无精确日期的排在年中，避免全挤在年末） */
+  if (!tasteType && orderByParam === 'release_asc') {
+    orderBySql =
+      "COALESCE(NULLIF(TRIM(m.release_date), ''), printf('%04d-06-15', IFNULL(m.release_year, 2099))) ASC";
+  }
+  sql += ` GROUP BY m.id ORDER BY ${orderBySql}`;
   const countSql = 'SELECT COUNT(*) as n FROM (' + sql + ') t';
   const total = (await db.prepare(countSql).get(...params))?.n ?? 0;
 

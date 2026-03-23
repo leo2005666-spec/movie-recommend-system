@@ -206,7 +206,7 @@ npm run fill-covers
 - `/api/users/me/comments` - **GET** 当前用户影评列表分页（`page`、`limit`，需登录）
 - `/api/actors/:tmdbPersonId` - **GET** TMDB 演员详情（`person`：含 `gender`、`birthday`、`place_of_birth`、`also_known_as`、`homepage`、`imdb_id`、`popularity` 等）+ **`movies`**：本站已入库参演作品 + **`filmography`**：TMDB 参演片单（去重，含 `tmdb_id`、`title`、`release_date`、`release_year_label`、`character`、`poster_thumb`、`in_library`、`local_id`）+ **`tmdb_person_url`**（链到 TMDB 人物页）；需配置 `TMDB_API_KEY`
 - `/api/logs` - 活动日志
-- `/api/movies` - 影视作品列表/CRUD；列表支持：`releaseStatus`、`typeKeys`（类型多选 AND）、`dateFrom`/`dateTo`、`durationMin`/`durationMax`（片长分钟）、`scoreMin`/`scoreMax`、`country`（可选）、`tasteType`（人群口味）
+- `/api/movies` - 影视作品列表/CRUD；列表支持：`releaseStatus`（`unreleased` 含 **未来年份** 或 **`release_date` 晚于今天**）、`orderBy=release_asc`（按发行日升序，配合未上映做「即将上映」）、`typeKeys`（类型多选 AND）、`dateFrom`/`dateTo`、`durationMin`/`durationMax`（片长分钟）、`scoreMin`/`scoreMax`、`country`（可选）、`tasteType`（人群口味）
 - `/api/categories` - 分类管理
 - `/api/tags` - 标签管理
 - `/api/recommend` - 个性化推荐（`tasteType`、`limit`≤80；**`prefer=popular`** 时固定按 TMDB 投票数/评分排序，供首页轮播）
@@ -301,6 +301,7 @@ npm run fill-covers
 - **影视库分页**：列表接口与前端默认 **每页 15 条**，便于 5 列网格 **3 行铺满**。
 - **演员页**：影视详情「演员阵容」中点击演员进入 **`/actors/:tmdbPersonId`**。布局为 **TMDB 式左栏资料 + 右栏片单**，主内容区 **`actor-page--fullbleed`** 与影视库同档 **加宽（约 1680px）**、**横向铺满**（避免窄容器居中）；**系统无衬线字体栈**（含 Noto Sans SC / 苹方 / 微软雅黑）。侧栏：头像、知名领域、参与作品数、性别/生日/出生地/又名、资料完整度、TMDB/IMDb/官网链接。主区：**AWARDS 横幅**（链 TMDB）、生平简介、**表演作品**表格式列表（年份｜圆点｜标题 + 饰演），支持 **全部 / 仅本站已收录** 与 **排序**；已入库链本站详情，未入库链 TMDB。需后端配置 **TMDB_API_KEY**。
 - **个性推荐页**：顶部增加 **沉浸式焦点区**（大背景剧照 + 左文右渐层 + 底部横向海报条），海报条内 **真实推荐与「站内推广位」同卡片样式**（白边高亮当前项），推广文案与图片可在 `frontend/src/constants/recommendSpotlightAds.js` 中配置。
+- **首页横幅**：`MovieBanner` 优先拉取 **`GET /movies?releaseStatus=unreleased&orderBy=release_asc`**（未上映含「发行日晚于今天」的条目），按档期排序；**不足 3 部**时退回 **`/recommend?prefer=popular`**。视觉为深色影院风 + 底部小海报条切换，整卡可点进 **`/movies/:id`**。
 - **头像与登录态**：`GET /users/me` 现返回 **nickname**；前端 **打开站点或登录成功后会再请求 `/users/me`** 写回 `localStorage` 与顶栏头像；`/uploads/` 头像在 **相对 API 基址** 下会拼 **`window.location.origin`**，配合 Vite 代理减少加载失败。
 - **个人中心**：**我的评分** → `/profile/ratings`，**我的影评** → `/profile/comments`（列表含影片名、分数/正文、时间）。
 - **协同过滤增强**：`collabFilter.js` 使用 **时间加权矩阵** + **标签混合重排**；推荐理由可出现 **「混合推荐」**。

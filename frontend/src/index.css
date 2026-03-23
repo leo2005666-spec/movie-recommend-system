@@ -3497,7 +3497,227 @@ a.admin-dashboard-card--link:hover {
   background: #334155;
 }
 
+/* ========== 首页横幅 · 高级版（即将上映优先 + 底部海报条） ========== */
+.movie-banner--premium {
+  border: none;
+  background: #0a0f16;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.06) inset,
+    0 20px 50px rgba(15, 23, 42, 0.14);
+}
+
+.movie-banner--premium.movie-banner--tmdb-hero {
+  min-height: unset;
+  max-height: none;
+}
+
+.movie-banner--premium .movie-banner__track {
+  min-height: min(44vh, 420px);
+  max-height: min(50vh, 500px);
+}
+
+/* 铺在单张底图上，不盖住文案（文案 z-index 更高） */
+.movie-banner__grain--slide {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  opacity: 0.045;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.5'/%3E%3C/svg%3E");
+  mix-blend-mode: overlay;
+}
+
+.movie-banner--premium .movie-banner__content--editorial {
+  position: relative;
+  z-index: 2;
+}
+
+.movie-banner__overlay--premium {
+  background: linear-gradient(
+      95deg,
+      rgba(8, 15, 26, 0.94) 0%,
+      rgba(8, 15, 26, 0.72) 38%,
+      rgba(8, 15, 26, 0.28) 68%,
+      rgba(8, 15, 26, 0.05) 100%
+    ),
+    linear-gradient(180deg, rgba(3, 12, 24, 0.2) 0%, transparent 45%, rgba(3, 12, 24, 0.88) 100%);
+}
+
+.movie-banner__kicker-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.75rem;
+}
+
+.movie-banner__kicker-en {
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.22em;
+  color: rgba(148, 163, 184, 0.95);
+}
+
+.movie-banner__kicker-dot {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: rgba(56, 189, 248, 0.65);
+}
+
+.movie-banner__kicker-cn {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: rgba(226, 232, 240, 0.88);
+  letter-spacing: 0.12em;
+}
+
+.movie-banner__pill--premium {
+  color: #e0f2fe !important;
+  background: rgba(56, 189, 248, 0.14) !important;
+  border-color: rgba(56, 189, 248, 0.35) !important;
+}
+
+.movie-banner__director {
+  font-size: 0.82rem;
+  color: rgba(186, 230, 253, 0.75);
+  margin: -0.35rem 0 0.65rem;
+}
+
+.movie-banner__content--premium {
+  min-height: 86%;
+  padding-bottom: 2rem;
+}
+
+.movie-banner__cta-pill--premium {
+  background: rgba(255, 255, 255, 0.95) !important;
+  color: #0f172a !important;
+  border: none !important;
+  font-weight: 700;
+  gap: 0.35rem;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25) !important;
+}
+
+.movie-banner__cta-arrow {
+  display: inline-block;
+  transition: transform 0.2s ease;
+}
+
+.movie-banner__slide:hover .movie-banner__cta-pill--premium .movie-banner__cta-arrow {
+  transform: translateX(4px);
+}
+
+.movie-banner__slide:hover .movie-banner__cta-pill--premium {
+  filter: none !important;
+  background: #fff !important;
+}
+
+.movie-banner__strip-outer {
+  position: relative;
+  z-index: 4;
+  margin-top: -44px;
+  padding: 0.5rem var(--space-sm) var(--space-md);
+  background: linear-gradient(180deg, rgba(10, 15, 22, 0) 0%, rgba(10, 15, 22, 0.75) 18%, #0a0f16 100%);
+}
+
+.movie-banner__strip-hint {
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(148, 163, 184, 0.55);
+  margin: 0 0 0.5rem 0.35rem;
+}
+
+.movie-banner__strip {
+  display: flex;
+  gap: 0.55rem;
+  overflow-x: auto;
+  padding: 0.2rem 0.15rem 0.35rem;
+  scroll-snap-type: x proximity;
+  scrollbar-width: thin;
+  mask-image: linear-gradient(90deg, transparent 0%, #000 14px, #000 calc(100% - 14px), transparent 100%);
+  -webkit-mask-image: linear-gradient(90deg, transparent 0%, #000 14px, #000 calc(100% - 14px), transparent 100%);
+}
+
+.movie-banner__strip-thumb {
+  flex: 0 0 auto;
+  width: 56px;
+  height: 84px;
+  padding: 0;
+  border: 2px solid rgba(255, 255, 255, 0.12);
+  border-radius: 8px;
+  overflow: hidden;
+  cursor: pointer;
+  background: #1e293b;
+  scroll-snap-align: start;
+  transition:
+    transform 0.2s ease,
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    opacity 0.2s ease;
+  opacity: 0.82;
+}
+
+.movie-banner__strip-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.movie-banner__strip-thumb:hover {
+  opacity: 1;
+  transform: translateY(-2px);
+}
+
+.movie-banner__strip-thumb--active {
+  border-color: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 6px 22px rgba(0, 0, 0, 0.45);
+  opacity: 1;
+  transform: scale(1.04);
+}
+
+.movie-banner--skeleton-load .movie-banner__track--skeleton {
+  min-height: min(44vh, 400px);
+  max-height: min(50vh, 480px);
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(135deg, #1e293b 0%, #0f172a 50%, #172554 100%);
+}
+
+.movie-banner__skeleton-shimmer {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(110deg, transparent 0%, rgba(255, 255, 255, 0.06) 50%, transparent 100%);
+  background-size: 200% 100%;
+  animation: rec-spot-shimmer 1.5s ease-in-out infinite;
+}
+
+.movie-banner__strip-outer--skeleton .movie-banner__strip {
+  mask-image: none;
+  -webkit-mask-image: none;
+}
+
+.movie-banner__strip-thumb--sk {
+  width: 56px;
+  height: 84px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.08);
+  animation: rec-spot-shimmer 1.5s ease-in-out infinite;
+}
+
 @media (max-width: 640px) {
+  .movie-banner__strip-thumb {
+    width: 48px;
+    height: 72px;
+  }
+  .movie-banner__kicker-en {
+    letter-spacing: 0.12em;
+  }
+  .movie-banner__strip-outer {
+    margin-top: -36px;
+  }
   .movie-banner__track {
     aspect-ratio: 2.15 / 1;
     min-height: 240px;

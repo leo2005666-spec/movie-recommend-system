@@ -107,16 +107,22 @@ export default function MovieCard({
   showRecommendReason = true,
   /** 趋势海报条：不显示中间大播放按钮，更接近 TMDB「趋势」样式 */
   showPlayOverlay = true,
+  /**
+   * default：无日期则不显示日期行
+   * library：影视库 TMDB 式——标题下必有一行日期（无则「日期待定」）
+   */
+  variant = 'default',
 }) {
   const coverUrl = getCoverUrl(movie);
   const fallbackSvg = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="150" fill="%232a2a35"><rect width="100" height="150"/><text x="50" y="75" dominant-baseline="middle" text-anchor="middle" fill="%238a8a9a" font-size="12">暂无封面</text></svg>';
 
   const dateLine = formatReleaseLine(movie);
+  const metaLine = variant === 'library' ? dateLine || '日期待定' : dateLine;
 
   return (
     <Link
       to={`/movies/${movie.id}`}
-      className={`movie-card ${className || ''}`}
+      className={`movie-card${variant === 'library' ? ' movie-card--library-meta' : ''} ${className || ''}`}
       onClick={onClick}
     >
       {topRight && <span className="movie-card__top-right">{topRight}</span>}
@@ -138,9 +144,9 @@ export default function MovieCard({
           </span>
         )}
         <div className="title">{movie.title}</div>
-        {dateLine && (
+        {metaLine && (
           <div className="meta movie-card__meta-col">
-            <span className="movie-card__date-line">{dateLine}</span>
+            <span className="movie-card__date-line">{metaLine}</span>
           </div>
         )}
       </div>

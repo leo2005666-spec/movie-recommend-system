@@ -2277,6 +2277,61 @@ button { cursor: pointer; }
   }
 }
 
+/** 影视库 ·「电影」四态：深蓝标题条 + 白卡片竖排（对齐 TMDB 参考） */
+.filter-movie-browse {
+  margin-bottom: var(--space-lg);
+}
+.filter-movie-browse__head {
+  background: linear-gradient(180deg, #032541 0%, #0a3a5c 100%);
+  color: #fff;
+  font-weight: 800;
+  font-size: 1.05rem;
+  letter-spacing: 0.02em;
+  padding: 0.65rem 1rem;
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  border: 1px solid rgba(15, 23, 42, 0.2);
+  border-bottom: none;
+}
+.filter-movie-browse__card {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-top: none;
+  border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.06);
+  overflow: hidden;
+}
+.filter-movie-browse__list {
+  list-style: none;
+  margin: 0;
+  padding: 0.35rem 0;
+}
+.filter-movie-browse__item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 0.75rem 1rem;
+  border: none;
+  background: transparent;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #0f172a;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+.filter-movie-browse__item:hover {
+  background: rgba(1, 180, 228, 0.08);
+  color: #0c4a6e;
+}
+.filter-movie-browse__item--active {
+  background: rgba(1, 180, 228, 0.14);
+  color: #0e7490;
+  box-shadow: inset 3px 0 0 #01b4e4;
+}
+.filter-movie-browse__item:focus-visible {
+  outline: 2px solid #01b4e4;
+  outline-offset: -2px;
+}
+
 .movie-list-layout {
   display: flex;
   gap: var(--space-xl);
@@ -3251,6 +3306,30 @@ button { cursor: pointer; }
 .movie-list-page--tmdb .movie-card__date-line {
   font-size: 0.82rem;
   color: #64748b;
+}
+
+/** 影视库列表：海报下 TMDB 式信息——粗黑标题 + 灰日期（第三张参考） */
+.movie-list-page--tmdb .movie-card--library-meta {
+  background: #fff;
+}
+.movie-list-page--tmdb .movie-card--library-meta .info {
+  background: #fff;
+  padding-top: calc(var(--space-md) + 6px);
+}
+.movie-list-page--tmdb .movie-card--library-meta .title {
+  font-weight: 800;
+  font-size: 1rem;
+  color: #0a0a0a;
+  letter-spacing: -0.02em;
+  line-height: 1.3;
+}
+.movie-list-page--tmdb .movie-card--library-meta .movie-card__date-line {
+  font-size: 0.875rem;
+  font-weight: 400;
+  color: rgba(0, 0, 0, 0.55);
+}
+.movie-list-page--tmdb .movie-card--library-meta .meta {
+  margin-top: 0.35rem;
 }
 
 /* 个性推荐页 · 推荐理由小标签（非 TMDB 商标，本站文案） */

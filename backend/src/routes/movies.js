@@ -193,7 +193,14 @@ router.get('/', optionalAuth, asyncHandler(async (req, res) => {
   const durationMin = req.query.durationMin !== undefined && req.query.durationMin !== '' ? parseInt(req.query.durationMin, 10) : null;
   const durationMax = req.query.durationMax !== undefined && req.query.durationMax !== '' ? parseInt(req.query.durationMax, 10) : null;
 
-  /** 上映状态：released=已上映，unreleased=未上映（按发行年份与当前年比较；兼容旧参数 watched/unwatched） */
+  /**
+   * 上映/浏览模式：
+   * - released / unreleased：旧版二态
+   * - popular：热门（按 TMDB 投票数、评分排序）
+   * - now_playing：正在上映（近 120 天内已首映，且首映日不晚于今天）
+   * - upcoming：即将上映（同 unreleased：未来年或未来 release_date）
+   * - top_rated：高分（TMDB 分 ≥ 6.5，按分排序）
+   */
   let releaseStatus = (req.query.releaseStatus || '').trim().toLowerCase();
   if (!releaseStatus) {
     const w = (req.query.watched || '').trim();
@@ -206,7 +213,7 @@ router.get('/', optionalAuth, asyncHandler(async (req, res) => {
   const { categoryIds: typeCategoryIds, tagIds: typeTagIds } = parseTypeKeys(req.query.typeKeys || '');
 
   let sql = `
-    SELECT m.id, m.title, m.cover, m.description, m.release_year, m.release_date, m.director, m.duration, m.tmdb_rating, m.created_at
+    SELECT m.id, m.title, m.cover, m.description, m.release_year, m.release_date, m.director, m.duration, m.tmdb_rating, m.tmdb_vote_count, m.created_at
     FROM movies m
   `;
   const params = [];
@@ -270,15 +277,24 @@ router.get('/', optionalAuth, asyncHandler(async (req, res) => {
   if (releaseStatus === 'released') {
     conditions.push('(m.release_year IS NULL OR m.release_year <= ?)');
     params.push(currentYear);
-  }
-  /** 未上映：未来年份，或今年/明年等已填具体日期且晚于今天 */
-  if (releaseStatus === 'unreleased') {
+  } else if (releaseStatus === 'unreleased' || releaseStatus === 'upcoming') {
+    /** 未上映 / 即将上映 */
     conditions.push(`(
       (m.release_year IS NOT NULL AND m.release_year > ?)
       OR (NULLIF(TRIM(m.release_date), '') IS NOT NULL AND date(m.release_date) > date('now'))
     )`);
     params.push(currentYear);
+  } else if (releaseStatus === 'now_playing') {
+    /** 已首映且落在近 120 天窗口内（近似「在映」） */
+    conditions.push(`(
+      NULLIF(TRIM(m.release_date), '') IS NOT NULL
+      AND date(m.release_date) <= date('now')
+      AND date(m.release_date) >= date('now', '-120 days')
+    )`);
+  } else if (releaseStatus === 'top_rated') {
+    conditions.push('m.tmdb_rating IS NOT NULL AND m.tmdb_rating >= 6.5');
   }
+  /** popular：不附加上映条件，仅排序 */
 
   if (country && /^[A-Z]{2}$/.test(country)) {
     conditions.push('(m.origin_countries IS NOT NULL AND INSTR(m.origin_countries, ?) > 0)');
@@ -305,11 +321,25 @@ router.get('/', optionalAuth, asyncHandler(async (req, res) => {
 
   if (conditions.length) sql += ' WHERE ' + conditions.join(' AND ');
   const orderByParam = (req.query.orderBy || '').trim().toLowerCase();
-  let orderBySql = tasteType ? TASTE_ORDER_BY : 'm.id DESC';
-  /** 即将上映列表：按发行日升序（无精确日期的排在年中，避免全挤在年末） */
-  if (!tasteType && orderByParam === 'release_asc') {
+  let orderBySql;
+  if (tasteType) {
+    orderBySql = TASTE_ORDER_BY;
+  } else if (releaseStatus === 'popular') {
+    orderBySql = 'COALESCE(m.tmdb_vote_count, 0) DESC, COALESCE(m.tmdb_rating, 0) DESC, m.id DESC';
+  } else if (releaseStatus === 'top_rated') {
+    orderBySql = 'COALESCE(m.tmdb_rating, 0) DESC, COALESCE(m.tmdb_vote_count, 0) DESC, m.id DESC';
+  } else if (releaseStatus === 'upcoming' || releaseStatus === 'unreleased') {
     orderBySql =
       "COALESCE(NULLIF(TRIM(m.release_date), ''), printf('%04d-06-15', IFNULL(m.release_year, 2099))) ASC";
+  } else if (releaseStatus === 'now_playing') {
+    orderBySql =
+      "COALESCE(NULLIF(TRIM(m.release_date), ''), printf('%04d-01-01', IFNULL(m.release_year, 0))) DESC";
+  } else if (orderByParam === 'release_asc') {
+    /** 即将上映列表：按发行日升序（无精确日期的排在年中，避免全挤在年末） */
+    orderBySql =
+      "COALESCE(NULLIF(TRIM(m.release_date), ''), printf('%04d-06-15', IFNULL(m.release_year, 2099))) ASC";
+  } else {
+    orderBySql = 'm.id DESC';
   }
   sql += ` GROUP BY m.id ORDER BY ${orderBySql}`;
   const countSql = 'SELECT COUNT(*) as n FROM (' + sql + ') t';

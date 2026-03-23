@@ -6,6 +6,14 @@ import Pagination from '../components/Pagination';
 import { api } from '../api/request';
 import FilterRangeDual from '../components/filter/FilterRangeDual';
 
+/** 影视库「电影」浏览模式（对齐 TMDB 分类：热门 / 在映 / 即将 / 高分） */
+const BROWSE_MODES = [
+  { key: 'popular', label: '热门' },
+  { key: 'now_playing', label: '正在上映' },
+  { key: 'upcoming', label: '即将上映' },
+  { key: 'top_rated', label: '高分' },
+];
+
 export default function MovieList() {
   const [searchParams] = useSearchParams();
   const [list, setList] = useState([]);
@@ -17,7 +25,8 @@ export default function MovieList() {
   const [tasteType, setTasteType] = useState('');
   const [keyword, setKeyword] = useState('');
   const [appliedKeyword, setAppliedKeyword] = useState('');
-  const [releaseStatus, setReleaseStatus] = useState('all');
+  /** 对应后端 query：releaseStatus=popular|now_playing|upcoming|top_rated */
+  const [browseMode, setBrowseMode] = useState('popular');
   const [filterOpen, setFilterOpen] = useState(true);
   const [loading, setLoading] = useState(true);
 
@@ -47,7 +56,7 @@ export default function MovieList() {
     const params = { page, limit: 15 };
     if (tasteType) params.tasteType = tasteType;
     if (appliedKeyword) params.keyword = appliedKeyword;
-    if (releaseStatus !== 'all') params.releaseStatus = releaseStatus;
+    params.releaseStatus = browseMode;
 
     if (selectedTypes.length) params.typeKeys = selectedTypes.join(',');
 
@@ -71,7 +80,7 @@ export default function MovieList() {
     page,
     tasteType,
     appliedKeyword,
-    releaseStatus,
+    browseMode,
     selectedTypes,
     searchAllReleases,
     dateFrom,
@@ -116,7 +125,7 @@ export default function MovieList() {
     setTasteType('');
     setKeyword('');
     setAppliedKeyword('');
-    setReleaseStatus('all');
+    setBrowseMode('popular');
     clearTypes();
     setSearchAllReleases(true);
     setDateFrom('');
@@ -146,6 +155,31 @@ export default function MovieList() {
           </button>
           {filterOpen && (
             <div className="filter-sidebar__content">
+              {/* 电影：TMDB 式深蓝标题 + 白卡片四态 */}
+              <div className="filter-movie-browse">
+                <div className="filter-movie-browse__head">电影</div>
+                <div className="filter-movie-browse__card">
+                  <ul className="filter-movie-browse__list" role="listbox" aria-label="电影分类">
+                    {BROWSE_MODES.map((item) => (
+                      <li key={item.key}>
+                        <button
+                          type="button"
+                          role="option"
+                          aria-selected={browseMode === item.key}
+                          className={`filter-movie-browse__item ${browseMode === item.key ? 'filter-movie-browse__item--active' : ''}`}
+                          onClick={() => {
+                            setBrowseMode(item.key);
+                            setPage(1);
+                          }}
+                        >
+                          {item.label}
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+
               {/* 发行日期 */}
               <div className="filter-section">
                 <h3 className="filter-section__title filter-section__title--lg">发行日期</h3>
@@ -185,48 +219,6 @@ export default function MovieList() {
                     </div>
                   </div>
                 )}
-              </div>
-
-              <div className="filter-section">
-                <h3 className="filter-section__title">上映状态</h3>
-                <div className="filter-radio-group">
-                  <label className="filter-radio">
-                    <input
-                      type="radio"
-                      name="releaseStatus"
-                      checked={releaseStatus === 'all'}
-                      onChange={() => {
-                        setReleaseStatus('all');
-                        setPage(1);
-                      }}
-                    />
-                    <span>全部</span>
-                  </label>
-                  <label className="filter-radio">
-                    <input
-                      type="radio"
-                      name="releaseStatus"
-                      checked={releaseStatus === 'released'}
-                      onChange={() => {
-                        setReleaseStatus('released');
-                        setPage(1);
-                      }}
-                    />
-                    <span>已上映</span>
-                  </label>
-                  <label className="filter-radio">
-                    <input
-                      type="radio"
-                      name="releaseStatus"
-                      checked={releaseStatus === 'unreleased'}
-                      onChange={() => {
-                        setReleaseStatus('unreleased');
-                        setPage(1);
-                      }}
-                    />
-                    <span>未上映</span>
-                  </label>
-                </div>
               </div>
 
               <div className="filter-section">
@@ -344,7 +336,7 @@ export default function MovieList() {
               <p className="list-count">共 {total} 部影视</p>
               <div className="movie-grid movie-grid--tmdb-list">
                 {list.map((m) => (
-                  <MovieCard key={m.id} movie={m} showRecommendReason={false} />
+                  <MovieCard key={m.id} movie={m} showRecommendReason={false} variant="library" showPlayOverlay={false} />
                 ))}
               </div>
               <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />

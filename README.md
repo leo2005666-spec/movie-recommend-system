@@ -206,7 +206,7 @@ npm run fill-covers
 - `/api/users/me/comments` - **GET** 当前用户影评列表分页（`page`、`limit`，需登录）
 - `/api/actors/:tmdbPersonId` - **GET** TMDB 演员详情（`person`：含 `gender`、`birthday`、`place_of_birth`、`also_known_as`、`homepage`、`imdb_id`、`popularity` 等）+ **`movies`**：本站已入库参演作品 + **`filmography`**：TMDB 参演片单（去重，含 `tmdb_id`、`title`、`release_date`、`release_year_label`、`character`、`poster_thumb`、`in_library`、`local_id`）+ **`tmdb_person_url`**（链到 TMDB 人物页）；需配置 `TMDB_API_KEY`
 - `/api/logs` - 活动日志
-- `/api/movies` - 影视作品列表/CRUD；列表支持：`releaseStatus`（`unreleased` 含 **未来年份** 或 **`release_date` 晚于今天**）、`orderBy=release_asc`（按发行日升序，配合未上映做「即将上映」）、`typeKeys`（类型多选 AND）、`dateFrom`/`dateTo`、`durationMin`/`durationMax`（片长分钟）、`scoreMin`/`scoreMax`、`country`（可选）、`tasteType`（人群口味）
+- `/api/movies` - 影视作品列表/CRUD；列表支持：`releaseStatus` —— **影视库侧栏四态**：`popular`（热门，按 `tmdb_vote_count`↓、`tmdb_rating`↓）、`now_playing`（正在上映：`release_date` 在近 **120 天内**且已首映）、`upcoming`（即将上映，同 `unreleased`：未来年或 `release_date` 晚于今天，按发行日升序）、`top_rated`（高分：`tmdb_rating ≥ 6.5`）；兼容旧值 `released` / `unreleased`。另支持 `orderBy=release_asc`、`typeKeys`（类型多选 AND）、`dateFrom`/`dateTo`、`durationMin`/`durationMax`、`scoreMin`/`scoreMax`、`country`、`tasteType`
 - `/api/categories` - 分类管理
 - `/api/tags` - 标签管理
 - `/api/recommend` - 个性化推荐（`tasteType`、`limit`≤80；**`prefer=popular`** 时固定按 TMDB 投票数/评分排序，供首页轮播）
@@ -316,7 +316,7 @@ npm run fill-covers
 - **问答社区**：顶部导航与 `/qa` 路由已移除；后端 `/api/qa` 未删，需要时可再挂回前端。
 - **评论删除**：`DELETE /api/comments/:id`，仅评论作者本人；详情页与首页热门影评对自己发的评论显示「删除」。
 - **反馈管理**：管理员 `GET /api/feedbacks` 始终返回全表，可重复刷新查看；`DELETE /api/feedbacks/:id` 物理删除单条反馈。
-- **影视库筛选**：「已上映/未上映」按 `release_year` 与当前年比较。**时长**：双滑块 **0–360 分钟**（`durationMin`/`durationMax`，对应库字段 `duration`）。**已从前台移除**：制片国家下拉、用户评分（TMDB）滑块（后端 `country`/`scoreMin`/`scoreMax` 仍可作为 API 兼容保留）。**TMDB 同步**：`npm run crawler` 写入制片国等；已有库可 **`npm run backfill-origin`**。**已移除**：观看平台网格、语言筛选、最少投票滑块。
+- **影视库筛选**：侧栏顶部 **「电影」** 为深蓝标题 + 白卡片竖排四选项（**热门 / 正在上映 / 即将上映 / 高分**），对应后端 `releaseStatus` 与排序/条件见上文接口说明；卡片海报下为 **粗黑标题 + 灰色上映日期**（`MovieCard` `variant="library"`，无日期则显示「日期待定」）。**时长**：双滑块 **0–360 分钟**。**已从前台移除**：旧版「全部/已上映/未上映」单选、制片国家下拉等（后端仍兼容 `released`/`unreleased`）。**TMDB 同步**：`npm run crawler`；已有库可 **`npm run backfill-origin`**。
 - **为何以前像「小众片」、现在更像 TMDB 热门**：库内若长期按 **`id` 新** 或 **站内评分少** 排序，会排到冷门老片。已改为 **热门/冷启动/补足** 统一优先 **`tmdb_vote_count` → `tmdb_rating` → 年份`**；协同过滤结果增加 **投票数加权**，避免全是低曝光片；**首页轮播** 单独请求 **`/api/recommend?prefer=popular`**，始终拉 TMDB 向热门作品。若仍偏冷：请运行 **`npm run crawler`** 同步更多 TMDB 热门数据并确保 **`tmdb_vote_count` 已写入**。
 - **人群口味（影视库 vs 个性推荐）**：同一套 `tasteType` 预设，但影视库列表改为 **须同时命中预设「分类之一」与「标签之一」**（AND），排序为 **TMDB 分 ↓、投票数 ↓、年份 ↑**，更易出现高分与经典感；个性推荐页在结果不足时仍会 **热门补足**。
 - **影视详情 Hero**：**TMDB 第二张参考**——左侧海报 + 右侧信息列，**横向渐变直接压在剧照上**（左深右浅），**白字 + 轻阴影**；**不用**整块圆角半透明「信息玻璃盒」（避免第三张参考那种装箱感）。剧照由后端 **`original` backdrop**；无横版时用封面 **`?w=1280`** 弱背景。评分旁装饰表情为纯展示（`pointer-events: none`）。

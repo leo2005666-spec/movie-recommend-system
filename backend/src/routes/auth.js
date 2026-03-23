@@ -37,7 +37,9 @@ router.post(
       await db.prepare(
         'INSERT INTO users (username, password, nickname, role) VALUES (?, ?, ?, ?)'
       ).run(username, hash, nickname, 'user');
-      const user = await db.prepare('SELECT id, username, nickname, role FROM users WHERE username = ?').get(username);
+      const user = await db.prepare(
+        'SELECT id, username, nickname, email, avatar, role FROM users WHERE username = ?'
+      ).get(username);
       const token = jwt.sign({ userId: user.id }, JWT_SECRET, { expiresIn: '7d' });
       res.json({ code: 0, data: { user, token } });
     } catch (e) {

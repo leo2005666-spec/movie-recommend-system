@@ -69,15 +69,15 @@ router.post(
     }
     await db.prepare('UPDATE users SET avatar = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?').run(publicPath, req.user.id);
     await logActivity(req, 'UPDATE_USER', 'user', req.user.id, '上传头像');
-    const user = await db.prepare('SELECT id, username, nickname, avatar, role FROM users WHERE id = ?').get(req.user.id);
+    const user = await db.prepare('SELECT id, username, email, avatar, role FROM users WHERE id = ?').get(req.user.id);
     res.json({ code: 0, data: user });
   })
 );
 
-// 获取当前用户信息
+// 获取当前用户信息（不含昵称编辑入口：前台以用户名 + 邮箱为主）
 router.get('/me', asyncHandler(async (req, res) => {
   const user = await db.prepare(
-    'SELECT id, username, nickname, avatar, role, created_at FROM users WHERE id = ?'
+    'SELECT id, username, email, avatar, role, created_at FROM users WHERE id = ?'
   ).get(req.user.id);
   if (!user) return res.status(404).json({ code: 404, message: '用户不存在' });
   res.json({ code: 0, data: user });
@@ -91,19 +91,17 @@ router.get('/me/stats', asyncHandler(async (req, res) => {
   res.json({ code: 0, data: { favorites: fav.n, ratings: rat.n, comments: com.n } });
 }));
 
-// 修改当前用户信息（含用户名、密码）
+// 修改当前用户信息（用户名、邮箱、密码；头像仅通过 POST /me/avatar 上传）
 router.put(
   '/me',
   [
     body('username').optional().trim().isLength({ min: 2, max: 20 }).withMessage('用户名2-20字符'),
-    body('nickname').optional().trim().isLength({ max: 50 }),
-    body('avatar').optional({ values: 'falsy' }).trim().custom((v) => {
+    body('email').optional().trim().custom((v) => {
       if (v == null || v === '') return true;
       const s = String(v).trim();
-      if (s.length > 2048) throw new Error('头像链接过长');
-      if (/^https?:\/\/.+/i.test(s)) return true;
-      if (/^\/uploads\/avatars\/.+/i.test(s)) return true;
-      throw new Error('头像需为 http(s) 链接或本站上传后的路径');
+      if (s.length > 120) throw new Error('邮箱过长');
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s)) throw new Error('邮箱格式不正确');
+      return true;
     }),
     body('password').optional().isLength({ min: 6 }).withMessage('密码至少6位'),
   ],
@@ -112,7 +110,7 @@ router.put(
     if (!errors.isEmpty()) {
       return res.status(400).json({ code: 400, message: errors.array()[0].msg });
     }
-    const { username, nickname, avatar, password } = req.body;
+    const { username, email, password } = req.body;
 
     if (username !== undefined && username.trim()) {
       const existing = await db.prepare('SELECT id FROM users WHERE username = ? AND id != ?').get(username.trim(), req.user.id);
@@ -124,8 +122,7 @@ router.put(
     const updates = [];
     const values = [];
     if (username !== undefined && username.trim()) { updates.push('username = ?'); values.push(username.trim()); }
-    if (nickname !== undefined) { updates.push('nickname = ?'); values.push(nickname); }
-    if (avatar !== undefined) { updates.push('avatar = ?'); values.push(avatar); }
+    if (email !== undefined) { updates.push('email = ?'); values.push(email === '' ? null : String(email).trim()); }
     if (password) {
       updates.push('password = ?');
       values.push(bcrypt.hashSync(password, 10));
@@ -137,7 +134,7 @@ router.put(
     values.push(req.user.id);
     await db.prepare(`UPDATE users SET ${updates.join(', ')} WHERE id = ?`).run(...values);
     await logActivity(req, 'UPDATE_USER', 'user', req.user.id, '修改个人信息');
-    const user = await db.prepare('SELECT id, username, nickname, avatar, role FROM users WHERE id = ?').get(req.user.id);
+    const user = await db.prepare('SELECT id, username, email, avatar, role FROM users WHERE id = ?').get(req.user.id);
     res.json({ code: 0, data: user });
   })
 );

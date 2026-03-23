@@ -65,7 +65,7 @@ export default function Feedback() {
             <label>反馈内容（5-1000字）</label>
             <textarea className="form-input form-textarea" value={content} onChange={(e) => setContent(e.target.value)} rows={6} placeholder="请详细描述您的意见或建议..." required minLength={5} maxLength={1000} />
           </div>
-          {user && <p className="empty-hint" style={{ fontSize: '0.85rem' }}>将以 {user.nickname || user.username} 身份提交</p>}
+          {user && <p className="empty-hint" style={{ fontSize: '0.85rem' }}>将以 {user.username} 身份提交</p>}
           {!user && <p className="empty-hint" style={{ fontSize: '0.85rem' }}>可匿名提交，登录后提交可查看反馈进度</p>}
           {msg && <div className={msg.includes('感谢') ? '' : 'error-msg'} style={{ marginTop: 'var(--space-sm)' }}>{msg}</div>}
           <button type="submit" className="btn" style={{ marginTop: 'var(--space-md)' }} disabled={submitting}>{submitting ? '提交中...' : '提交反馈'}</button>

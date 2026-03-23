@@ -18,7 +18,9 @@ const authMiddleware = asyncHandler(async (req, res, next) => {
   const token = authHeader.slice(7);
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
-    const user = await db.prepare('SELECT id, username, nickname, role FROM users WHERE id = ?').get(decoded.userId);
+    const user = await db.prepare(
+      'SELECT id, username, nickname, email, avatar, role FROM users WHERE id = ?'
+    ).get(decoded.userId);
     if (!user) {
       return res.status(401).json({ code: 401, message: '用户不存在' });
     }
@@ -40,7 +42,9 @@ const optionalAuth = asyncHandler(async (req, res, next) => {
   const token = authHeader.slice(7);
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
-    const user = await db.prepare('SELECT id, username, nickname, role FROM users WHERE id = ?').get(decoded.userId);
+    const user = await db.prepare(
+      'SELECT id, username, nickname, email, avatar, role FROM users WHERE id = ?'
+    ).get(decoded.userId);
     if (user) req.user = user;
   } catch (_) {}
   next();

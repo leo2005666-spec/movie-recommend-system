@@ -24,6 +24,11 @@ async function run() {
       updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )
   `);
+  try {
+    await db.exec('ALTER TABLE users ADD COLUMN email TEXT');
+  } catch (_) {
+    /* 旧库已含 email 列 */
+  }
   await db.exec(`
     CREATE TABLE IF NOT EXISTS activity_logs (
       id INTEGER PRIMARY KEY AUTOINCREMENT,

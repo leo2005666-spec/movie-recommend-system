@@ -19,11 +19,9 @@ export default function Profile() {
   const [profile, setProfile] = useState(null);
   const [stats, setStats] = useState(null);
   const [username, setUsername] = useState('');
-  const [nickname, setNickname] = useState('');
-  const [avatar, setAvatar] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [msg, setMsg] = useState('');
-  /** 仅点击「编辑」后为 true：隐藏上传与表单，保护隐私 */
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
@@ -33,8 +31,7 @@ export default function Profile() {
     api.get('/users/me').then((r) => {
       setProfile(r.data);
       setUsername(r.data?.username || '');
-      setNickname(r.data?.nickname || '');
-      setAvatar(r.data?.avatar || '');
+      setEmail(r.data?.email || '');
       setAvatarLoadErr(false);
     });
 
@@ -43,7 +40,6 @@ export default function Profile() {
     api.get('/users/me/stats').then((r) => setStats(r.data)).catch(() => setStats({ favorites: 0, ratings: 0, comments: 0 }));
   }, []);
 
-  /** 保存成功回到查看模式后，顶部提示几秒后自动消失 */
   useEffect(() => {
     if (!msg || isEditing) return;
     const t = setTimeout(() => setMsg(''), 4500);
@@ -53,8 +49,7 @@ export default function Profile() {
   const handleCancel = () => {
     if (!profile) return;
     setUsername(profile.username || '');
-    setNickname(profile.nickname || '');
-    setAvatar(profile.avatar || '');
+    setEmail(profile.email || '');
     setPassword('');
     setMsg('');
     setIsEditing(false);
@@ -67,8 +62,7 @@ export default function Profile() {
     setIsSaving(true);
     const body = {
       username: username?.trim() || undefined,
-      nickname: nickname || undefined,
-      avatar: avatar?.trim() ? avatar.trim() : '',
+      email: email?.trim() ?? '',
     };
     if (password) body.password = password;
     try {
@@ -78,11 +72,11 @@ export default function Profile() {
       const r = await api.get('/users/me');
       setProfile(r.data);
       setUsername(r.data?.username || '');
-      setAvatar(r.data?.avatar || '');
+      setEmail(r.data?.email || '');
       setAvatarLoadErr(false);
       updateUser({
         username: r.data?.username,
-        nickname: r.data?.nickname,
+        email: r.data?.email ?? null,
         avatar: r.data?.avatar || null,
       });
       setIsEditing(false);
@@ -104,15 +98,14 @@ export default function Profile() {
       fd.append('avatar', file);
       const r = await api.postForm('/users/me/avatar', fd);
       const u = r.data;
-      setProfile(u);
-      setAvatar(u?.avatar || '');
+      setProfile((prev) => ({ ...prev, ...u }));
       setAvatarLoadErr(false);
       updateUser({
         username: u?.username,
-        nickname: u?.nickname,
+        email: u?.email ?? null,
         avatar: u?.avatar || null,
       });
-      setMsg('头像已更新');
+      setMsg('头像已更新，可继续修改资料后点「保存」或直接关闭编辑');
     } catch (err) {
       setMsg(err.message || '上传失败');
     } finally {
@@ -122,8 +115,7 @@ export default function Profile() {
 
   if (!profile) return <p className="empty-hint">加载中...</p>;
 
-  const displayName = profile.nickname || profile.username;
-  const initial = (displayName[0] || '?').toUpperCase();
+  const initial = (profile.username?.[0] || '?').toUpperCase();
   const roleLabel = profile.role === 'admin' ? '管理员' : '用户';
   const createdAt = profile.created_at
     ? new Date(profile.created_at).toLocaleString('zh-CN', { dateStyle: 'medium', timeStyle: 'short' })
@@ -203,27 +195,36 @@ export default function Profile() {
         </div>
       )}
 
-      {/* 顶部身份区：铺满宽卡片 */}
       <section className="card profile-hero">
         <div className="profile-hero__row">
-          {avatarBlock}
+          <div className="profile-hero__avatar-col">
+            {avatarBlock}
+            <div className="profile-hero__email-below">
+              {profile.email ? (
+                <a href={`mailto:${profile.email}`} className="profile-hero__email-link">
+                  {profile.email}
+                </a>
+              ) : (
+                <span className="profile-hero__email-placeholder">未设置邮箱</span>
+              )}
+            </div>
+          </div>
           <div className="profile-hero__meta">
-            <div className="profile-hero__name">{displayName}</div>
-            <div className="profile-hero__sub">@{profile.username}</div>
+            <div className="profile-hero__name">{profile.username}</div>
+            {isEditing && (
+              <p className="profile-hero__hint">
+                点击头像右下角相机更换头像（jpg / png / gif / webp，≤{AVATAR_MAX_MB}MB）
+                {uploadingAvatar ? ' · 上传中…' : ''}
+                {uploadingAvatar ? '' : ' · 上传后可点「保存」同步邮箱与密码等'}
+              </p>
+            )}
             <div className="profile-hero__badges">
               <span className="profile-overview__tag">{roleLabel}</span>
             </div>
-            {isEditing && (
-              <p className="profile-hero__hint">
-                点击头像右下角相机图标可更换头像（jpg / png / gif / webp，单张不超过 {AVATAR_MAX_MB}MB）
-                {uploadingAvatar ? ' · 上传中…' : ''}
-              </p>
-            )}
           </div>
         </div>
       </section>
 
-      {/* 统计：三列铺满 */}
       <div className="profile-stats">
         <Link to="/favorites" className="profile-stat card">
           <HeartIcon size={22} weight="regular" className="profile-stat__icon profile-stat__icon--pink" />
@@ -242,7 +243,6 @@ export default function Profile() {
         </div>
       </div>
 
-      {/* 查看模式：信息卡片网格 */}
       {!isEditing && (
         <div className="profile-info-grid">
           <div className="profile-field-card card">
@@ -251,9 +251,11 @@ export default function Profile() {
             <div className="profile-field-card__footer">登录名，修改后仍可用于登录</div>
           </div>
           <div className="profile-field-card card">
-            <div className="profile-field-card__label">昵称</div>
-            <div className="profile-field-card__value">{profile.nickname || '未设置'}</div>
-            <div className="profile-field-card__footer">展示名称，可随时在编辑中修改</div>
+            <div className="profile-field-card__label">邮箱</div>
+            <div className="profile-field-card__value">
+              {profile.email || <span className="profile-field-card__muted">未设置</span>}
+            </div>
+            <div className="profile-field-card__footer">在编辑中填写或修改</div>
           </div>
           <div className="profile-field-card card">
             <div className="profile-field-card__label">角色</div>
@@ -268,7 +270,6 @@ export default function Profile() {
         </div>
       )}
 
-      {/* 编辑模式：表单卡片网格 */}
       {isEditing && (
         <form id="profile-edit-form" onSubmit={handleSubmit} className="profile-edit-panel card">
           {msg && (
@@ -295,33 +296,18 @@ export default function Profile() {
               />
             </div>
             <div className="profile-field-card profile-field-card--input">
-              <label className="profile-field-card__label" htmlFor="pf-nickname">
-                昵称
+              <label className="profile-field-card__label" htmlFor="pf-email">
+                邮箱
               </label>
               <input
-                id="pf-nickname"
+                id="pf-email"
                 className="form-input profile-field-card__control"
-                value={nickname}
-                onChange={(e) => setNickname(e.target.value)}
-                maxLength={50}
-              />
-            </div>
-            <div className="profile-field-card profile-field-card--input profile-field-card--span2">
-              <label className="profile-field-card__label" htmlFor="pf-avatar-url">
-                头像链接（可选，http/https；与上方本地上传二选一或先后使用）
-              </label>
-              <input
-                id="pf-avatar-url"
-                className="form-input profile-field-card__control"
-                type="url"
-                inputMode="url"
-                value={avatar}
-                onChange={(e) => {
-                  setAvatar(e.target.value);
-                  setAvatarLoadErr(false);
-                }}
-                placeholder="https://example.com/avatar.jpg"
-                maxLength={2048}
+                type="email"
+                inputMode="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="name@example.com"
+                autoComplete="email"
               />
             </div>
             <div className="profile-field-card profile-field-card--input profile-field-card--span2">

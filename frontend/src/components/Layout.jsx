@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Outlet, Link, useLocation } from 'react-router-dom';
+import { getAvatarUrl } from '../api/request';
 import {
   HouseIcon,
   FilmStripIcon,
@@ -12,7 +13,6 @@ import {
   SignInIcon,
   UserPlusIcon,
   SignOutIcon,
-  UserIcon,
 } from '@phosphor-icons/react';
 import { useAuth } from '../context/AuthContext';
 import BackgroundFX from './BackgroundFX';
@@ -29,6 +29,7 @@ const navItems = [
 export default function Layout() {
   const { user, logout, isAdmin } = useAuth();
   const loc = useLocation();
+  const [headerAvatarErr, setHeaderAvatarErr] = useState(false);
   /** 向下滚动时收起顶栏，向上滚动时展开，减少遮挡海报/Hero */
   const [headerScrollHidden, setHeaderScrollHidden] = useState(false);
   const lastScrollY = useRef(0);
@@ -45,6 +46,10 @@ export default function Layout() {
     lastScrollY.current = typeof window !== 'undefined' ? window.scrollY : 0;
     setHeaderScrollHidden(false);
   }, [loc.pathname]);
+
+  useEffect(() => {
+    setHeaderAvatarErr(false);
+  }, [user?.avatar]);
 
   useEffect(() => {
     const onScroll = () => {
@@ -89,10 +94,23 @@ export default function Layout() {
                   管理
                 </Link>
               )}
-              <Link to="/profile">
-                <UserIcon size={18} weight="regular" className="nav-icon" />
-                {user.nickname || user.username}
-                {isAdmin && <span className="admin-tag">管理员</span>}
+              <Link to="/profile" className="header-user-link">
+                <span className="header-user-avatar" aria-hidden>
+                  {user.avatar && !headerAvatarErr ? (
+                    <img
+                      src={getAvatarUrl(user.avatar)}
+                      alt=""
+                      className="header-user-avatar__img"
+                      onError={() => setHeaderAvatarErr(true)}
+                    />
+                  ) : (
+                    <span className="header-user-avatar__fallback">{(user.username || '?')[0].toUpperCase()}</span>
+                  )}
+                </span>
+                <span className="header-user-link__text">
+                  {user.username}
+                  {isAdmin && <span className="admin-tag">管理员</span>}
+                </span>
               </Link>
               <Link to="/favorites">
                 <HeartIcon size={18} weight="regular" className="nav-icon" />

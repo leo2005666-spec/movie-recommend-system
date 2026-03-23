@@ -44,6 +44,10 @@ export function getAvatarUrl(avatar) {
       const origin = base.replace(/\/api\/?$/, '');
       return `${origin}${s}`;
     }
+    // 相对 /api：开发环境 Vite 代理了 /uploads；用当前页面 origin 拼绝对地址，避免部分浏览器对相对路径解析异常
+    if (typeof window !== 'undefined' && window.location?.origin) {
+      return `${window.location.origin}${s}`;
+    }
     return s;
   }
   if (s.startsWith('/')) return s;

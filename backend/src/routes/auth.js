@@ -73,6 +73,7 @@ router.post(
     }
     const token = jwt.sign({ userId: user.id }, JWT_SECRET, { expiresIn: '7d' });
     const { password: _, ...safeUser } = user;
+    if (safeUser.avatar === undefined) safeUser.avatar = null;
     await log.logActivity(req, 'LOGIN', 'user', user.id, '用户登录');
     res.json({ code: 0, data: { user: safeUser, token } });
   })

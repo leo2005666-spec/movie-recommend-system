@@ -2752,6 +2752,426 @@ a.admin-dashboard-card--link:hover {
   padding-bottom: var(--space-xl);
 }
 
+.recommend-page--with-spotlight .recommend-page__intro {
+  margin-bottom: var(--space-md);
+}
+
+/* ========== 个性推荐 · 沉浸式焦点 + 底部海报条（层次柔和、过渡自然） ========== */
+.rec-spotlight {
+  position: relative;
+  margin-bottom: var(--space-xl);
+  border-radius: 14px;
+  overflow: hidden;
+  background: linear-gradient(165deg, #121a22 0%, #0c1016 100%);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.06) inset,
+    0 16px 48px rgba(15, 23, 42, 0.12);
+}
+
+.rec-spotlight__hero {
+  position: relative;
+  min-height: min(44vh, 400px);
+  max-height: min(50vh, 460px);
+  display: flex;
+  align-items: flex-end;
+}
+
+.rec-spotlight__bg-layer {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+}
+
+.rec-spotlight__bg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 18%;
+  transform: scale(1.04);
+  animation: rec-spot-bg-in 0.55s ease-out both;
+}
+
+@keyframes rec-spot-bg-in {
+  from {
+    opacity: 0.35;
+    transform: scale(1.1);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1.04);
+  }
+}
+
+.rec-spotlight__bg--fallback {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(145deg, #1e293b 0%, #0f172a 42%, #164e63 100%);
+}
+
+/* 极轻颗粒，减少「数码拼贴」感 */
+.rec-spotlight__grain {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  opacity: 0.04;
+  pointer-events: none;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.55'/%3E%3C/svg%3E");
+  mix-blend-mode: overlay;
+}
+
+.rec-spotlight__gradient {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background:
+    linear-gradient(
+      92deg,
+      rgba(15, 20, 28, 0.94) 0%,
+      rgba(15, 20, 28, 0.5) 48%,
+      rgba(15, 20, 28, 0.12) 100%
+    ),
+    linear-gradient(180deg, rgba(8, 10, 14, 0.15) 0%, transparent 42%, rgba(8, 10, 14, 0.88) 100%);
+  pointer-events: none;
+}
+
+.rec-spotlight__hero-inner {
+  position: relative;
+  z-index: 2;
+  padding: var(--space-xl) var(--space-xl) calc(var(--space-2xl) + 14px);
+  max-width: min(620px, 94%);
+  animation: rec-spot-content-in 0.45s ease-out both;
+}
+
+@keyframes rec-spot-content-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.rec-spotlight__meta-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.45rem 0.65rem;
+  margin-bottom: 0.55rem;
+}
+
+.rec-spotlight__pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.22rem 0.7rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: rgba(255, 255, 255, 0.92);
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  backdrop-filter: blur(6px);
+}
+
+.rec-spotlight__pill--soft {
+  color: rgba(226, 232, 240, 0.95);
+  background: rgba(56, 189, 248, 0.12);
+  border-color: rgba(56, 189, 248, 0.22);
+}
+
+.rec-spotlight__reason {
+  font-size: 0.78rem;
+  color: rgba(226, 232, 240, 0.78);
+}
+
+.rec-spotlight__title {
+  font-size: clamp(1.55rem, 3.4vw, 2.15rem);
+  font-weight: 700;
+  line-height: 1.22;
+  color: #f8fafc;
+  text-shadow: 0 2px 24px rgba(0, 0, 0, 0.35);
+  margin-bottom: 0.45rem;
+  letter-spacing: -0.02em;
+}
+
+.rec-spotlight__desc {
+  font-size: 0.92rem;
+  line-height: 1.58;
+  color: rgba(226, 232, 240, 0.78);
+  margin-bottom: 0.45rem;
+  max-width: 34rem;
+}
+
+.rec-spotlight__extra {
+  font-size: 0.8rem;
+  line-height: 1.45;
+  color: rgba(148, 163, 184, 0.95);
+  margin-bottom: 1rem;
+  max-width: 34rem;
+}
+
+.rec-spotlight__cta-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.65rem 1rem;
+}
+
+.rec-spotlight__cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.5rem 1.1rem;
+  border-radius: 999px;
+  font-size: 0.86rem;
+  font-weight: 600;
+  color: #0f172a;
+  background: rgba(255, 255, 255, 0.94);
+  text-decoration: none;
+  transition:
+    transform 0.18s ease,
+    box-shadow 0.18s ease,
+    background 0.18s ease;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+}
+
+.rec-spotlight__cta:hover {
+  transform: translateY(-1px);
+  background: #fff;
+  box-shadow: 0 6px 22px rgba(0, 0, 0, 0.22);
+}
+
+.rec-spotlight__cta-arrow {
+  display: inline-block;
+  transition: transform 0.2s ease;
+}
+
+.rec-spotlight__cta:hover .rec-spotlight__cta-arrow {
+  transform: translateX(3px);
+}
+
+.rec-spotlight__hint {
+  font-size: 0.75rem;
+  color: rgba(148, 163, 184, 0.85);
+}
+
+.rec-spotlight__rail-outer {
+  position: relative;
+  margin-top: -48px;
+  z-index: 2;
+  padding: 0 var(--space-sm) var(--space-md);
+  padding-top: 8px;
+  background: linear-gradient(180deg, rgba(12, 16, 22, 0) 0%, rgba(12, 16, 22, 0.65) 18%, #0c1016 100%);
+}
+
+@media (max-width: 640px) {
+  .rec-spotlight__rail-outer {
+    margin-top: -36px;
+  }
+}
+
+.rec-spotlight__rail-title {
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: rgba(148, 163, 184, 0.65);
+  margin: 0 0 0.5rem 0.35rem;
+}
+
+.rec-spotlight__rail-mask {
+  position: relative;
+  margin: 0 -4px;
+  padding: 4px 0 2px;
+  mask-image: linear-gradient(90deg, transparent 0%, #000 12px, #000 calc(100% - 12px), transparent 100%);
+  -webkit-mask-image: linear-gradient(90deg, transparent 0%, #000 12px, #000 calc(100% - 12px), transparent 100%);
+}
+
+.rec-spotlight__rail {
+  display: flex;
+  gap: 0.75rem;
+  overflow-x: auto;
+  padding: 0.25rem 8px 0.45rem;
+  scroll-snap-type: x proximity;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.18) transparent;
+}
+
+.rec-spotlight__rail::-webkit-scrollbar {
+  height: 5px;
+}
+.rec-spotlight__rail::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.18);
+  border-radius: 4px;
+}
+
+.rec-spotlight__thumb {
+  flex: 0 0 auto;
+  width: 100px;
+  scroll-snap-align: start;
+  border: none;
+  padding: 0;
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+  font: inherit;
+  color: rgba(226, 232, 240, 0.72);
+  transition:
+    transform 0.2s ease,
+    color 0.2s ease;
+}
+
+.rec-spotlight__thumb:hover {
+  transform: translateY(-3px);
+  color: rgba(248, 250, 252, 0.92);
+}
+
+.rec-spotlight__thumb--active {
+  color: rgba(248, 250, 252, 0.98);
+}
+
+.rec-spotlight__thumb-frame {
+  position: relative;
+  display: block;
+  aspect-ratio: 2 / 3;
+  border-radius: 11px;
+  overflow: hidden;
+  border: 2px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+  transition:
+    border-color 0.25s ease,
+    box-shadow 0.25s ease,
+    transform 0.25s ease,
+    opacity 0.25s ease;
+  opacity: 0.9;
+}
+
+.rec-spotlight__thumb--active .rec-spotlight__thumb-frame {
+  border-color: rgba(255, 255, 255, 0.88);
+  box-shadow:
+    0 10px 32px rgba(0, 0, 0, 0.4),
+    0 0 0 1px rgba(255, 255, 255, 0.08);
+  transform: scale(1.025);
+  opacity: 1;
+}
+
+.rec-spotlight__thumb-frame img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.35s ease;
+}
+
+.rec-spotlight__thumb:hover .rec-spotlight__thumb-frame img {
+  transform: scale(1.03);
+}
+
+.rec-spotlight__thumb-placeholder {
+  display: block;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(145deg, #334155 0%, #1e293b 100%);
+}
+
+.rec-spotlight__thumb-badge {
+  position: absolute;
+  right: 5px;
+  bottom: 5px;
+  padding: 0.1rem 0.38rem;
+  font-size: 0.62rem;
+  font-weight: 700;
+  color: #fff;
+  background: rgba(15, 23, 42, 0.72);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 5px;
+  line-height: 1.2;
+}
+
+.rec-spotlight__thumb-label {
+  display: block;
+  margin-top: 0.4rem;
+  font-size: 0.7rem;
+  line-height: 1.38;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100px;
+}
+
+.rec-spotlight--loading .rec-spotlight__hero {
+  min-height: min(40vh, 360px);
+}
+
+.rec-spotlight__skeleton-bg {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(110deg, #1e293b 0%, #0f172a 40%, #1e293b 80%);
+  background-size: 200% 100%;
+  animation: rec-spot-shimmer 1.4s ease-in-out infinite;
+}
+
+@keyframes rec-spot-shimmer {
+  0% {
+    background-position: 100% 0;
+  }
+  100% {
+    background-position: -100% 0;
+  }
+}
+
+.rec-spotlight__skeleton-pill {
+  width: 88px;
+  height: 22px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.12);
+  margin-bottom: 0.75rem;
+}
+
+.rec-spotlight__skeleton-title {
+  width: min(72%, 320px);
+  height: 32px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.14);
+  margin-bottom: 0.65rem;
+}
+
+.rec-spotlight__skeleton-line {
+  width: min(55%, 240px);
+  height: 16px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.rec-spotlight__thumb--skeleton {
+  width: 100px;
+  pointer-events: none;
+}
+
+.rec-spotlight__thumb--skeleton .rec-spotlight__thumb-frame {
+  background: rgba(255, 255, 255, 0.08);
+  animation: rec-spot-shimmer 1.4s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rec-spotlight__bg {
+    animation: none;
+    opacity: 1;
+    transform: scale(1.04);
+  }
+  .rec-spotlight__hero-inner {
+    animation: none;
+  }
+  .rec-spotlight__skeleton-bg,
+  .rec-spotlight__thumb--skeleton .rec-spotlight__thumb-frame {
+    animation: none;
+  }
+}
+
 /* ========== 流动电影广告轮播 · TMDB Hero：高清底图 + 深色渐变（无磨砂模糊） ========== */
 .movie-banner {
   position: relative;

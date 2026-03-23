@@ -77,7 +77,7 @@ router.post(
 // 获取当前用户信息（不含昵称编辑入口：前台以用户名 + 邮箱为主）
 router.get('/me', asyncHandler(async (req, res) => {
   const user = await db.prepare(
-    'SELECT id, username, email, avatar, role, created_at FROM users WHERE id = ?'
+    'SELECT id, username, nickname, email, avatar, role, created_at FROM users WHERE id = ?'
   ).get(req.user.id);
   if (!user) return res.status(404).json({ code: 404, message: '用户不存在' });
   res.json({ code: 0, data: user });

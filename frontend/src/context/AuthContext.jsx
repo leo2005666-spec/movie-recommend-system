@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { api } from '../api/request';
 
 const AuthContext = createContext(null);
 
@@ -12,10 +13,51 @@ export function AuthProvider({ children }) {
     }
   });
 
+  /** 用服务端资料覆盖本地 user，修复「再次登录后头像丢失」等缓存过期问题 */
+  const syncUserFromServer = (prev) => {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+    let cancelled = false;
+    api
+      .get('/users/me')
+      .then((res) => {
+        if (cancelled || !res?.data) return;
+        const me = res.data;
+        const next = {
+          id: me.id,
+          username: me.username,
+          nickname: me.nickname ?? prev?.nickname ?? me.username,
+          email: me.email ?? null,
+          avatar: me.avatar != null && me.avatar !== '' ? me.avatar : null,
+          role: me.role,
+        };
+        localStorage.setItem('user', JSON.stringify(next));
+        setUser(next);
+      })
+      .catch(() => {
+        /* 未登录或 token 失效由 request 内 401 处理 */
+      });
+    return () => {
+      cancelled = true;
+    };
+  };
+
+  useEffect(() => {
+    if (!localStorage.getItem('token')) return undefined;
+    return syncUserFromServer(user);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- 仅挂载时用本地 user 作 nickname 兜底
+  }, []);
+
   const login = (userData, token) => {
-    localStorage.setItem('user', JSON.stringify(userData));
+    const normalized = {
+      ...userData,
+      avatar: userData?.avatar != null && userData.avatar !== '' ? userData.avatar : null,
+    };
+    localStorage.setItem('user', JSON.stringify(normalized));
     localStorage.setItem('token', token);
-    setUser(userData);
+    setUser(normalized);
+    // 登录后立即拉一次完整资料，与数据库头像等字段对齐
+    syncUserFromServer(normalized);
   };
 
   const logout = () => {

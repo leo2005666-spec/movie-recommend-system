@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { SparkleIcon } from '@phosphor-icons/react';
 import MovieCard from '../components/MovieCard';
 import MovieLoading from '../components/MovieLoading';
+import RecommendSpotlight from '../components/RecommendSpotlight';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../api/request';
 
@@ -51,18 +52,21 @@ export default function Recommend() {
   }, [user, tasteType]);
 
   return (
-    <div className="recommend-page">
+    <div className="recommend-page recommend-page--with-spotlight">
       <h1 className="page-title">
         <SparkleIcon size={24} weight="regular" className="page-title__icon" />
         个性推荐
       </h1>
-      <p className="empty-hint" style={{ marginBottom: 'var(--space-md)' }}>
+      <p className="empty-hint recommend-page__intro">
         {tasteType
           ? `「${tastes.find((t) => t.key === tasteType)?.label || tasteType}」为你精选`
           : user
             ? '根据你的评分和收藏，为你推荐可能喜欢的作品'
             : '登录后可获得更精准的个性化推荐，或选择人群口味快速筛选'}
       </p>
+      {(list.length > 0 || (loading && !list.length)) && (
+        <RecommendSpotlight movies={list} loading={loading && !list.length} />
+      )}
       {tastes.length > 0 && (
         <div className="taste-chips">
           <button

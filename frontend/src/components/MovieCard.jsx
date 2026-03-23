@@ -98,7 +98,16 @@ function PlayOverlay() {
   );
 }
 
-export default function MovieCard({ movie, onClick, showBadge = true, topRight, className, showRecommendReason = true }) {
+export default function MovieCard({
+  movie,
+  onClick,
+  showBadge = true,
+  topRight,
+  className,
+  showRecommendReason = true,
+  /** 趋势海报条：不显示中间大播放按钮，更接近 TMDB「趋势」样式 */
+  showPlayOverlay = true,
+}) {
   const coverUrl = getCoverUrl(movie);
   const fallbackSvg = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="150" fill="%232a2a35"><rect width="100" height="150"/><text x="50" y="75" dominant-baseline="middle" text-anchor="middle" fill="%238a8a9a" font-size="12">暂无封面</text></svg>';
 
@@ -120,7 +129,7 @@ export default function MovieCard({ movie, onClick, showBadge = true, topRight, 
         />
         <PraiseRateRing movie={movie} />
         {showBadge !== false && <MoreMenu />}
-        <PlayOverlay />
+        {showPlayOverlay ? <PlayOverlay /> : null}
       </div>
       <div className="info">
         {showRecommendReason && movie.recommendReason && (

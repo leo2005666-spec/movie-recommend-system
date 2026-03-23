@@ -38,6 +38,8 @@ export default function Layout() {
   const isMovieDetail = /^\/movies\/\d+\/?$/.test(loc.pathname);
   /** 影视库列表：主内容区加宽铺满，贴近 TMDB 热门页 */
   const isMovieList = loc.pathname === '/movies' || loc.pathname === '/movies/';
+  /** 首页：TMDB 式全宽趋势/预告片 */
+  const isHome = loc.pathname === '/' || loc.pathname === '';
 
   const isActive = (to) =>
     loc.pathname === to || (to !== '/' && loc.pathname.startsWith(to + '/'));
@@ -142,7 +144,7 @@ export default function Layout() {
         </div>
       </header>
       <main
-        className={`main${isMovieDetail ? ' main--movie-detail' : ''}${isMovieList ? ' main--movie-list' : ''}`}
+        className={`main${isMovieDetail ? ' main--movie-detail' : ''}${isMovieList ? ' main--movie-list' : ''}${isHome ? ' main--home-tmdb' : ''}`}
       >
         <Outlet />
       </main>

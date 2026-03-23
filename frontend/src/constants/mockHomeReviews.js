@@ -1,0 +1,66 @@
+/**
+ * 首页「影迷热议」虚拟用户数据（仅展示，不写入数据库）
+ * movieTitle 可与真实片名一致，便于后续把 movieId 换成接口返回的 id
+ */
+export const MOCK_HOME_REVIEWS = [
+  {
+    id: 'mock-r1',
+    username: '影迷阿哲',
+    nickname: '影迷阿哲',
+    initial: '哲',
+    color: '#0ea5e9',
+    rating: 5,
+    content: '周末一口气刷完，节奏和配乐都戳我，已经二刷了。',
+    movieTitle: '（将自动关联下方热映片）',
+  },
+  {
+    id: 'mock-r2',
+    username: '糖炒栗子',
+    nickname: '糖炒栗子',
+    initial: '糖',
+    color: '#a855f7',
+    rating: 4,
+    content: '结局有点意外，但细想伏笔早就埋好了，值得和朋友讨论。',
+    movieTitle: '',
+  },
+  {
+    id: 'mock-r3',
+    username: 'NightOwl_07',
+    nickname: 'NightOwl_07',
+    initial: 'N',
+    color: '#22c55e',
+    rating: 5,
+    content: '画面质感在线，IMAX 场观感拉满，推荐大屏看。',
+    movieTitle: '',
+  },
+  {
+    id: 'mock-r4',
+    username: '小陈不沉',
+    nickname: '小陈不沉',
+    initial: '陈',
+    color: '#f97316',
+    rating: 4,
+    content: '演员化学反应很好，轻松向，适合下班放松。',
+    movieTitle: '',
+  },
+  {
+    id: 'mock-r5',
+    username: 'SeaBreeze',
+    nickname: 'SeaBreeze',
+    initial: 'S',
+    color: '#ec4899',
+    rating: 3,
+    content: '中规中矩，胜在题材新鲜，可以一看。',
+    movieTitle: '',
+  },
+  {
+    id: 'mock-r6',
+    username: '木子李',
+    nickname: '木子李',
+    initial: '李',
+    color: '#14b8a6',
+    rating: 5,
+    content: '配乐一响就起鸡皮疙瘩，片尾字幕都不想走。',
+    movieTitle: '',
+  },
+];

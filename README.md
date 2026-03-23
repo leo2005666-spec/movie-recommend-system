@@ -301,7 +301,9 @@ npm run fill-covers
 - **影视库分页**：列表接口与前端默认 **每页 15 条**，便于 5 列网格 **3 行铺满**。
 - **演员页**：影视详情「演员阵容」中点击演员进入 **`/actors/:tmdbPersonId`**。布局为 **TMDB 式左栏资料 + 右栏片单**，主内容区 **`actor-page--fullbleed`** 与影视库同档 **加宽（约 1680px）**、**横向铺满**（避免窄容器居中）；**系统无衬线字体栈**（含 Noto Sans SC / 苹方 / 微软雅黑）。侧栏：头像、知名领域、参与作品数、性别/生日/出生地/又名、资料完整度、TMDB/IMDb/官网链接。主区：**AWARDS 横幅**（链 TMDB）、生平简介、**表演作品**表格式列表（年份｜圆点｜标题 + 饰演），支持 **全部 / 仅本站已收录** 与 **排序**；已入库链本站详情，未入库链 TMDB。需后端配置 **TMDB_API_KEY**。
 - **个性推荐页**：顶部增加 **沉浸式焦点区**（大背景剧照 + 左文右渐层 + 底部横向海报条），海报条内 **真实推荐与「站内推广位」同卡片样式**（白边高亮当前项），推广文案与图片可在 `frontend/src/constants/recommendSpotlightAds.js` 中配置。
-- **首页横幅**：`MovieBanner` 优先拉取 **`GET /movies?releaseStatus=unreleased&orderBy=release_asc`**（未上映含「发行日晚于今天」的条目），按档期排序；**不足 3 部**时退回 **`/recommend?prefer=popular`**。视觉为深色影院风 + 底部小海报条切换，整卡可点进 **`/movies/:id`**。
+- **首页横幅**：`MovieBanner` 组件仍保留在工程内，但**首页默认不再使用**；首页改为 **TMDB 式全宽布局**（`main--home-tmdb`）：**「趋势」**（今日=热门榜 / 本周=一周口碑，胶囊切换 + 底部波形装饰 + **固定 175px 宽**横向轮播）、**「最新预告片」**（深色底图 + 绿字激活 Tab：热门 / 流媒体 / 电视 / 租借 / 影院上映，**16:9 横条**可进详情）、**「猜你喜欢」**轻量条带；底部 **「影迷热议」** 合并 **真实热门影评** 与 **`constants/mockHomeReviews.js` 虚拟用户**，营造社区氛围（仅展示，不落库）。
+- **旧版首页大横幅**：若需恢复轮播，可在 `Home.jsx` 中重新引入 `MovieBanner`。
+- **MovieBanner（组件）**：仍可单独使用；数据逻辑见前文「即将上映」说明。
 - **头像与登录态**：`GET /users/me` 现返回 **nickname**；前端 **打开站点或登录成功后会再请求 `/users/me`** 写回 `localStorage` 与顶栏头像；`/uploads/` 通过 **`getBackendOrigin()`** 拼绝对地址（优先 **`VITE_API_BASE`** 完整域名推导后端根，或单独配置 **`VITE_UPLOADS_ORIGIN`**，用于 Vercel 前端 + Render 后端分离场景）。与服务端一致时 **跳过重复 `setUser`**，减轻首页重复请求。
 - **首页/个性推荐加载**：`GET /recommend?prefer=popular` 与 **`GET /recommendations` 并行**，并 **`normalizeMovieListResponse`** 兼容 `data` 为数组或 `{ list }`；**`useEffect` 依赖 `user?.id`**，避免用户对象引用抖动导致反复拉取。默认请求超时：**`VITE_API_TIMEOUT_MS`**（默认 45000ms）。
 - **个人中心**：**我的评分** → `/profile/ratings`，**我的影评** → `/profile/comments`（列表含影片名、分数/正文、时间）。

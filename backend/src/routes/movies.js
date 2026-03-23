@@ -321,21 +321,37 @@ router.get('/', optionalAuth, asyncHandler(async (req, res) => {
 
   if (conditions.length) sql += ' WHERE ' + conditions.join(' AND ');
   const orderByParam = (req.query.orderBy || '').trim().toLowerCase();
+  /**
+   * 排序优先级（与 TMDB 一致）：
+   * - 影视库侧栏「电影」四态（popular / top_rated / upcoming / now_playing）**必须优先**，
+   *   不能再被 tasteType 的 TASTE_ORDER_BY 覆盖，否则切换热门/高分等时列表几乎不变。
+   * - 无上述四态且有人群口味时，再用 TASTE_ORDER_BY。
+   */
+  const isBrowseMode =
+    releaseStatus === 'popular' ||
+    releaseStatus === 'top_rated' ||
+    releaseStatus === 'upcoming' ||
+    releaseStatus === 'unreleased' ||
+    releaseStatus === 'now_playing';
+
   let orderBySql;
-  if (tasteType) {
+  if (isBrowseMode) {
+    if (releaseStatus === 'popular') {
+      orderBySql = 'COALESCE(m.tmdb_vote_count, 0) DESC, COALESCE(m.tmdb_rating, 0) DESC, m.id DESC';
+    } else if (releaseStatus === 'top_rated') {
+      orderBySql = 'COALESCE(m.tmdb_rating, 0) DESC, COALESCE(m.tmdb_vote_count, 0) DESC, m.id DESC';
+    } else if (releaseStatus === 'upcoming' || releaseStatus === 'unreleased') {
+      orderBySql =
+        "COALESCE(NULLIF(TRIM(m.release_date), ''), printf('%04d-06-15', IFNULL(m.release_year, 2099))) ASC";
+    } else if (releaseStatus === 'now_playing') {
+      orderBySql =
+        "COALESCE(NULLIF(TRIM(m.release_date), ''), printf('%04d-01-01', IFNULL(m.release_year, 0))) DESC";
+    } else {
+      orderBySql = 'm.id DESC';
+    }
+  } else if (tasteType) {
     orderBySql = TASTE_ORDER_BY;
-  } else if (releaseStatus === 'popular') {
-    orderBySql = 'COALESCE(m.tmdb_vote_count, 0) DESC, COALESCE(m.tmdb_rating, 0) DESC, m.id DESC';
-  } else if (releaseStatus === 'top_rated') {
-    orderBySql = 'COALESCE(m.tmdb_rating, 0) DESC, COALESCE(m.tmdb_vote_count, 0) DESC, m.id DESC';
-  } else if (releaseStatus === 'upcoming' || releaseStatus === 'unreleased') {
-    orderBySql =
-      "COALESCE(NULLIF(TRIM(m.release_date), ''), printf('%04d-06-15', IFNULL(m.release_year, 2099))) ASC";
-  } else if (releaseStatus === 'now_playing') {
-    orderBySql =
-      "COALESCE(NULLIF(TRIM(m.release_date), ''), printf('%04d-01-01', IFNULL(m.release_year, 0))) DESC";
   } else if (orderByParam === 'release_asc') {
-    /** 即将上映列表：按发行日升序（无精确日期的排在年中，避免全挤在年末） */
     orderBySql =
       "COALESCE(NULLIF(TRIM(m.release_date), ''), printf('%04d-06-15', IFNULL(m.release_year, 2099))) ASC";
   } else {

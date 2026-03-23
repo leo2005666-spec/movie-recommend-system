@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useMemo } from 'react';
+import { useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { FilmStripIcon, CaretDown, CaretUp } from '@phosphor-icons/react';
 import MovieCard from '../components/MovieCard';
@@ -41,6 +41,9 @@ export default function MovieList() {
   /** 片长（分钟）0–360 */
   const [durationRange, setDurationRange] = useState({ min: 0, max: 360 });
 
+  /** 避免快速切换筛选时，旧请求晚返回覆盖新结果 */
+  const movieListFetchGen = useRef(0);
+
   const toggleTypeKey = (key) => {
     setSelectedTypes((prev) => (prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key]));
     setPage(1);
@@ -52,6 +55,7 @@ export default function MovieList() {
   };
 
   const load = useCallback(() => {
+    const gen = ++movieListFetchGen.current;
     setLoading(true);
     const params = { page, limit: 15 };
     if (tasteType) params.tasteType = tasteType;
@@ -71,11 +75,19 @@ export default function MovieList() {
     api
       .get('/movies', params)
       .then((r) => {
+        if (gen !== movieListFetchGen.current) return;
         setList(r.data.list || []);
         setTotal(r.data.total || 0);
       })
-      .catch(() => setList([]))
-      .finally(() => setLoading(false));
+      .catch(() => {
+        if (gen !== movieListFetchGen.current) return;
+        setList([]);
+        setTotal(0);
+      })
+      .finally(() => {
+        if (gen !== movieListFetchGen.current) return;
+        setLoading(false);
+      });
   }, [
     page,
     tasteType,

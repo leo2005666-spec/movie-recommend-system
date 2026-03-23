@@ -206,7 +206,7 @@ npm run fill-covers
 - `/api/users/me/comments` - **GET** 当前用户影评列表分页（`page`、`limit`，需登录）
 - `/api/actors/:tmdbPersonId` - **GET** TMDB 演员详情（`person`：含 `gender`、`birthday`、`place_of_birth`、`also_known_as`、`homepage`、`imdb_id`、`popularity` 等）+ **`movies`**：本站已入库参演作品 + **`filmography`**：TMDB 参演片单（去重，含 `tmdb_id`、`title`、`release_date`、`release_year_label`、`character`、`poster_thumb`、`in_library`、`local_id`）+ **`tmdb_person_url`**（链到 TMDB 人物页）；需配置 `TMDB_API_KEY`
 - `/api/logs` - 活动日志
-- `/api/movies` - 影视作品列表/CRUD；列表支持：`releaseStatus` —— **影视库侧栏四态**：`popular`（热门，按 `tmdb_vote_count`↓、`tmdb_rating`↓）、`now_playing`（正在上映：`release_date` 在近 **120 天内**且已首映）、`upcoming`（即将上映，同 `unreleased`：未来年或 `release_date` 晚于今天，按发行日升序）、`top_rated`（高分：`tmdb_rating ≥ 6.5`）；兼容旧值 `released` / `unreleased`。另支持 `orderBy=release_asc`、`typeKeys`（类型多选 AND）、`dateFrom`/`dateTo`、`durationMin`/`durationMax`、`scoreMin`/`scoreMax`、`country`、`tasteType`
+- `/api/movies` - 影视作品列表/CRUD；列表支持：`releaseStatus` —— **影视库侧栏四态**：`popular`（热门，按 `tmdb_vote_count`↓、`tmdb_rating`↓）、`now_playing`（正在上映：`release_date` 在近 **120 天内**且已首映）、`upcoming`（即将上映，同 `unreleased`：未来年或 `release_date` 晚于今天，按发行日升序）、`top_rated`（高分：`tmdb_rating ≥ 6.5`）；兼容旧值 `released` / `unreleased`。**排序**：侧栏四态与 TMDB 一致，**优先按上述模式排序**，不再被 `tasteType` 的人群口味排序覆盖（口味仍参与 WHERE 筛选）。另支持 `orderBy=release_asc`、`typeKeys`（类型多选 AND）、`dateFrom`/`dateTo`、`durationMin`/`durationMax`、`scoreMin`/`scoreMax`、`country`、`tasteType`
 - `/api/categories` - 分类管理
 - `/api/tags` - 标签管理
 - `/api/recommend` - 个性化推荐（`tasteType`、`limit`≤80；**`prefer=popular`** 时固定按 TMDB 投票数/评分排序，供首页轮播）

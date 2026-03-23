@@ -39,7 +39,8 @@ export default function TrailerStripCard({ movie, subtitle, onHoverStart, onHove
     onMouseLeave: onHoverEnd,
   };
 
-  if (movie.id) {
+  /** 仅本站电影库有 id；电视剧走 TMDB 外链 */
+  if (movie.id && movie.media_type !== 'tv') {
     return (
       <Link to={`/movies/${movie.id}`} className="trailer-strip-card" {...hoverProps}>
         {thumb}

@@ -5,19 +5,23 @@ import { api, getCoverUrl, getProxiedImageUrl, getPosterOrCoverUrl } from '../ap
 import { normalizeMovieListResponse } from '../utils/recommendApi';
 import MovieCard from '../components/MovieCard';
 import TrailerStripCard from '../components/home/TrailerStripCard';
+import HomeTmdbRails from '../components/home/HomeTmdbRails';
 import HomeReviewsBoard from '../components/home/HomeReviewsBoard';
 import HomeWelcomeHero from '../components/home/HomeWelcomeHero';
 import { MOCK_HOME_REVIEWS } from '../constants/mockHomeReviews';
 
 const SCENE_HOME = 'home_personalized';
 
-/** 最新预告片 · 筛选 Tab（与 TMDB 数据源对齐：热门=即将上映 / 影院=正在上映） */
+/** TMDB 区域（与 tmdb.org 地区片单一致，可 VITE_TMDB_REGION=US 等） */
+const TMDB_REGION = import.meta.env.VITE_TMDB_REGION || 'CN';
+
+/** 最新预告片 · 与 TMDB 各 Tab 同源（GET /api/tmdb/trailer-row） */
 const TRAILER_TABS = [
-  { key: 'hot', label: '热门', mode: 'tmdb', tmdbKind: 'upcoming' },
-  { key: 'worker', label: '流媒体', mode: 'taste', tasteType: 'worker' },
-  { key: 'family', label: '电视播出', mode: 'taste', tasteType: 'family' },
-  { key: 'couple', label: '可供租借', mode: 'taste', tasteType: 'couple' },
-  { key: 'soon', label: '影院上映中', mode: 'tmdb', tmdbKind: 'now_playing' },
+  { key: 'hot', label: '热门', trailerTab: 'hot' },
+  { key: 'streaming', label: '流媒体', trailerTab: 'streaming' },
+  { key: 'tv', label: '电视播出', trailerTab: 'tv' },
+  { key: 'rent', label: '可供租借', trailerTab: 'rent' },
+  { key: 'theaters', label: '影院上映中', trailerTab: 'theaters' },
 ];
 
 function movieRowKey(m) {
@@ -81,30 +85,25 @@ export default function Home() {
     setTrailerHoverKey(null);
     const tab = TRAILER_TABS.find((t) => t.key === key) || TRAILER_TABS[0];
     try {
-      /** TMDB 实时列表（与 TMDB 网站一致：未上映 / 在映） */
-      if (tab.mode === 'tmdb' && tab.tmdbKind) {
-        try {
-          const r = await api.get('/tmdb/lists', { kind: tab.tmdbKind });
-          const list = r?.data?.list || [];
-          if (list.length) {
-            setTrailerList(list);
-            return;
-          }
-        } catch {
-          /* 走本地兜底 */
+      try {
+        const r = await api.get('/tmdb/trailer-row', {
+          tab: tab.trailerTab || 'hot',
+          region: TMDB_REGION,
+        });
+        const list = r?.data?.list || [];
+        if (list.length) {
+          setTrailerList(list);
+          return;
         }
-        const fallback =
-          tab.tmdbKind === 'now_playing'
-            ? { releaseStatus: 'now_playing', limit: 20, page: 1 }
-            : { releaseStatus: 'upcoming', orderBy: 'release_asc', limit: 20, page: 1 };
-        const r = await api.get('/movies', fallback);
-        setTrailerList(r?.data?.list || []);
-        return;
+      } catch {
+        /* 走本地兜底 */
       }
-      if (tab.mode === 'taste' && tab.tasteType) {
-        const r = await api.get('/recommend', { limit: 20, tasteType: tab.tasteType });
-        setTrailerList(Array.isArray(r?.data) ? r.data : []);
-      }
+      const fallback =
+        tab.trailerTab === 'theaters'
+          ? { releaseStatus: 'now_playing', limit: 20, page: 1 }
+          : { releaseStatus: 'upcoming', orderBy: 'release_asc', limit: 20, page: 1 };
+      const r = await api.get('/movies', fallback);
+      setTrailerList(r?.data?.list || []);
     } catch {
       setTrailerList([]);
     } finally {
@@ -283,6 +282,9 @@ export default function Home() {
           </div>
         </div>
       </section>
+
+      {/* TMDB：热门（四 Tab）+ 可免费观看（与 tmdb.org 同步） */}
+      <HomeTmdbRails />
 
       {/* 快捷入口 + 轻量推荐 */}
       <section className="home-tmdb-section home-tmdb-section--compact">

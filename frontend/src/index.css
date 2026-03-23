@@ -878,6 +878,204 @@ button { cursor: pointer; }
   overflow: hidden;
 }
 
+/** ========== TMDB 同步双轨：热门 + 可免费观看（与 tmdb.org 布局接近） ========== */
+.home-tmdb-rail-section {
+  background: #ffffff;
+  border-top: 1px solid #e2e8f0;
+}
+.home-tmdb-rail-section--free {
+  background: #f8fafc;
+}
+.home-tmdb-rail-section__inner {
+  padding: var(--space-xl) 0;
+  max-width: min(1680px, 100%);
+  margin: 0 auto;
+  padding-left: clamp(0.35rem, 2vw, 1.5rem);
+  padding-right: clamp(0.35rem, 2vw, 1.5rem);
+}
+.home-tmdb-rail-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem 1rem;
+  margin-bottom: var(--space-md);
+}
+.home-tmdb-rail-title {
+  font-size: 1.5rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: #0f172a;
+  margin: 0;
+}
+.home-tmdb-rail-pill-row {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  padding: 4px;
+  border-radius: 999px;
+  background: #e2e8f0;
+  margin-left: auto;
+  justify-content: flex-end;
+  max-width: 100%;
+}
+.home-tmdb-rail-pill-row--free {
+  background: #e2e8f0;
+}
+.home-tmdb-rail-pill {
+  border: none;
+  border-radius: 999px;
+  padding: 0.38rem 0.95rem;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+  background: transparent;
+  color: #475569;
+  transition: background 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
+}
+.home-tmdb-rail-pill:hover {
+  color: #0f172a;
+}
+.home-tmdb-rail-pill--active {
+  background: #032541;
+  color: #fff;
+  box-shadow: 0 2px 10px rgba(3, 37, 65, 0.28);
+}
+.home-tmdb-carousel--rail {
+  overflow: visible;
+  margin-top: 0.25rem;
+}
+.home-tmdb-carousel__track--rail {
+  gap: 1rem;
+  padding-bottom: 0.5rem;
+}
+.home-tmdb-carousel__cell--rail {
+  flex: 0 0 158px;
+  width: 158px;
+  min-width: 158px;
+  scroll-snap-align: start;
+}
+@media (max-width: 640px) {
+  .home-tmdb-carousel__cell--rail {
+    flex-basis: 140px;
+    width: 140px;
+    min-width: 140px;
+  }
+}
+
+.tmdb-rail-card {
+  display: block;
+  text-decoration: none;
+  color: inherit;
+  border-radius: 10px;
+  overflow: hidden;
+  background: #fff;
+  border: 1px solid #e8ecf0;
+  box-shadow: 0 2px 10px rgba(15, 23, 42, 0.06);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.tmdb-rail-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 10px 28px rgba(15, 23, 42, 0.12);
+}
+.tmdb-rail-card__cover-wrap {
+  position: relative;
+  aspect-ratio: 2 / 3;
+  background: #1e293b;
+}
+.tmdb-rail-card__cover-wrap img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.tmdb-rail-card__score-ring {
+  position: absolute;
+  left: 8px;
+  bottom: -10px;
+  z-index: 2;
+  width: 42px;
+  height: 42px;
+  background: #081c22;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.35);
+}
+.tmdb-rail-card__score-svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  transform: rotate(-90deg);
+}
+.tmdb-rail-card__score-bg {
+  fill: none;
+  stroke: rgba(255, 255, 255, 0.16);
+  stroke-width: 2.5;
+}
+.tmdb-rail-card__score-fill {
+  fill: none;
+  stroke-width: 2.5;
+  stroke-linecap: round;
+}
+.tmdb-rail-card__score-value {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: #fff;
+  z-index: 1;
+}
+.tmdb-rail-card__score-pct {
+  font-size: 0.45rem;
+  margin-left: 0.05em;
+  opacity: 0.95;
+}
+.tmdb-rail-card__more {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 2;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.45);
+  color: rgba(255, 255, 255, 0.95);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.85;
+  pointer-events: none;
+}
+.tmdb-rail-card:hover .tmdb-rail-card__more {
+  opacity: 1;
+}
+.tmdb-rail-card__info {
+  padding: 0.65rem 0.5rem 0.75rem;
+  padding-top: calc(0.65rem + 8px);
+  background: #fff;
+}
+.tmdb-rail-card__title {
+  font-size: 0.88rem;
+  font-weight: 800;
+  color: #0a0a0a;
+  line-height: 1.3;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.tmdb-rail-card__date {
+  margin-top: 0.3rem;
+  font-size: 0.8rem;
+  font-weight: 400;
+  color: rgba(0, 0, 0, 0.55);
+}
+
 .home-tmdb-section--compact {
   padding-top: var(--space-lg);
 }

@@ -208,7 +208,11 @@ npm run fill-covers
 - `/api/users/me/comments` - **GET** 当前用户影评列表分页（`page`、`limit`，需登录）
 - `/api/actors/:tmdbPersonId` - **GET** TMDB 演员详情（`person`：含 `gender`、`birthday`、`place_of_birth`、`also_known_as`、`homepage`、`imdb_id`、`popularity` 等）+ **`movies`**：本站已入库参演作品 + **`filmography`**：TMDB 参演片单（去重，含 `tmdb_id`、`title`、`release_date`、`release_year_label`、`character`、`poster_thumb`、`in_library`、`local_id`）+ **`tmdb_person_url`**（链到 TMDB 人物页）；需配置 `TMDB_API_KEY`
 - `/api/logs` - 活动日志
-- `/api/tmdb/lists?kind=upcoming|now_playing|popular` - **TMDB 官方列表**（需 `TMDB_API_KEY`）：每次请求拉取 TMDB API（服务端 **约 5 分钟内存缓存**，减轻频率与冷启动）；返回与本地库 `tmdb_id` 合并后的条目（含 `backdropUrl`、无本站 id 时 `externalUrl` 链 TMDB）。首页「最新预告片」**热门=即将上映**、**影院上映中=now_playing** 使用本接口；失败或空时回退 **`/api/movies`** 对应筛选。全量入库仍靠 **`npm run crawler`** 等脚本，与「列表实时」互补
+- `/api/tmdb/lists?kind=upcoming|now_playing|popular&region=CN` - **TMDB 电影列表**（`upcoming`/`now_playing` 带 **`region`**，与 tmdb.org 地区一致；服务端约 **5 分钟**缓存）
+- `/api/tmdb/trailer-row?tab=hot|streaming|tv|rent|theaters&region=CN` - **首页「最新预告片」各 Tab** 与 TMDB 同源：`hot`=即将上映、`streaming`=流媒体订阅、`tv`=今日播出剧集、`rent`=租借、`theaters`=影院上映
+- `/api/tmdb/rail?type=trending&tab=streaming|tv|rent|theaters&region=CN` - **首页「热门」横条**：`streaming`=`trending/all/day`（混合影视）、`tv`=`tv/on_the_air`、`rent`=`discover/movie` rent、`theaters`=`movie/now_playing`
+- `/api/tmdb/rail?type=free&tab=movie|tv&region=CN` - **「可免费观看」**：`discover` + `with_watch_monetization_types=free`（某地区可能为空属正常）
+- 上述接口均返回 `media_type`（`movie`|`tv`）、`vote_average`、`release_date` 等；电视剧无本站 `id` 时链 **TMDB**。全量入库仍靠 **`npm run crawler`**。前端可选 **`VITE_TMDB_REGION`**（默认 `CN`）与后端 **`TMDB_REGION`** 对齐
 - `/api/movies` - 影视作品列表/CRUD；列表支持：`releaseStatus` —— **影视库侧栏四态**：`popular`（热门，按 `tmdb_vote_count`↓、`tmdb_rating`↓）、`now_playing`（正在上映：`release_date` 在近 **120 天内**且已首映）、`upcoming`（即将上映，同 `unreleased`：未来年或 `release_date` 晚于今天，按发行日升序）、`top_rated`（高分：`tmdb_rating ≥ 6.5`）；兼容旧值 `released` / `unreleased`。**排序**：侧栏四态与 TMDB 一致，**优先按上述模式排序**，不再被 `tasteType` 的人群口味排序覆盖（口味仍参与 WHERE 筛选）。另支持 `orderBy=release_asc`、`typeKeys`（类型多选 AND）、`dateFrom`/`dateTo`、`durationMin`/`durationMax`、`scoreMin`/`scoreMax`、`country`、`tasteType`
 - `/api/categories` - 分类管理
 - `/api/tags` - 标签管理

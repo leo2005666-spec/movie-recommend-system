@@ -6,11 +6,13 @@ import MovieLoading from '../components/MovieLoading';
 import RecommendSpotlight from '../components/RecommendSpotlight';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../api/request';
+import { normalizeMovieListResponse } from '../utils/recommendApi';
 
 const SCENE_RECOMMEND = 'home_personalized';
 
 export default function Recommend() {
   const { user } = useAuth();
+  const userId = user?.id ?? null;
   const [list, setList] = useState([]);
   const [tastes, setTastes] = useState([]);
   const [tasteType, setTasteType] = useState('');
@@ -21,35 +23,65 @@ export default function Recommend() {
   }, []);
 
   useEffect(() => {
+    let cancelled = false;
     setLoading(true);
     const params = { limit: 48 };
 
     if (tasteType) {
-      api.get('/recommend', { ...params, tasteType })
-        .then((r) => setList(r.data || []))
-        .catch(() => setList([]))
-        .finally(() => setLoading(false));
-      return;
+      api
+        .get('/recommend', { ...params, tasteType })
+        .then((r) => {
+          if (!cancelled) setList(r?.data || []);
+        })
+        .catch(() => {
+          if (!cancelled) setList([]);
+        })
+        .finally(() => {
+          if (!cancelled) setLoading(false);
+        });
+      return () => {
+        cancelled = true;
+      };
     }
 
-    // 为你推荐：优先用协同过滤（基于用户评分/收藏/评论），fallback 到原有个性化
-    api.get('/recommendations', { scene: SCENE_RECOMMEND, ...params })
-      .then((r) => {
-        const data = Array.isArray(r.data) ? r.data : [];
-        if (data.length > 0) {
-          setList(data);
-          if (user) {
-            data.slice(0, 48).forEach((m) => {
-              api.post('/recommend/events', { scene: SCENE_RECOMMEND, movieId: m.id, eventType: 'exposure' }).catch(() => {});
-            });
-          }
-        } else {
-          return api.get('/recommend', params).then((res) => setList(res.data || []));
+    (async () => {
+      try {
+        const [popularRes, recRes] = await Promise.all([
+          api.get('/recommend', { ...params, prefer: 'popular' }).catch(() => null),
+          api.get('/recommendations', { scene: SCENE_RECOMMEND, ...params }).catch(() => null),
+        ]);
+        if (cancelled) return;
+        const recList = normalizeMovieListResponse(recRes);
+        const popularList = Array.isArray(popularRes?.data) ? popularRes.data : [];
+        let data = recList.length ? recList : popularList;
+        if (!data.length) {
+          const fb = await api.get('/recommend', params).catch(() => null);
+          data = Array.isArray(fb?.data) ? fb.data : [];
         }
-      })
-      .catch(() => api.get('/recommend', params).then((r) => setList(r.data || [])).catch(() => setList([])))
-      .finally(() => setLoading(false));
-  }, [user, tasteType]);
+        setList(data);
+        if (userId != null && data.length > 0) {
+          data.slice(0, 48).forEach((m) => {
+            api.post('/recommend/events', { scene: SCENE_RECOMMEND, movieId: m.id, eventType: 'exposure' }).catch(() => {});
+          });
+        }
+      } catch {
+        if (!cancelled) {
+          try {
+            const r = await api.get('/recommend', { ...params, prefer: 'popular' });
+            setList(Array.isArray(r?.data) ? r.data : []);
+          } catch {
+            setList([]);
+          }
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [tasteType, userId]);
 
   return (
     <div className="recommend-page recommend-page--with-spotlight">

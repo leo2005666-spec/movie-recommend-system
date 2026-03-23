@@ -8,6 +8,22 @@ export const API_BASE = import.meta.env.VITE_API_BASE || '/api';
 
 const BASE = API_BASE;
 
+/** 后端静态资源根（头像 /uploads 等）。生产环境前后端分离时请配置 VITE_API_BASE 为完整 https://xxx/api，或单独设 VITE_UPLOADS_ORIGIN */
+export function getBackendOrigin() {
+  const uploads = import.meta.env.VITE_UPLOADS_ORIGIN;
+  if (typeof uploads === 'string' && uploads.trim().startsWith('http')) {
+    return uploads.trim().replace(/\/$/, '');
+  }
+  const apiBase = import.meta.env.VITE_API_BASE || '/api';
+  if (typeof apiBase === 'string' && apiBase.startsWith('http')) {
+    return apiBase.replace(/\/api\/?$/, '');
+  }
+  if (typeof window !== 'undefined' && window.location?.origin) {
+    return window.location.origin;
+  }
+  return '';
+}
+
 /** 封面图片 URL：走后端代理（后端会尝试直连 + wsrv.nl 兜底）；opts.w 请求更宽像素利于轮播高清。仅需本地 id 即可。 */
 export function getCoverUrl(movie, opts = {}) {
   if (!movie?.id) return '';
@@ -39,16 +55,8 @@ export function getAvatarUrl(avatar) {
   if (!s) return '';
   if (/^https?:\/\//i.test(s)) return s;
   if (s.startsWith('/uploads/')) {
-    const base = import.meta.env.VITE_API_BASE || '/api';
-    if (typeof base === 'string' && base.startsWith('http')) {
-      const origin = base.replace(/\/api\/?$/, '');
-      return `${origin}${s}`;
-    }
-    // 相对 /api：开发环境 Vite 代理了 /uploads；用当前页面 origin 拼绝对地址，避免部分浏览器对相对路径解析异常
-    if (typeof window !== 'undefined' && window.location?.origin) {
-      return `${window.location.origin}${s}`;
-    }
-    return s;
+    const origin = getBackendOrigin();
+    return origin ? `${origin}${s}` : s;
   }
   if (s.startsWith('/')) return s;
   return s;
@@ -63,7 +71,8 @@ async function request(url, options = {}) {
   const token = getToken();
   if (token) headers.Authorization = `Bearer ${token}`;
 
-  const timeout = 60000; // 60 秒，适配 Render 冷启动（约 30-50 秒）
+  /** 默认 45s：协同过滤略慢；过短易误判失败，过长体感差 */
+  const timeout = Number(import.meta.env.VITE_API_TIMEOUT_MS) || 45000;
   let res;
   try {
     res = await fetch(BASE + url, { ...options, headers, signal: AbortSignal.timeout(timeout) });
@@ -109,7 +118,7 @@ async function postForm(url, formData) {
   const headers = {};
   const token = getToken();
   if (token) headers.Authorization = `Bearer ${token}`;
-  const timeout = 60000;
+  const timeout = Number(import.meta.env.VITE_API_UPLOAD_TIMEOUT_MS) || 90000;
   let res;
   try {
     res = await fetch(BASE + url, {

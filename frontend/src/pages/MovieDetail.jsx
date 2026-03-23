@@ -3,6 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import MovieCard, { getScoreColor } from '../components/MovieCard';
 import { useAuth } from '../context/AuthContext';
 import { api, getCoverUrl } from '../api/request';
+import { normalizeMovieListResponse } from '../utils/recommendApi';
 import DetailPageLoading from '../components/DetailPageLoading';
 
 const SCENE_SIMILAR = 'similar';
@@ -87,7 +88,7 @@ export default function MovieDetail() {
       setBackdropPath(cd.backdrop_path || null);
       setTagline(cd.tagline || null);
       setTmdbDetails(cd.tmdb_details || null);
-      const list = Array.isArray(recRes.data) ? recRes.data : [];
+      const list = normalizeMovieListResponse(recRes);
       setSimilar(list);
       if (list.length > 0 && user) {
         queueMicrotask(() => {

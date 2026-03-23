@@ -3,6 +3,18 @@ import { api } from '../api/request';
 
 const AuthContext = createContext(null);
 
+function userPayloadEqual(a, b) {
+  if (!a || !b) return false;
+  return (
+    a.id === b.id &&
+    a.username === b.username &&
+    (a.nickname || '') === (b.nickname || '') &&
+    (a.email || '') === (b.email || '') &&
+    (a.avatar || '') === (b.avatar || '') &&
+    a.role === b.role
+  );
+}
+
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(() => {
     try {
@@ -28,9 +40,10 @@ export function AuthProvider({ children }) {
           username: me.username,
           nickname: me.nickname ?? prev?.nickname ?? me.username,
           email: me.email ?? null,
-          avatar: me.avatar != null && me.avatar !== '' ? me.avatar : null,
+          avatar: me.avatar != null && me.avatar !== '' ? String(me.avatar).trim() : null,
           role: me.role,
         };
+        if (userPayloadEqual(prev, next)) return;
         localStorage.setItem('user', JSON.stringify(next));
         setUser(next);
       })
@@ -51,7 +64,10 @@ export function AuthProvider({ children }) {
   const login = (userData, token) => {
     const normalized = {
       ...userData,
-      avatar: userData?.avatar != null && userData.avatar !== '' ? userData.avatar : null,
+      avatar:
+        userData?.avatar != null && String(userData.avatar).trim() !== ''
+          ? String(userData.avatar).trim()
+          : null,
     };
     localStorage.setItem('user', JSON.stringify(normalized));
     localStorage.setItem('token', token);

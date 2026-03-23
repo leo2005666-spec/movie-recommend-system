@@ -111,7 +111,8 @@ router.get('/', optionalAuth, asyncHandler(async (req, res) => {
     } else {
       result = await handleHomePersonalized(userId, limit);
     }
-    res.json({ code: 0, data: result.list, source: result.source });
+    const listOut = Array.isArray(result.list) ? result.list : [];
+    res.json({ code: 0, data: listOut, source: result.source });
   } catch (err) {
     console.error('[recommendations]', err.message);
     const fallback = userId ? await getPersonalizedRecommendations(userId, limit) : await getPopularRecommendations(limit);

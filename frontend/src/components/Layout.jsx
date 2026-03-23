@@ -98,9 +98,11 @@ export default function Layout() {
                 <span className="header-user-avatar" aria-hidden>
                   {user.avatar && !headerAvatarErr ? (
                     <img
+                      key={`${user.id}-${user.avatar}`}
                       src={getAvatarUrl(user.avatar)}
                       alt=""
                       className="header-user-avatar__img"
+                      referrerPolicy="no-referrer"
                       onError={() => setHeaderAvatarErr(true)}
                     />
                   ) : (

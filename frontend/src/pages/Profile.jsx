@@ -126,9 +126,11 @@ export default function Profile() {
       <div className="profile-overview__avatar profile-hero__avatar">
         {profile.avatar && !avatarLoadErr ? (
           <img
+            key={profile.avatar}
             src={getAvatarUrl(profile.avatar)}
             alt=""
             className="profile-overview__avatar-img"
+            referrerPolicy="no-referrer"
             onError={() => setAvatarLoadErr(true)}
           />
         ) : (

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { api, getCoverUrl } from '../api/request';
+import { normalizeMovieListResponse } from '../utils/recommendApi';
 import MovieBanner from '../components/MovieBanner';
 import MovieCard from '../components/MovieCard';
 import MovieLoading from '../components/MovieLoading';
@@ -10,6 +11,7 @@ const SCENE_HOME = 'home_personalized';
 
 export default function Home() {
   const { user } = useAuth();
+  const userId = user?.id ?? null;
   const [recommend, setRecommend] = useState([]);
   const [tastes, setTastes] = useState([]);
   const [tasteType, setTasteType] = useState('');
@@ -33,7 +35,7 @@ export default function Home() {
 
     const finish = (list) => {
       if (!cancelled) {
-        setRecommend(list);
+        setRecommend(Array.isArray(list) ? list : []);
         setLoading(false);
       }
     };
@@ -43,19 +45,35 @@ export default function Home() {
       try {
         if (tasteType) {
           const r = await api.get('/recommend', { ...params, tasteType });
-          finish(r.data || []);
+          finish(r?.data || []);
           return;
         }
 
-        const r = await api.get('/recommendations', { scene: SCENE_HOME, ...params });
-        let list = Array.isArray(r.data) ? r.data : [];
-        if (list.length === 0) {
-          const fb = await api.get('/recommend', params);
-          list = fb.data || [];
+        /** 并行拉「热门」与「协同推荐」，谁先到都能先展示热门兜底 */
+        const [popularRes, recRes] = await Promise.all([
+          api.get('/recommend', { ...params, prefer: 'popular' }).catch(() => null),
+          api.get('/recommendations', { scene: SCENE_HOME, ...params }).catch(() => null),
+        ]);
+
+        const popularList = Array.isArray(popularRes?.data) ? popularRes.data : [];
+        if (!cancelled && popularList.length) {
+          setRecommend(popularList);
+          setLoading(false);
+        }
+
+        const recList = normalizeMovieListResponse(recRes);
+        let list = recList.length ? recList : popularList;
+        if (!list.length) {
+          try {
+            const fb = await api.get('/recommend', params);
+            list = Array.isArray(fb?.data) ? fb.data : [];
+          } catch {
+            list = [];
+          }
         }
         finish(list);
 
-        if (!cancelled && user && list.length > 0) {
+        if (!cancelled && userId != null && list.length > 0) {
           list.slice(0, 12).forEach((m) => {
             api.post('/recommend/events', { scene: SCENE_HOME, movieId: m.id, eventType: 'exposure' }).catch(() => {});
           });
@@ -63,17 +81,24 @@ export default function Home() {
       } catch {
         if (cancelled) return;
         try {
-          const r = await api.get('/recommend', params);
-          finish(r.data || []);
+          const r = await api.get('/recommend', { ...params, prefer: 'popular' });
+          finish(r?.data || []);
         } catch {
-          finish([]);
+          try {
+            const r2 = await api.get('/recommend', params);
+            finish(r2?.data || []);
+          } catch {
+            finish([]);
+          }
         }
       }
     };
 
     loadRecommend();
-    return () => { cancelled = true; };
-  }, [tasteType, user]);
+    return () => {
+      cancelled = true;
+    };
+  }, [tasteType, userId]);
 
   return (
     <div className="home-page">

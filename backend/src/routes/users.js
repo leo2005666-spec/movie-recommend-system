@@ -13,6 +13,9 @@ const { authMiddleware, requireAdmin } = require('../middleware/auth');
 const { logActivity } = require('../middleware/log');
 const { asyncHandler } = require('../utils/asyncHandler');
 
+/** 头像上传单文件上限（字节），与前端提示一致 */
+const AVATAR_MAX_BYTES = 10 * 1024 * 1024;
+
 const avatarsDir = path.join(__dirname, '../../uploads/avatars');
 fs.mkdirSync(avatarsDir, { recursive: true });
 
@@ -27,10 +30,10 @@ const avatarStorage = multer.diskStorage({
 
 const uploadAvatar = multer({
   storage: avatarStorage,
-  limits: { fileSize: 2 * 1024 * 1024 },
+  limits: { fileSize: AVATAR_MAX_BYTES },
   fileFilter: (req, file, cb) => {
     if (/^image\/(jpeg|png|gif|webp)$/.test(file.mimetype)) return cb(null, true);
-    cb(new Error('仅支持 jpg、png、gif、webp 图片，单张不超过 2MB'));
+    cb(new Error('仅支持 jpg、png、gif、webp 图片，单张不超过 10MB'));
   },
 });
 
@@ -43,7 +46,7 @@ router.post(
   (req, res, next) => {
     uploadAvatar.single('avatar')(req, res, (err) => {
       if (err) {
-        const msg = err.code === 'LIMIT_FILE_SIZE' ? '图片不能超过 2MB' : (err.message || '上传失败');
+        const msg = err.code === 'LIMIT_FILE_SIZE' ? '图片不能超过 10MB' : (err.message || '上传失败');
         return res.status(400).json({ code: 400, message: msg });
       }
       next();

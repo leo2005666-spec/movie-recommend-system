@@ -47,7 +47,7 @@
 
 - **前端**：React 18 + Vite + React Router + Phosphor Icons（图标）
 - **界面风格**：全站 **浅灰画布 + 白卡片**；**影视库** 主区域 **`main--movie-list` 加宽（约 1680px）**、筛选列靠左、网格 **更大海报 / 约 5 列**；卡片为 **TMDB 式左下角好评率圆环**（TMDB 分×10 或站内均分换算，悬停可看说明）+ **标题 + 上映日期**，**不展示片长**；**个性推荐页** 卡片顶部有 **推荐理由小标签**（与 TMDB 商标无关）；首页轮播同宽 contained Hero；详情页仍可评分
-- **管理后台**：**数据概览**（`/admin/dashboard`）展示用户数、影片数、评分/评论/收藏/反馈等统计；**每张统计卡片可点击**进入对应明细（如评论明细 `/admin/explore/comments`、收藏明细 `/admin/explore/favorites`，其余链到用户/影片/评分/反馈管理页）；**个人资料** 支持 **本地上传头像**（jpg/png/gif/webp，≤2MB，存于后端 `/uploads/avatars/`）或填写 **外链头像 URL**（`http/https`）；**影视详情评论** 支持 **10 条/页** 与 **加载更多**；**影视库搜索** 关键词匹配 **标题 + 简介 + 导演 + 演员** 字段
+- **管理后台**：**数据概览**（`/admin/dashboard`）展示用户数、影片数、评分/评论/收藏/反馈等统计；**每张统计卡片可点击**进入对应明细（如评论明细 `/admin/explore/comments`、收藏明细 `/admin/explore/favorites`，其余链到用户/影片/评分/反馈管理页）；**个人资料** 支持 **本地上传头像**（jpg/png/gif/webp，≤10MB，存于后端 `/uploads/avatars/`）或填写 **外链头像 URL**（`http/https`）；**影视详情评论** 支持 **10 条/页** 与 **加载更多**；**影视库搜索** 关键词匹配 **标题 + 简介 + 导演 + 演员** 字段
 - **字体**：Plus Jakarta Sans + Noto Sans SC（Google Fonts，高级无衬线风格）
 - **后端**：Node.js + Express
 - **数据库**：sql.js（纯 JavaScript 实现的 SQLite，**无需 Visual Studio 编译**，Windows 可直接运行）
@@ -215,7 +215,7 @@ npm run fill-covers
 - `/api/comments` - 评论（`DELETE /api/comments/:id` 删除**本人**评论）
 - `/api/qa` - 问答接口（**前台已不展示**；页面与导航已移除，接口仍可用）
 - `/api/feedbacks` - 用户反馈（`GET /me` 本人列表；`GET /` 管理员全部；`PATCH /:id` 改状态；`DELETE /:id` **管理员删除**）
-- `/api/users/me/avatar` - **POST** `multipart/form-data`，字段名 **`avatar`**，上传头像（需登录；jpg/png/gif/webp，≤2MB）；成功后 `users.avatar` 存为 `/uploads/avatars/...`，静态文件由后端 **`GET /uploads/...`** 提供
+- `/api/users/me/avatar` - **POST** `multipart/form-data`，字段名 **`avatar`**，上传头像（需登录；jpg/png/gif/webp，≤10MB）；成功后 `users.avatar` 存为 `/uploads/avatars/...`，静态文件由后端 **`GET /uploads/...`** 提供
 - `/api/admin/dashboard` - 管理员数据概览计数
 - `/api/admin/explore/comments` - 管理员分页查看全站评论明细（`page`、`limit`）
 - `/api/admin/explore/favorites` - 管理员分页查看全站收藏明细（谁收藏了哪部影片）
@@ -293,7 +293,8 @@ npm run fill-covers
 
 ## 近期调整说明（维护备忘）
 
-- **个人头像**：支持 **本地上传**（`POST /api/users/me/avatar`）与 **外链 URL**；开发环境 Vite 需代理 **`/uploads`** 到后端以便预览上传图。
+- **个人头像**：支持 **本地上传**（`POST /api/users/me/avatar`，单张 **≤10MB**）与 **外链 URL**；开发环境 Vite 需代理 **`/uploads`** 到后端以便预览上传图。
+- **个人资料页**：默认 **仅展示** 信息卡片；点击 **「编辑」** 后才显示 **相机换头像**、用户名/昵称/密码与外链头像，减少误触与旁人窥屏；宽屏下 **双列卡片网格** 与统计区尽量 **铺满主内容区**。
 - **管理端数据概览**：各统计卡片可点击；**评论 / 收藏** 进入 **`/admin/explore/comments`**、**`/admin/explore/favorites`** 分页明细表。
 - **影视详情 · 推荐观看**：TMDB 返回的推荐片若未在本库入库则无本地 `id`。现逻辑为：只把**已入库**的 TMDB 推荐做成可点进本站的卡片，并与「相似推荐」去重合并展示，避免出现「有海报但点不进去」。
 - **影视详情 · 评论**：原「评价 / 讨论」两个 Tab 内容相同，已合并为一块「评论」区域。

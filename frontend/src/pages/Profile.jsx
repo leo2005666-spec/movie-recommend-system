@@ -1,8 +1,18 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { UserIcon, HeartIcon, StarIcon, ChatCircleDotsIcon } from '@phosphor-icons/react';
+import {
+  UserIcon,
+  HeartIcon,
+  StarIcon,
+  ChatCircleDotsIcon,
+  CameraIcon,
+  PencilSimpleIcon,
+} from '@phosphor-icons/react';
 import { useAuth } from '../context/AuthContext';
 import { api, getAvatarUrl } from '../api/request';
+
+/** 头像上传大小限制（与后端一致，用于提示） */
+const AVATAR_MAX_MB = 10;
 
 export default function Profile() {
   const { updateUser } = useAuth();
@@ -13,27 +23,48 @@ export default function Profile() {
   const [avatar, setAvatar] = useState('');
   const [password, setPassword] = useState('');
   const [msg, setMsg] = useState('');
-  /** 本地上传头像中 */
+  /** 仅点击「编辑」后为 true：隐藏上传与表单，保护隐私 */
+  const [isEditing, setIsEditing] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
-  /** 头像图加载失败时回退为首字母 */
   const [avatarLoadErr, setAvatarLoadErr] = useState(false);
 
+  const loadProfile = () =>
+    api.get('/users/me').then((r) => {
+      setProfile(r.data);
+      setUsername(r.data?.username || '');
+      setNickname(r.data?.nickname || '');
+      setAvatar(r.data?.avatar || '');
+      setAvatarLoadErr(false);
+    });
+
   useEffect(() => {
-    api.get('/users/me')
-      .then((r) => {
-        setProfile(r.data);
-        setUsername(r.data?.username || '');
-        setNickname(r.data?.nickname || '');
-        setAvatar(r.data?.avatar || '');
-        setAvatarLoadErr(false);
-      })
-      .catch(() => setProfile(null));
+    loadProfile().catch(() => setProfile(null));
     api.get('/users/me/stats').then((r) => setStats(r.data)).catch(() => setStats({ favorites: 0, ratings: 0, comments: 0 }));
   }, []);
+
+  /** 保存成功回到查看模式后，顶部提示几秒后自动消失 */
+  useEffect(() => {
+    if (!msg || isEditing) return;
+    const t = setTimeout(() => setMsg(''), 4500);
+    return () => clearTimeout(t);
+  }, [msg, isEditing]);
+
+  const handleCancel = () => {
+    if (!profile) return;
+    setUsername(profile.username || '');
+    setNickname(profile.nickname || '');
+    setAvatar(profile.avatar || '');
+    setPassword('');
+    setMsg('');
+    setIsEditing(false);
+    setAvatarLoadErr(false);
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setMsg('');
+    setIsSaving(true);
     const body = {
       username: username?.trim() || undefined,
       nickname: nickname || undefined,
@@ -42,21 +73,23 @@ export default function Profile() {
     if (password) body.password = password;
     try {
       await api.put('/users/me', body);
-      setMsg('更新成功');
+      setMsg('已保存');
       setPassword('');
-      api.get('/users/me').then((r) => {
-        setProfile(r.data);
-        setUsername(r.data?.username || '');
-        setAvatar(r.data?.avatar || '');
-        setAvatarLoadErr(false);
-        updateUser({
-          username: r.data?.username,
-          nickname: r.data?.nickname,
-          avatar: r.data?.avatar || null,
-        });
+      const r = await api.get('/users/me');
+      setProfile(r.data);
+      setUsername(r.data?.username || '');
+      setAvatar(r.data?.avatar || '');
+      setAvatarLoadErr(false);
+      updateUser({
+        username: r.data?.username,
+        nickname: r.data?.nickname,
+        avatar: r.data?.avatar || null,
       });
-    } catch (e) {
-      setMsg(e.message || '更新失败');
+      setIsEditing(false);
+    } catch (err) {
+      setMsg(err.message || '保存失败');
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -79,7 +112,7 @@ export default function Profile() {
         nickname: u?.nickname,
         avatar: u?.avatar || null,
       });
-      setMsg('头像上传成功');
+      setMsg('头像已更新');
     } catch (err) {
       setMsg(err.message || '上传失败');
     } finally {
@@ -91,35 +124,106 @@ export default function Profile() {
 
   const displayName = profile.nickname || profile.username;
   const initial = (displayName[0] || '?').toUpperCase();
+  const roleLabel = profile.role === 'admin' ? '管理员' : '用户';
+  const createdAt = profile.created_at
+    ? new Date(profile.created_at).toLocaleString('zh-CN', { dateStyle: 'medium', timeStyle: 'short' })
+    : '—';
+
+  const avatarBlock = (
+    <div className={`profile-hero__avatar-wrap ${isEditing ? 'profile-hero__avatar-wrap--editable' : ''}`}>
+      <div className="profile-overview__avatar profile-hero__avatar">
+        {profile.avatar && !avatarLoadErr ? (
+          <img
+            src={getAvatarUrl(profile.avatar)}
+            alt=""
+            className="profile-overview__avatar-img"
+            onError={() => setAvatarLoadErr(true)}
+          />
+        ) : (
+          initial
+        )}
+      </div>
+      {isEditing && (
+        <>
+          <input
+            type="file"
+            accept="image/jpeg,image/png,image/gif,image/webp"
+            className="profile-avatar-upload__input"
+            id="profile-avatar-file"
+            disabled={uploadingAvatar || isSaving}
+            onChange={handleAvatarFile}
+          />
+          <label htmlFor="profile-avatar-file" className="profile-avatar-camera" title="更换头像">
+            <CameraIcon size={18} weight="bold" aria-hidden />
+            <span className="sr-only">更换头像</span>
+          </label>
+        </>
+      )}
+    </div>
+  );
 
   return (
-    <div className="form-page profile-page">
-      <h1 className="page-title">
-        <UserIcon size={24} weight="regular" className="page-title__icon" />
-        个人信息
-      </h1>
-
-      {/* 用户概览卡片 */}
-      <div className="profile-overview card">
-        <div className="profile-overview__avatar">
-          {profile.avatar && !avatarLoadErr ? (
-            <img
-              src={getAvatarUrl(profile.avatar)}
-              alt=""
-              className="profile-overview__avatar-img"
-              onError={() => setAvatarLoadErr(true)}
-            />
+    <div className="form-page profile-page profile-page--wide">
+      <header className="profile-page__header">
+        <h1 className="page-title profile-page__title">
+          <UserIcon size={24} weight="regular" className="page-title__icon" />
+          个人信息
+        </h1>
+        <div className="profile-page__toolbar">
+          {!isEditing ? (
+            <button type="button" className="btn profile-page__edit-btn" onClick={() => { setMsg(''); setIsEditing(true); }}>
+              <PencilSimpleIcon size={18} weight="bold" style={{ marginRight: 6 }} />
+              编辑
+            </button>
           ) : (
-            initial
+            <>
+              <button
+                type="button"
+                className="btn btn-outline"
+                onClick={handleCancel}
+                disabled={isSaving || uploadingAvatar}
+              >
+                取消
+              </button>
+              <button
+                type="submit"
+                form="profile-edit-form"
+                className="btn"
+                disabled={isSaving || uploadingAvatar}
+              >
+                {isSaving ? '保存中…' : '保存'}
+              </button>
+            </>
           )}
         </div>
-        <div className="profile-overview__info">
-          <div className="profile-overview__name">{displayName}</div>
-          <span className="profile-overview__tag">用户</span>
+      </header>
+      {msg && !isEditing && (
+        <div className={msg.includes('失败') || msg.includes('超过') ? 'error-msg profile-page__flash' : 'profile-page__flash profile-page__flash--ok'} role="status">
+          {msg}
         </div>
-      </div>
+      )}
 
-      {/* 统计卡片 */}
+      {/* 顶部身份区：铺满宽卡片 */}
+      <section className="card profile-hero">
+        <div className="profile-hero__row">
+          {avatarBlock}
+          <div className="profile-hero__meta">
+            <div className="profile-hero__name">{displayName}</div>
+            <div className="profile-hero__sub">@{profile.username}</div>
+            <div className="profile-hero__badges">
+              <span className="profile-overview__tag">{roleLabel}</span>
+            </div>
+            {isEditing && (
+              <p className="profile-hero__hint">
+                点击头像右下角相机图标可更换头像（jpg / png / gif / webp，单张不超过 {AVATAR_MAX_MB}MB）
+                {uploadingAvatar ? ' · 上传中…' : ''}
+              </p>
+            )}
+          </div>
+        </div>
+      </section>
+
+      {/* 统计：三列铺满 */}
       <div className="profile-stats">
         <Link to="/favorites" className="profile-stat card">
           <HeartIcon size={22} weight="regular" className="profile-stat__icon profile-stat__icon--pink" />
@@ -138,66 +242,105 @@ export default function Profile() {
         </div>
       </div>
 
-      {/* 个人资料表单 */}
-      <form onSubmit={handleSubmit} className="card profile-form">
-        <div className="profile-form__title">个人资料</div>
-        <div className="form-group">
-          <label>用户名（2-20字符）</label>
-          <input
-            className="form-input"
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-            placeholder="用户名"
-            minLength={2}
-            maxLength={20}
-          />
-        </div>
-        <div className="form-group">
-          <label>昵称</label>
-          <input className="form-input" value={nickname} onChange={(e) => setNickname(e.target.value)} />
-        </div>
-        <div className="form-group">
-          <label>头像</label>
-          <div className="profile-avatar-upload">
-            <input
-              type="file"
-              accept="image/jpeg,image/png,image/gif,image/webp"
-              className="profile-avatar-upload__input"
-              id="profile-avatar-file"
-              disabled={uploadingAvatar}
-              onChange={handleAvatarFile}
-            />
-            <label htmlFor="profile-avatar-file" className="btn btn-outline profile-avatar-upload__btn">
-              {uploadingAvatar ? '上传中…' : '从本地上传图片'}
-            </label>
-            <span className="profile-avatar-upload__tip">支持 jpg / png / gif / webp，单张不超过 2MB</span>
+      {/* 查看模式：信息卡片网格 */}
+      {!isEditing && (
+        <div className="profile-info-grid">
+          <div className="profile-field-card card">
+            <div className="profile-field-card__label">用户名</div>
+            <div className="profile-field-card__value">{profile.username}</div>
+            <div className="profile-field-card__footer">登录名，修改后仍可用于登录</div>
+          </div>
+          <div className="profile-field-card card">
+            <div className="profile-field-card__label">昵称</div>
+            <div className="profile-field-card__value">{profile.nickname || '未设置'}</div>
+            <div className="profile-field-card__footer">展示名称，可随时在编辑中修改</div>
+          </div>
+          <div className="profile-field-card card">
+            <div className="profile-field-card__label">角色</div>
+            <div className="profile-field-card__value">
+              <span className="profile-field-card__pill">{roleLabel}</span>
+            </div>
+          </div>
+          <div className="profile-field-card card">
+            <div className="profile-field-card__label">注册时间</div>
+            <div className="profile-field-card__value">{createdAt}</div>
           </div>
         </div>
-        <div className="form-group">
-          <label>或填写头像链接（http/https，留空则显示首字母）</label>
-          <input
-            className="form-input"
-            type="url"
-            inputMode="url"
-            value={avatar}
-            onChange={(e) => {
-              setAvatar(e.target.value);
-              setAvatarLoadErr(false);
-            }}
-            placeholder="https://example.com/avatar.jpg"
-            maxLength={2048}
-          />
-        </div>
-        <div className="form-group">
-          <label>新密码（不修改留空）</label>
-          <input className="form-input" type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="至少6位" />
-        </div>
-        {msg && <div className={msg.includes('失败') ? 'error-msg' : ''} style={{ marginBottom: '0.5rem' }}>{msg}</div>}
-        <button type="submit" className="btn">
-          <UserIcon size={16} weight="regular" style={{ marginRight: 6 }} />
-          保存
-        </button>
-      </form>
+      )}
+
+      {/* 编辑模式：表单卡片网格 */}
+      {isEditing && (
+        <form id="profile-edit-form" onSubmit={handleSubmit} className="profile-edit-panel card">
+          {msg && (
+            <div
+              className={msg.includes('失败') || msg.includes('超过') ? 'error-msg profile-edit-panel__msg' : 'profile-edit-panel__msg profile-edit-panel__msg--ok'}
+              role="status"
+            >
+              {msg}
+            </div>
+          )}
+          <div className="profile-edit-grid">
+            <div className="profile-field-card profile-field-card--input">
+              <label className="profile-field-card__label" htmlFor="pf-username">
+                用户名（2–20 字符）
+              </label>
+              <input
+                id="pf-username"
+                className="form-input profile-field-card__control"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                minLength={2}
+                maxLength={20}
+                autoComplete="username"
+              />
+            </div>
+            <div className="profile-field-card profile-field-card--input">
+              <label className="profile-field-card__label" htmlFor="pf-nickname">
+                昵称
+              </label>
+              <input
+                id="pf-nickname"
+                className="form-input profile-field-card__control"
+                value={nickname}
+                onChange={(e) => setNickname(e.target.value)}
+                maxLength={50}
+              />
+            </div>
+            <div className="profile-field-card profile-field-card--input profile-field-card--span2">
+              <label className="profile-field-card__label" htmlFor="pf-avatar-url">
+                头像链接（可选，http/https；与上方本地上传二选一或先后使用）
+              </label>
+              <input
+                id="pf-avatar-url"
+                className="form-input profile-field-card__control"
+                type="url"
+                inputMode="url"
+                value={avatar}
+                onChange={(e) => {
+                  setAvatar(e.target.value);
+                  setAvatarLoadErr(false);
+                }}
+                placeholder="https://example.com/avatar.jpg"
+                maxLength={2048}
+              />
+            </div>
+            <div className="profile-field-card profile-field-card--input profile-field-card--span2">
+              <label className="profile-field-card__label" htmlFor="pf-password">
+                新密码（不修改请留空）
+              </label>
+              <input
+                id="pf-password"
+                className="form-input profile-field-card__control"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="至少 6 位"
+                autoComplete="new-password"
+              />
+            </div>
+          </div>
+        </form>
+      )}
     </div>
   );
 }

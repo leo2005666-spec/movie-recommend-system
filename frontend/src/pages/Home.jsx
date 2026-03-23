@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { api, getCoverUrl } from '../api/request';
+import { api, getCoverUrl, getProxiedImageUrl, getPosterOrCoverUrl } from '../api/request';
 import { normalizeMovieListResponse } from '../utils/recommendApi';
 import MovieCard from '../components/MovieCard';
 import TrailerStripCard from '../components/home/TrailerStripCard';
@@ -11,14 +11,20 @@ import { MOCK_HOME_REVIEWS } from '../constants/mockHomeReviews';
 
 const SCENE_HOME = 'home_personalized';
 
-/** 最新预告片 · 筛选 Tab（对齐 TMDB 文案风格） */
+/** 最新预告片 · 筛选 Tab（与 TMDB 数据源对齐：热门=即将上映 / 影院=正在上映） */
 const TRAILER_TABS = [
-  { key: 'hot', label: '热门', mode: 'popular' },
+  { key: 'hot', label: '热门', mode: 'tmdb', tmdbKind: 'upcoming' },
   { key: 'worker', label: '流媒体', mode: 'taste', tasteType: 'worker' },
   { key: 'family', label: '电视播出', mode: 'taste', tasteType: 'family' },
   { key: 'couple', label: '可供租借', mode: 'taste', tasteType: 'couple' },
-  { key: 'soon', label: '影院上映中', mode: 'soon' },
+  { key: 'soon', label: '影院上映中', mode: 'tmdb', tmdbKind: 'now_playing' },
 ];
+
+function movieRowKey(m) {
+  if (m?.id != null) return `id-${m.id}`;
+  if (m?.tmdb_id != null) return `tmdb-${m.tmdb_id}`;
+  return `k-${String(m?.title || '')}`;
+}
 
 function chartItemsToMovies(chartList) {
   if (!Array.isArray(chartList)) return [];
@@ -36,6 +42,8 @@ export default function Home() {
   const [trailerTab, setTrailerTab] = useState('hot');
   const [trailerList, setTrailerList] = useState([]);
   const [trailerLoading, setTrailerLoading] = useState(true);
+  /** 悬停某部时切换背景；null 表示用列表第一项 */
+  const [trailerHoverKey, setTrailerHoverKey] = useState(null);
 
   const [hotComments, setHotComments] = useState([]);
   const [linkMovie, setLinkMovie] = useState(null);
@@ -70,21 +78,27 @@ export default function Home() {
 
   const loadTrailerTab = useCallback(async (key) => {
     setTrailerLoading(true);
+    setTrailerHoverKey(null);
     const tab = TRAILER_TABS.find((t) => t.key === key) || TRAILER_TABS[0];
     try {
-      if (tab.mode === 'soon') {
-        const r = await api.get('/movies', {
-          releaseStatus: 'unreleased',
-          orderBy: 'release_asc',
-          limit: 20,
-          page: 1,
-        });
+      /** TMDB 实时列表（与 TMDB 网站一致：未上映 / 在映） */
+      if (tab.mode === 'tmdb' && tab.tmdbKind) {
+        try {
+          const r = await api.get('/tmdb/lists', { kind: tab.tmdbKind });
+          const list = r?.data?.list || [];
+          if (list.length) {
+            setTrailerList(list);
+            return;
+          }
+        } catch {
+          /* 走本地兜底 */
+        }
+        const fallback =
+          tab.tmdbKind === 'now_playing'
+            ? { releaseStatus: 'now_playing', limit: 20, page: 1 }
+            : { releaseStatus: 'upcoming', orderBy: 'release_asc', limit: 20, page: 1 };
+        const r = await api.get('/movies', fallback);
         setTrailerList(r?.data?.list || []);
-        return;
-      }
-      if (tab.mode === 'popular') {
-        const r = await api.get('/recommend', { limit: 20, prefer: 'popular' });
-        setTrailerList(Array.isArray(r?.data) ? r.data : []);
         return;
       }
       if (tab.mode === 'taste' && tab.tasteType) {
@@ -150,9 +164,19 @@ export default function Home() {
     };
   }, [userId]);
 
-  const trailerBackdrop = trailerList[0]
-    ? `linear-gradient(105deg, rgba(3,12,28,0.92) 0%, rgba(12,20,40,0.78) 45%, rgba(8,15,30,0.55) 100%), url(${getCoverUrl(trailerList[0], { w: 1280 })})`
-    : undefined;
+  const trailerBgMovie = useMemo(() => {
+    if (!trailerList.length) return null;
+    if (trailerHoverKey == null) return trailerList[0];
+    return trailerList.find((m) => movieRowKey(m) === trailerHoverKey) || trailerList[0];
+  }, [trailerList, trailerHoverKey]);
+
+  const trailerBackdropUrl = useMemo(() => {
+    const m = trailerBgMovie;
+    if (!m) return '';
+    if (m.backdropUrl) return getProxiedImageUrl(m.backdropUrl);
+    if (m.id) return getCoverUrl(m, { w: 1280 });
+    return getPosterOrCoverUrl(m, { w: 1280 });
+  }, [trailerBgMovie]);
 
   return (
     <div className="home-page home-page--tmdb-wide">
@@ -206,8 +230,20 @@ export default function Home() {
         </div>
       </section>
 
-      {/* 最新预告片（横版 16:9 + Tab） */}
-      <section className="home-tmdb-section home-tmdb-section--trailers" style={trailerBackdrop ? { backgroundImage: trailerBackdrop } : undefined}>
+      {/* 最新预告片（横版 16:9 + Tab）· 背景随悬停切换，数据来自 TMDB 实时接口 */}
+      <section className="home-tmdb-section home-tmdb-section--trailers">
+        <div className="home-tmdb-trailer-bg-slot" aria-hidden>
+          {trailerBackdropUrl ? (
+            <img
+              key={trailerBackdropUrl}
+              src={trailerBackdropUrl}
+              alt=""
+              className="home-tmdb-trailer-bg-img"
+              decoding="async"
+            />
+          ) : null}
+          <div className="home-tmdb-trailer-bg-gradient" />
+        </div>
         <div className="home-tmdb-section__inner home-tmdb-section__inner--trailers">
           <div className="home-tmdb-row__head home-tmdb-row__head--on-dark">
             <h2 className="home-tmdb-row__title">最新预告片</h2>
@@ -230,10 +266,14 @@ export default function Home() {
             {trailerLoading ? (
               <div className="home-tmdb-carousel__loading home-tmdb-carousel__loading--light">加载中…</div>
             ) : trailerList.length ? (
-              <div className="home-tmdb-carousel__track home-tmdb-carousel__track--trailers">
+              <div className="home-tmdb-carousel__track home-tmdb-carousel__track--trailers home-tmdb-carousel__track--smooth">
                 {trailerList.slice(0, 16).map((m) => (
-                  <div key={m.id} className="home-tmdb-carousel__cell home-tmdb-carousel__cell--trailer">
-                    <TrailerStripCard movie={m} />
+                  <div key={movieRowKey(m)} className="home-tmdb-carousel__cell home-tmdb-carousel__cell--trailer">
+                    <TrailerStripCard
+                      movie={m}
+                      onHoverStart={() => setTrailerHoverKey(movieRowKey(m))}
+                      onHoverEnd={() => setTrailerHoverKey(null)}
+                    />
                   </div>
                 ))}
               </div>

@@ -45,7 +45,7 @@ function buildStripItems(movies, ads, positions) {
 
 function backdropForItem(item) {
   if (!item) return '';
-  if (item.kind === 'movie') return getCoverUrl(item.movie, { w: 1280 });
+  if (item.kind === 'movie') return getCoverUrl(item.movie, { w: 1920 });
   return item.ad.coverUrl || '';
 }
 
@@ -97,10 +97,11 @@ export default function RecommendSpotlight({ movies, loading }) {
   }, [movies]);
 
   /** 当前选中海报滚入可视区，避免「选中了但还在屏幕外」的别扭感 */
+  /** 仅轻量滚入可视区，避免 smooth 与悬停快速切换叠队列导致卡顿 */
   useEffect(() => {
     const el = thumbRefs.current[active];
     if (!el || typeof el.scrollIntoView !== 'function') return;
-    el.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
+    el.scrollIntoView({ behavior: 'auto', block: 'nearest', inline: 'nearest' });
   }, [active]);
 
   const safeIndex = items.length ? Math.min(active, items.length - 1) : 0;
@@ -203,6 +204,7 @@ export default function RecommendSpotlight({ movies, loading }) {
                   title={label}
                   className={`rec-spotlight__thumb ${isActive ? 'rec-spotlight__thumb--active' : ''}`}
                   onClick={() => setActive(i)}
+                  onMouseEnter={() => setActive(i)}
                 >
                   <span className="rec-spotlight__thumb-frame">
                     {poster ? (

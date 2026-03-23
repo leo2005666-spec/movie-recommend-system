@@ -34,6 +34,18 @@ export function getCoverUrl(movie, opts = {}) {
   return u;
 }
 
+/**
+ * 列表/卡片通用：本站 id 走 cover 代理；仅 TMDB 外链封面（无 id）走 proxy-img
+ */
+export function getPosterOrCoverUrl(movie, opts = {}) {
+  if (movie?.id) return getCoverUrl(movie, opts);
+  const c = movie?.cover;
+  if (c && /^https?:\/\//i.test(String(c))) {
+    return getProxiedImageUrl(String(c).trim());
+  }
+  return '';
+}
+
 /** 仅按作品 id 拼封面代理地址（用于取色等，不依赖是否已加载 movie 对象） */
 export function getCoverProxyById(id, opts = {}) {
   const n = typeof id === 'string' ? parseInt(id, 10) : id;

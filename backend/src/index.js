@@ -46,6 +46,7 @@ async function start() {
   const adminRouter = require('./routes/admin');
   const actorsRouter = require('./routes/actors');
   const proxyImgRouter = require('./routes/proxyImg');
+  const tmdbListsRouter = require('./routes/tmdbLists');
 
   app.use('/api/auth', authRouter);
   app.use('/api/users', usersRouter);
@@ -65,6 +66,7 @@ async function start() {
   app.use('/api/actors', actorsRouter);
 
   app.use('/api/proxy-img', proxyImgRouter);
+  app.use('/api/tmdb', tmdbListsRouter);
 
   app.get('/api/health', (req, res) => {
     res.json({ ok: true, message: '服务正常' });

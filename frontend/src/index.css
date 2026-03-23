@@ -629,6 +629,7 @@ button { cursor: pointer; }
   scroll-padding-inline: 0.25rem;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: thin;
+  transform: translateZ(0);
 }
 
 .home-tmdb-carousel__track::-webkit-scrollbar {
@@ -674,16 +675,59 @@ button { cursor: pointer; }
   color: rgba(255, 255, 255, 0.75);
 }
 
-/** 最新预告片 · 深色条带 */
+/** 最新预告片 · 深色条带 + 悬停切换宽幅背景（TMDB 剧照） */
 .home-tmdb-section--trailers {
-  background: linear-gradient(135deg, #0b1220 0%, #0f172a 50%, #0b1220 100%);
-  background-size: cover;
-  background-position: center top;
+  position: relative;
+  overflow: hidden;
+  background: #0b1220;
   border-top: 1px solid rgba(255, 255, 255, 0.06);
   border-bottom: 1px solid rgba(255, 255, 255, 0.06);
 }
 
+.home-tmdb-trailer-bg-slot {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.home-tmdb-trailer-bg-img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 22%;
+  opacity: 0.44;
+  transform: scale(1.02);
+  animation: home-trailer-bg-in 0.42s ease-out both;
+}
+
+@keyframes home-trailer-bg-in {
+  from {
+    opacity: 0.2;
+    transform: scale(1.06);
+  }
+  to {
+    opacity: 0.44;
+    transform: scale(1.02);
+  }
+}
+
+.home-tmdb-trailer-bg-gradient {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    105deg,
+    rgba(3, 12, 28, 0.94) 0%,
+    rgba(12, 20, 40, 0.8) 45%,
+    rgba(8, 15, 30, 0.62) 100%
+  );
+}
+
 .home-tmdb-section__inner--trailers {
+  position: relative;
+  z-index: 1;
   padding-top: var(--space-xl);
   padding-bottom: var(--space-2xl);
 }
@@ -721,11 +765,21 @@ button { cursor: pointer; }
 
 .home-tmdb-carousel--trailers {
   margin-top: var(--space-md);
+  overflow: visible;
 }
 
 .home-tmdb-carousel__track--trailers {
   gap: 1rem;
   padding-bottom: 0.5rem;
+  contain: content;
+  scroll-snap-type: x mandatory;
+}
+
+/** 横向滚动更顺滑（减少合成层抖动） */
+.home-tmdb-carousel__track--smooth {
+  scroll-behavior: smooth;
+  overscroll-behavior-x: contain;
+  -webkit-overflow-scrolling: touch;
 }
 
 .home-tmdb-carousel__cell--trailer {
@@ -769,6 +823,19 @@ button { cursor: pointer; }
   width: 100%;
   height: 100%;
   object-fit: cover;
+}
+
+.trailer-strip-card__thumb-placeholder {
+  width: 100%;
+  height: 100%;
+  min-height: 120px;
+  background: linear-gradient(145deg, #1e293b 0%, #334155 100%);
+}
+
+.trailer-strip-card--external .trailer-strip-card__title {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.35rem;
 }
 
 .trailer-strip-card__play {

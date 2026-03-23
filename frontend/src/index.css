@@ -1006,6 +1006,13 @@ button { cursor: pointer; }
   color: var(--text-primary);
 }
 
+.profile-stat__hint {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  margin-top: 0.4rem;
+  line-height: 1.3;
+}
+
 @media (max-width: 560px) {
   .profile-stats { grid-template-columns: 1fr; }
 }
@@ -4107,6 +4114,11 @@ a.admin-dashboard-card--link:hover {
     0 12px 32px rgba(15, 23, 42, 0.14),
     0 4px 10px rgba(15, 23, 42, 0.08);
 }
+.cast-card__link {
+  display: block;
+  text-decoration: none;
+  color: inherit;
+}
 .cast-photo--filmstrip {
   width: 100% !important;
   height: auto !important;
@@ -4310,4 +4322,242 @@ a.admin-dashboard-card--link:hover {
   color: var(--accent);
   background: var(--accent-muted);
   font-weight: 500;
+}
+
+/* ========== 演员详情页（TMDB 式双栏） ========== */
+.actor-page {
+  max-width: min(1200px, 100%);
+  margin: 0 auto;
+  padding: 0 var(--space-md);
+}
+.actor-page__subnav {
+  display: flex;
+  gap: var(--space-lg);
+  margin-bottom: var(--space-lg);
+  padding-bottom: var(--space-sm);
+  border-bottom: 1px solid var(--border);
+  font-size: 0.95rem;
+  color: var(--text-secondary);
+}
+.actor-page__subnav-item {
+  cursor: default;
+  opacity: 0.7;
+}
+.actor-page__subnav-item--active {
+  color: var(--accent);
+  font-weight: var(--fw-semibold);
+  opacity: 1;
+}
+.actor-page__layout {
+  display: grid;
+  grid-template-columns: minmax(220px, 280px) 1fr;
+  gap: var(--space-xl);
+  padding: var(--space-xl);
+  align-items: start;
+}
+@media (max-width: 900px) {
+  .actor-page__layout {
+    grid-template-columns: 1fr;
+  }
+}
+.actor-page__sidebar {
+  position: sticky;
+  top: calc(var(--header-height) + var(--space-md));
+}
+.actor-page__photo-wrap {
+  margin-bottom: var(--space-lg);
+}
+.actor-page__photo {
+  width: 100%;
+  max-width: 280px;
+  border-radius: var(--radius-md);
+  display: block;
+  box-shadow: var(--shadow-sm);
+}
+.actor-page__photo--placeholder {
+  aspect-ratio: 2/3;
+  max-width: 280px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-muted);
+  color: var(--text-tertiary);
+}
+.actor-page__meta-title {
+  font-size: 0.9rem;
+  font-weight: var(--fw-semibold);
+  margin-bottom: var(--space-sm);
+  color: var(--text-primary);
+}
+.actor-page__dl dt {
+  font-size: 0.75rem;
+  color: var(--text-tertiary);
+  margin-top: var(--space-sm);
+}
+.actor-page__dl dd {
+  margin: 0.15rem 0 0;
+  font-size: 0.9rem;
+  color: var(--text-primary);
+}
+.actor-page__name {
+  font-size: 1.75rem;
+  font-weight: var(--fw-bold);
+  margin: 0 0 var(--space-lg);
+  color: #0f172a;
+}
+.actor-page__section {
+  margin-bottom: var(--space-xl);
+}
+.actor-page__section .section-title {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+.actor-page__section-hint {
+  font-size: 0.8rem;
+  font-weight: var(--fw-medium);
+  color: var(--text-muted);
+}
+.actor-page__bio p {
+  line-height: 1.7;
+  color: var(--text-secondary);
+  margin: 0 0 var(--space-sm);
+  white-space: pre-wrap;
+}
+.actor-page__bio-toggle {
+  background: none;
+  border: none;
+  color: var(--accent);
+  cursor: pointer;
+  font-size: 0.9rem;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+.actor-page__filmstrip {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: var(--space-md);
+}
+.actor-page__film-item .movie-card {
+  max-width: 100%;
+}
+.actor-page__character {
+  font-size: 0.78rem;
+  color: var(--text-tertiary);
+  margin-top: 0.35rem;
+  text-align: center;
+}
+
+/* 个人中心 · 评分 / 影评 子页 */
+.my-activity-page__back {
+  margin-bottom: var(--space-md);
+}
+.my-activity-page__back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  color: var(--text-secondary);
+  text-decoration: none;
+  font-size: 0.95rem;
+}
+.my-activity-page__back-link:hover {
+  color: var(--accent);
+}
+.my-activity-page__desc {
+  margin-bottom: var(--space-lg) !important;
+}
+.my-ratings-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+.my-ratings-row {
+  display: flex;
+  gap: var(--space-md);
+  align-items: center;
+  padding: var(--space-md);
+}
+.my-ratings-row__cover {
+  flex-shrink: 0;
+  width: 72px;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  box-shadow: var(--shadow-xs);
+}
+.my-ratings-row__cover img {
+  width: 72px;
+  height: 108px;
+  object-fit: cover;
+  display: block;
+}
+.my-ratings-row__title {
+  font-weight: var(--fw-semibold);
+  color: var(--text-primary);
+  text-decoration: none;
+}
+.my-ratings-row__title:hover {
+  color: var(--accent);
+}
+.my-ratings-row__meta {
+  display: flex;
+  gap: var(--space-md);
+  margin-top: 0.35rem;
+  font-size: 0.88rem;
+  color: var(--text-tertiary);
+}
+.my-ratings-row__score {
+  color: #d97706;
+  font-weight: var(--fw-semibold);
+}
+.my-comments-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+.my-comments-card__head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: var(--space-md);
+  margin-bottom: var(--space-sm);
+  flex-wrap: wrap;
+}
+.my-comments-card__movie {
+  font-weight: var(--fw-semibold);
+  color: var(--accent);
+  text-decoration: none;
+}
+.my-comments-card__movie:hover {
+  text-decoration: underline;
+}
+.my-comments-card__date {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+.my-comments-card__content {
+  margin: 0 0 var(--space-sm);
+  line-height: 1.65;
+  color: var(--text-primary);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.my-comments-card__goto {
+  font-size: 0.88rem;
+  color: var(--text-secondary);
+}
+.my-comments-pager {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  margin-top: var(--space-xl);
+  flex-wrap: wrap;
 }

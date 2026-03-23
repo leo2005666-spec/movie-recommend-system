@@ -300,18 +300,36 @@ export default function MovieDetail() {
               <h2 className="section-title section-title--cast">演员阵容</h2>
               <div className="cast-row cast-row--filmstrip">
                 {cast.map((c, i) => (
-                  <div key={i} className="cast-card cast-card--filmstrip">
-                    <div className="cast-photo cast-photo--filmstrip">
-                      {c.profile_path ? (
-                        <img src={c.profile_path} alt={c.name} onError={(e) => { e.target.style.display = 'none'; }} />
-                      ) : (
-                        <div className="cast-placeholder cast-placeholder--filmstrip" />
-                      )}
-                    </div>
-                    <div className="cast-info cast-info--filmstrip">
-                      <div className="cast-name cast-name--filmstrip">{c.name}</div>
-                      <div className="cast-character cast-character--filmstrip">{c.character || '—'}</div>
-                    </div>
+                  <div key={c.id || i} className="cast-card cast-card--filmstrip">
+                    {c.id ? (
+                      <Link to={`/actors/${c.id}`} className="cast-card__link">
+                        <div className="cast-photo cast-photo--filmstrip">
+                          {c.profile_path ? (
+                            <img src={c.profile_path} alt={c.name} onError={(e) => { e.target.style.display = 'none'; }} />
+                          ) : (
+                            <div className="cast-placeholder cast-placeholder--filmstrip" />
+                          )}
+                        </div>
+                        <div className="cast-info cast-info--filmstrip">
+                          <div className="cast-name cast-name--filmstrip">{c.name}</div>
+                          <div className="cast-character cast-character--filmstrip">{c.character || '—'}</div>
+                        </div>
+                      </Link>
+                    ) : (
+                      <>
+                        <div className="cast-photo cast-photo--filmstrip">
+                          {c.profile_path ? (
+                            <img src={c.profile_path} alt={c.name} onError={(e) => { e.target.style.display = 'none'; }} />
+                          ) : (
+                            <div className="cast-placeholder cast-placeholder--filmstrip" />
+                          )}
+                        </div>
+                        <div className="cast-info cast-info--filmstrip">
+                          <div className="cast-name cast-name--filmstrip">{c.name}</div>
+                          <div className="cast-character cast-character--filmstrip">{c.character || '—'}</div>
+                        </div>
+                      </>
+                    )}
                   </div>
                 ))}
               </div>

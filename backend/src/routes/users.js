@@ -91,6 +91,39 @@ router.get('/me/stats', asyncHandler(async (req, res) => {
   res.json({ code: 0, data: { favorites: fav.n, ratings: rat.n, comments: com.n } });
 }));
 
+/** 我的评分影片列表（含分数、时间） */
+router.get('/me/ratings', asyncHandler(async (req, res) => {
+  const list = await db.prepare(`
+    SELECT r.id, r.movie_id, r.score, r.created_at,
+           m.title, m.cover, m.release_year, m.release_date
+    FROM ratings r
+    INNER JOIN movies m ON r.movie_id = m.id
+    WHERE r.user_id = ?
+    ORDER BY r.created_at DESC
+  `).all(req.user.id);
+  res.json({ code: 0, data: list });
+}));
+
+/** 我的影评列表（含影片、正文、时间） */
+router.get('/me/comments', asyncHandler(async (req, res) => {
+  const page = Math.max(1, parseInt(req.query.page, 10) || 1);
+  const limit = Math.min(50, Math.max(5, parseInt(req.query.limit, 10) || 20));
+  const offset = (page - 1) * limit;
+
+  const list = await db.prepare(`
+    SELECT c.id, c.movie_id, c.content, c.created_at,
+           m.title, m.cover, m.release_year
+    FROM comments c
+    INNER JOIN movies m ON c.movie_id = m.id
+    WHERE c.user_id = ?
+    ORDER BY c.created_at DESC
+    LIMIT ? OFFSET ?
+  `).all(req.user.id, limit, offset);
+
+  const total = (await db.prepare('SELECT COUNT(*) as n FROM comments WHERE user_id = ?').get(req.user.id)).n;
+  res.json({ code: 0, data: { list, total, page, limit } });
+}));
+
 // 修改当前用户信息（用户名、邮箱、密码；头像仅通过 POST /me/avatar 上传）
 router.put(
   '/me',

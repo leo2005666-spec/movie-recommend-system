@@ -202,6 +202,9 @@ npm run fill-covers
 - `/api/auth` - 登录、注册
 - `/api/users` - 用户信息管理
 - `/api/users/me/stats` - 当前用户统计（收藏、评分、影评数量）
+- `/api/users/me/ratings` - **GET** 当前用户已评分影片列表（需登录）
+- `/api/users/me/comments` - **GET** 当前用户影评列表分页（`page`、`limit`，需登录）
+- `/api/actors/:tmdbPersonId` - **GET** TMDB 演员详情 + **本站片库中已收录**的参演作品（需配置 `TMDB_API_KEY`）
 - `/api/logs` - 活动日志
 - `/api/movies` - 影视作品列表/CRUD；列表支持：`releaseStatus`、`typeKeys`（类型多选 AND）、`dateFrom`/`dateTo`、`durationMin`/`durationMax`（片长分钟）、`scoreMin`/`scoreMax`、`country`（可选）、`tasteType`（人群口味）
 - `/api/categories` - 分类管理
@@ -296,6 +299,8 @@ npm run fill-covers
 ## 近期调整说明（维护备忘）
 
 - **影视库分页**：列表接口与前端默认 **每页 15 条**，便于 5 列网格 **3 行铺满**。
+- **演员页**：影视详情「演员阵容」中点击演员进入 **`/actors/:tmdbPersonId`**，展示 TMDB 简介与本站已入库作品；需后端配置 **TMDB_API_KEY**。
+- **个人中心**：**我的评分** → `/profile/ratings`，**我的影评** → `/profile/comments`（列表含影片名、分数/正文、时间）。
 - **协同过滤增强**：`collabFilter.js` 使用 **时间加权矩阵** + **标签混合重排**；推荐理由可出现 **「混合推荐」**。
 - **个人头像**：仅 **本地上传**（`POST /api/users/me/avatar`，单张 **≤10MB**），**不再提供头像外链输入**；开发环境 Vite 需代理 **`/uploads`** 到后端以便预览上传图。
 - **个人资料页**：默认 **仅展示**；点击 **「编辑」** 后出现 **相机换头像**、用户名、**邮箱**、密码；**邮箱显示在头像正下方**；宽屏下 **双列卡片网格** 铺满主内容区。

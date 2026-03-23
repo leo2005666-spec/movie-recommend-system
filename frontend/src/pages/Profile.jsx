@@ -231,16 +231,18 @@ export default function Profile() {
           <div className="profile-stat__label">我的收藏</div>
           <div className="profile-stat__value">{stats?.favorites ?? '—'}</div>
         </Link>
-        <div className="profile-stat card">
+        <Link to="/profile/ratings" className="profile-stat card">
           <StarIcon size={22} weight="regular" className="profile-stat__icon profile-stat__icon--amber" />
           <div className="profile-stat__label">我的评分</div>
           <div className="profile-stat__value">{stats?.ratings ?? '—'}</div>
-        </div>
-        <div className="profile-stat card">
+          <div className="profile-stat__hint">查看已评分的影片</div>
+        </Link>
+        <Link to="/profile/comments" className="profile-stat card">
           <ChatCircleDotsIcon size={22} weight="regular" className="profile-stat__icon profile-stat__icon--green" />
           <div className="profile-stat__label">我的影评</div>
           <div className="profile-stat__value">{stats?.comments ?? '—'}</div>
-        </div>
+          <div className="profile-stat__hint">查看全部评论内容</div>
+        </Link>
       </div>
 
       {!isEditing && (

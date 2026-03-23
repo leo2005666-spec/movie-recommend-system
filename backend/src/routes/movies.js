@@ -59,6 +59,7 @@ router.get('/:id/credits', asyncHandler(async (req, res) => {
     const details = detailsRes.ok ? await detailsRes.json() : {};
     const keywordsJson = keywordsRes.ok ? await keywordsRes.json() : {};
     const cast = (credits.cast || []).slice(0, 20).map((c) => ({
+      id: c.id,
       name: c.name,
       character: c.character,
       /** 详情页演员卡用较大尺寸，避免糊脸 */

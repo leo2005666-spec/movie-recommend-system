@@ -44,6 +44,7 @@ async function start() {
   const qaRouter = require('./routes/qa');
   const feedbacksRouter = require('./routes/feedbacks');
   const adminRouter = require('./routes/admin');
+  const actorsRouter = require('./routes/actors');
   const proxyImgRouter = require('./routes/proxyImg');
 
   app.use('/api/auth', authRouter);
@@ -61,6 +62,7 @@ async function start() {
   app.use('/api/qa', qaRouter);
   app.use('/api/feedbacks', feedbacksRouter);
   app.use('/api/admin', adminRouter);
+  app.use('/api/actors', actorsRouter);
 
   app.use('/api/proxy-img', proxyImgRouter);
 

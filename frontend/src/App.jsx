@@ -12,6 +12,9 @@ const MovieDetail = lazy(() => import('./pages/MovieDetail'));
 const Recommend = lazy(() => import('./pages/Recommend'));
 const Charts = lazy(() => import('./pages/Charts'));
 const Profile = lazy(() => import('./pages/Profile'));
+const MyRatings = lazy(() => import('./pages/MyRatings'));
+const MyComments = lazy(() => import('./pages/MyComments'));
+const ActorDetail = lazy(() => import('./pages/ActorDetail'));
 const MyFavorites = lazy(() => import('./pages/MyFavorites'));
 const MyLogs = lazy(() => import('./pages/MyLogs'));
 const Feedback = lazy(() => import('./pages/Feedback'));
@@ -52,6 +55,7 @@ export default function App() {
             <Route path="register" element={<Register />} />
             <Route path="movies" element={<MovieList />} />
             <Route path="movies/:id" element={<MovieDetail />} />
+            <Route path="actors/:tmdbId" element={<ActorDetail />} />
             <Route path="recommend" element={<Recommend />} />
             <Route path="charts" element={<Charts />} />
             <Route path="feedback" element={<Feedback />} />
@@ -61,6 +65,22 @@ export default function App() {
               element={
                 <ProtectedRoute>
                   <Profile />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="profile/ratings"
+              element={
+                <ProtectedRoute>
+                  <MyRatings />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="profile/comments"
+              element={
+                <ProtectedRoute>
+                  <MyComments />
                 </ProtectedRoute>
               }
             />

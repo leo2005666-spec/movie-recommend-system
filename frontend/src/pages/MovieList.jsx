@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback, useMemo } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { FilmStripIcon, CaretDown, CaretUp } from '@phosphor-icons/react';
 import MovieCard from '../components/MovieCard';
 import Pagination from '../components/Pagination';
@@ -6,6 +7,7 @@ import { api } from '../api/request';
 import FilterRangeDual from '../components/filter/FilterRangeDual';
 
 export default function MovieList() {
+  const [searchParams] = useSearchParams();
   const [list, setList] = useState([]);
   const [categories, setCategories] = useState([]);
   const [tags, setTags] = useState([]);
@@ -86,6 +88,22 @@ export default function MovieList() {
   useEffect(() => {
     load();
   }, [load]);
+
+  /** 从首页 Hero 等入口跳转：/movies?keyword=xxx */
+  useEffect(() => {
+    const k = searchParams.get('keyword');
+    if (k == null || String(k).trim() === '') return;
+    try {
+      const decoded = decodeURIComponent(String(k)).trim();
+      if (decoded) {
+        setKeyword(decoded);
+        setAppliedKeyword(decoded);
+        setPage(1);
+      }
+    } catch {
+      /* 非法编码则忽略 */
+    }
+  }, [searchParams]);
 
   const search = () => {
     setAppliedKeyword(keyword);

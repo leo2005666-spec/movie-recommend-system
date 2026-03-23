@@ -46,7 +46,7 @@
 ## 技术栈
 
 - **前端**：React 18 + Vite + React Router + Phosphor Icons（图标）
-- **界面风格**：全站 **浅灰画布 + 白卡片**；**影视库** 主区域 **`main--movie-list` 加宽（约 1680px）**、筛选列靠左、网格 **更大海报 / 约 5 列**、**分页每页 15 部**（5×3 铺满）；卡片为 **TMDB 式左下角好评率圆环**（TMDB 分×10 或站内均分换算，悬停可看说明）+ **标题 + 上映日期**，**不展示片长**；**个性推荐页** 卡片顶部有 **推荐理由小标签**（与 TMDB 商标无关）；首页轮播同宽 contained Hero；详情页仍可评分
+- **界面风格**：全站 **浅灰画布 + 白卡片**；**影视库** 主区域 **`main--movie-list` 加宽（约 1680px）**、筛选列靠左、网格 **更大海报 / 约 5 列**、**分页每页 15 部**（5×3 铺满）；卡片为 **TMDB 式左下角好评率圆环**（TMDB 分×10 或站内均分换算，悬停可看说明）+ **标题 + 上映日期**，**不展示片长**；**个性推荐页** 卡片顶部有 **推荐理由小标签**（与 TMDB 商标无关）；**首页最上方**为 **`HomeWelcomeHero`**：白底细搜索条 + 全宽欢迎区（左深右亮蓝青渐变 + 胶囊搜索跳转 **`/movies?keyword=…`**）；横版背景优先从 **`GET /recommend?prefer=popular`** 取片单再请求 **`GET /movies/:id/credits`** 的 `backdrop_path`（TMDB `original`），经 **`/api/proxy-img?u=`** 加载，并用 `Image` 校验宽度 ≥960px，**不清晰则丢弃**；不足时用 `frontend/src/constants/homeHeroFallbacks.js` 中备用高清图，**约 9 秒**轮换一张；详情页仍可评分
 - **推荐算法**：协同过滤在 **用户–物品矩阵** 上引入 **时间衰减**（`exp(-λ·天数)`，近期交互权重大）；在 `GET /api/recommendations` 的个性化路径上叠加 **微标签（movie_tags）内容分**，**混合得分 = α·归一化CF + β·标签匹配**（可调 `RECOMMEND_CF_ALPHA` / `RECOMMEND_CONTENT_BETA` / `RECOMMEND_TIME_LAMBDA`）。详见 `backend/src/docs/HYBRID_RECOMMEND.md`
 - **管理后台**：**数据概览**（`/admin/dashboard`）展示用户数、影片数、评分/评论/收藏/反馈等统计；**每张统计卡片可点击**进入对应明细（如评论明细 `/admin/explore/comments`、收藏明细 `/admin/explore/favorites`，其余链到用户/影片/评分/反馈管理页）；**个人资料** 仅 **本地上传头像**（jpg/png/gif/webp，≤10MB），**邮箱** 在编辑中填写；**顶栏** 对已登录用户展示 **头像缩略图**（含管理员）；**影视详情评论** 支持 **10 条/页** 与 **加载更多**；**影视库搜索** 关键词匹配 **标题 + 简介 + 导演 + 演员** 字段
 - **字体**：Plus Jakarta Sans + Noto Sans SC（Google Fonts，高级无衬线风格）
@@ -301,7 +301,7 @@ npm run fill-covers
 - **影视库分页**：列表接口与前端默认 **每页 15 条**，便于 5 列网格 **3 行铺满**。
 - **演员页**：影视详情「演员阵容」中点击演员进入 **`/actors/:tmdbPersonId`**。布局为 **TMDB 式左栏资料 + 右栏片单**，主内容区 **`actor-page--fullbleed`** 与影视库同档 **加宽（约 1680px）**、**横向铺满**（避免窄容器居中）；**系统无衬线字体栈**（含 Noto Sans SC / 苹方 / 微软雅黑）。侧栏：头像、知名领域、参与作品数、性别/生日/出生地/又名、资料完整度、TMDB/IMDb/官网链接。主区：**AWARDS 横幅**（链 TMDB）、生平简介、**表演作品**表格式列表（年份｜圆点｜标题 + 饰演），支持 **全部 / 仅本站已收录** 与 **排序**；已入库链本站详情，未入库链 TMDB。需后端配置 **TMDB_API_KEY**。
 - **个性推荐页**：顶部增加 **沉浸式焦点区**（大背景剧照 + 左文右渐层 + 底部横向海报条），海报条内 **真实推荐与「站内推广位」同卡片样式**（白边高亮当前项），推广文案与图片可在 `frontend/src/constants/recommendSpotlightAds.js` 中配置。
-- **首页横幅**：`MovieBanner` 组件仍保留在工程内，但**首页默认不再使用**；首页改为 **TMDB 式全宽布局**（`main--home-tmdb`）：**「趋势」**（今日=热门榜 / 本周=一周口碑，胶囊切换 + 底部波形装饰 + **固定 175px 宽**横向轮播）、**「最新预告片」**（深色底图 + 绿字激活 Tab：热门 / 流媒体 / 电视 / 租借 / 影院上映，**16:9 横条**可进详情）、**「猜你喜欢」**轻量条带；底部 **「影迷热议」** 合并 **真实热门影评** 与 **`constants/mockHomeReviews.js` 虚拟用户**，营造社区氛围（仅展示，不落库）。
+- **首页横幅**：`MovieBanner` 组件仍保留在工程内，但**首页默认不再使用**；首页改为 **TMDB 式全宽布局**（`main--home-tmdb`）：**最上方 `HomeWelcomeHero`**（`frontend/src/components/home/HomeWelcomeHero.jsx`：白底细搜索条 + 全宽欢迎 Hero + 高清横版背景轮换与影视库 `?keyword=` 联动，详见上文「界面风格」）；**「趋势」**（今日=热门榜 / 本周=一周口碑，胶囊切换 + 底部波形装饰 + **固定 175px 宽**横向轮播）、**「最新预告片」**（深色底图 + 绿字激活 Tab：热门 / 流媒体 / 电视 / 租借 / 影院上映，**16:9 横条**可进详情）、**「猜你喜欢」**轻量条带；底部 **「影迷热议」** 合并 **真实热门影评** 与 **`constants/mockHomeReviews.js` 虚拟用户**，营造社区氛围（仅展示，不落库）。
 - **旧版首页大横幅**：若需恢复轮播，可在 `Home.jsx` 中重新引入 `MovieBanner`。
 - **MovieBanner（组件）**：仍可单独使用；数据逻辑见前文「即将上映」说明。
 - **头像与登录态**：`GET /users/me` 现返回 **nickname**；前端 **打开站点或登录成功后会再请求 `/users/me`** 写回 `localStorage` 与顶栏头像；`/uploads/` 通过 **`getBackendOrigin()`** 拼绝对地址（优先 **`VITE_API_BASE`** 完整域名推导后端根，或单独配置 **`VITE_UPLOADS_ORIGIN`**，用于 Vercel 前端 + Render 后端分离场景）。与服务端一致时 **跳过重复 `setUser`**，减轻首页重复请求。

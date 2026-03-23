@@ -6,6 +6,7 @@ import { normalizeMovieListResponse } from '../utils/recommendApi';
 import MovieCard from '../components/MovieCard';
 import TrailerStripCard from '../components/home/TrailerStripCard';
 import HomeReviewsBoard from '../components/home/HomeReviewsBoard';
+import HomeWelcomeHero from '../components/home/HomeWelcomeHero';
 import { MOCK_HOME_REVIEWS } from '../constants/mockHomeReviews';
 
 const SCENE_HOME = 'home_personalized';
@@ -155,6 +156,8 @@ export default function Home() {
 
   return (
     <div className="home-page home-page--tmdb-wide">
+      <HomeWelcomeHero />
+
       {/* 趋势 */}
       <section className="home-tmdb-section home-tmdb-section--trend">
         <div className="home-tmdb-section__inner">

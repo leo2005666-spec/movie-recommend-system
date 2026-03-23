@@ -336,6 +336,182 @@ button { cursor: pointer; }
   padding: 0;
 }
 
+/** 首页顶部：白底细搜索条 + TMDB 风欢迎 Hero（高清横版背景可轮换） */
+.home-welcome-hero-wrap {
+  width: 100vw;
+  margin-left: calc(50% - 50vw);
+  margin-right: calc(50% - 50vw);
+  position: relative;
+  z-index: 0;
+}
+
+.home-welcome-hero__topbar {
+  background: #fff;
+  border-bottom: 1px solid rgba(15, 23, 42, 0.06);
+  padding: 0.5rem clamp(0.75rem, 3vw, 2rem);
+}
+
+.home-welcome-hero__topbar-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  max-width: min(1200px, 100%);
+  margin: 0 auto;
+  cursor: text;
+}
+
+.home-welcome-hero__topbar-icon {
+  flex-shrink: 0;
+  width: 1.15rem;
+  height: 1.15rem;
+  color: #94a3b8;
+}
+
+.home-welcome-hero__topbar-input {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  background: transparent;
+  font-size: 0.95rem;
+  color: #0f172a;
+  outline: none;
+}
+
+.home-welcome-hero__topbar-input::placeholder {
+  color: #94a3b8;
+}
+
+.home-welcome-hero {
+  position: relative;
+  min-height: min(52vh, 520px);
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+}
+
+.home-welcome-hero__bg-stack {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+}
+
+.home-welcome-hero__bg-layer {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center 28%;
+  background-repeat: no-repeat;
+}
+
+.home-welcome-hero__bg-layer--fade {
+  animation: homeWelcomeHeroFade 1s ease-out both;
+}
+
+@keyframes homeWelcomeHeroFade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.home-welcome-hero__bg-fallback {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, #020617 0%, #0c4a6e 50%, #06b6d4 100%);
+}
+
+.home-welcome-hero__tint {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.home-welcome-hero__inner {
+  position: relative;
+  z-index: 2;
+  padding: clamp(2rem, 5vw, 3.5rem) clamp(1rem, 4vw, 2.5rem);
+  max-width: min(1200px, 100%);
+  margin: 0 auto;
+  width: 100%;
+}
+
+.home-welcome-hero__title {
+  margin: 0 0 0.75rem;
+  font-size: clamp(2.25rem, 5vw, 3.25rem);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  color: #fff;
+  text-shadow: 0 4px 24px rgba(0, 0, 0, 0.45);
+}
+
+.home-welcome-hero__subtitle {
+  margin: 0 0 1.75rem;
+  max-width: 36rem;
+  font-size: clamp(1rem, 2vw, 1.15rem);
+  font-weight: 500;
+  line-height: 1.55;
+  color: rgba(255, 255, 255, 0.95);
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.35);
+}
+
+.home-welcome-hero__search-pill {
+  display: flex;
+  align-items: stretch;
+  max-width: min(640px, 100%);
+  background: #fff;
+  border-radius: 999px;
+  overflow: hidden;
+  box-shadow: 0 12px 40px rgba(2, 12, 40, 0.35);
+}
+
+.home-welcome-hero__search-pill-input {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  padding: 0.85rem 1.25rem;
+  font-size: 1rem;
+  outline: none;
+  color: #0f172a;
+}
+
+.home-welcome-hero__search-pill-input::placeholder {
+  color: #94a3b8;
+}
+
+.home-welcome-hero__search-pill-btn {
+  flex-shrink: 0;
+  border: none;
+  padding: 0.85rem 1.5rem;
+  font-size: 1rem;
+  font-weight: 700;
+  color: #fff;
+  cursor: pointer;
+  background: linear-gradient(135deg, #0d9488 0%, #06b6d4 100%);
+  transition: filter 0.2s, transform 0.15s;
+}
+
+.home-welcome-hero__search-pill-btn:hover {
+  filter: brightness(1.06);
+}
+
+.home-welcome-hero__search-pill-btn:active {
+  transform: scale(0.98);
+}
+
+@media (max-width: 520px) {
+  .home-welcome-hero__search-pill {
+    flex-direction: column;
+    border-radius: 1.25rem;
+  }
+
+  .home-welcome-hero__search-pill-btn {
+    border-radius: 0 0 1.1rem 1.1rem;
+  }
+}
+
 .home-tmdb-section {
   position: relative;
   margin-bottom: 0;

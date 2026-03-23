@@ -46,6 +46,18 @@ export function getCoverProxyById(id, opts = {}) {
 }
 
 /**
+ * TMDB 等外链大图经后端代理（避免直连被墙）。用于横版 backdrop 等需 original 清晰度的场景。
+ * @param {string} url 完整 https 图片地址（如 image.tmdb.org/t/p/original/...）
+ * @returns {string} 可放入 <img src> 或 CSS background-image 的地址
+ */
+export function getProxiedImageUrl(url) {
+  if (!url || typeof url !== 'string') return '';
+  const s = url.trim();
+  if (!/^https?:\/\//i.test(s)) return '';
+  return `${BASE}/proxy-img?u=${encodeURIComponent(s)}`;
+}
+
+/**
  * 用户头像地址：支持外链 http(s) 与本站上传路径 /uploads/...
  * 生产环境若 VITE_API_BASE 为完整域名（如 https://xxx/api），会自动拼成后端域名下的静态地址。
  */

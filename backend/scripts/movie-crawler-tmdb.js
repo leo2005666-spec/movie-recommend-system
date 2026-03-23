@@ -11,7 +11,14 @@
  *   set TMDB_API_KEY=你的key
  *   node scripts/movie-crawler-tmdb.js          # 单次运行（与现有 OMDb 数据合并）
  *   node scripts/movie-crawler-tmdb.js --replace # 清空旧数据，仅保留 TMDB
- *   node scripts/movie-crawler-tmdb.js --cron  # 启动定时任务（每6小时）
+ *   node scripts/movie-crawler-tmdb.js --cron   # 定时同步（默认每 30 分钟 + 快速增量，见下）
+ *   node scripts/movie-crawler-tmdb.js --cron --full  # 定时全量（多页），建议把 TMDB_CRAWLER_CRON 调慢（如每天一次）
+ *   node scripts/movie-crawler-tmdb.js --quick   # 单次快速：每源只抓 1 页（适合频繁跑）
+ *
+ * 环境变量（可选）：
+ *   TMDB_CRAWLER_CRON   cron 表达式，默认 */30 * * * *（每 30 分钟）。见 https://crontab.guru
+ *   TMDB_CRAWLER_PAGES  每源抓取页数，默认 13；与 --quick 互斥（quick=1）
+ *   TMDB_CRAWLER_DELAY_MS  请求间隔毫秒，默认 220（勿低于 ~150，避免触发 TMDB 限流）
  *
  * API Key: https://www.themoviedb.org/settings/api
  */
@@ -19,8 +26,11 @@ const API_KEY = process.env.TMDB_API_KEY;
 const POSTER_BASE = 'https://image.tmdb.org/t/p/w500';
 const HTTPS_PROXY = process.env.HTTPS_PROXY || process.env.HTTP_PROXY;
 
-// 请求间隔（毫秒），TMDB 免费版约 40 次/10 秒
-const REQUEST_DELAY = 280;
+/** 请求间隔（毫秒），TMDB 免费版约 40 次/10 秒；略调低可加快整轮同步 */
+const REQUEST_DELAY = Math.max(
+  150,
+  parseInt(process.env.TMDB_CRAWLER_DELAY_MS || '220', 10) || 220,
+);
 
 // 数据源：热门、高分、正在上映、即将上映
 const ENDPOINTS = [
@@ -30,7 +40,14 @@ const ENDPOINTS = [
   { name: '即将上映', path: '/movie/upcoming' },
 ];
 
-const PAGES_PER_SOURCE = 13; // 每个源抓取页数，约 260 部/源，总量约 1000 部（去重后）
+const PAGES_PER_SOURCE_DEFAULT = 13; // 每个源抓取页数，全量时约 1000+ 部（去重后）
+
+function resolvePagesPerSource(argv, envPages) {
+  if (argv.includes('--quick')) return 1;
+  const n = parseInt(envPages || process.env.TMDB_CRAWLER_PAGES || '', 10);
+  if (!Number.isNaN(n) && n >= 1 && n <= 50) return n;
+  return PAGES_PER_SOURCE_DEFAULT;
+}
 
 function sleep(ms) {
   return new Promise((r) => setTimeout(r, ms));
@@ -101,8 +118,12 @@ function formatOriginCountries(detail) {
   return null;
 }
 
-async function runCrawler() {
+async function runCrawler(options = {}) {
   const replaceMode = process.argv.includes('--replace');
+  const pagesPerSource =
+    typeof options.pagesPerSource === 'number' && options.pagesPerSource >= 1
+      ? options.pagesPerSource
+      : resolvePagesPerSource(process.argv, process.env.TMDB_CRAWLER_PAGES);
 
   if (!API_KEY) {
     console.error('\n请设置 TMDB_API_KEY：');
@@ -135,10 +156,10 @@ async function runCrawler() {
   const seenTmdbIds = new Set();
   const allMovies = [];
 
-  console.log('开始从 TMDB 拉取电影数据（控制频率）...\n');
+  console.log(`开始从 TMDB 拉取电影数据（每源 ${pagesPerSource} 页，请求间隔 ${REQUEST_DELAY}ms）...\n`);
 
   for (const ep of ENDPOINTS) {
-    for (let page = 1; page <= PAGES_PER_SOURCE; page++) {
+    for (let page = 1; page <= pagesPerSource; page++) {
       const url = `https://api.themoviedb.org/3${ep.path}?api_key=${API_KEY}&language=zh-CN&page=${page}`;
       try {
         const data = await fetchJson(url);
@@ -280,19 +301,34 @@ async function runCrawler() {
 
 async function main() {
   const useCron = process.argv.includes('--cron');
+  /** 默认定时：每 30 分钟；全量模式请加长间隔，例如 TMDB_CRAWLER_CRON="0 3 * * *" */
+  const cronExpr = (process.env.TMDB_CRAWLER_CRON || '*/30 * * * *').trim();
+  /** --cron 时默认「快速增量」（每源 1 页），加 --full 才多页全量 */
+  const cronUseFull = process.argv.includes('--full');
+  const cronPages = cronUseFull ? resolvePagesPerSource(process.argv, process.env.TMDB_CRAWLER_PAGES) : 1;
 
   if (useCron) {
     const cron = require('node-cron');
-    console.log('定时任务已启动，每 6 小时同步一次（0:00, 6:00, 12:00, 18:00）\n');
-    cron.schedule('0 */6 * * *', async () => {
-      console.log(`[${new Date().toISOString()}] 开始定时同步...`);
-      try {
-        await runCrawler();
-      } catch (e) {
-        console.error('定时同步失败:', e.message);
-      }
-    });
-    await runCrawler();
+    console.log(`定时任务已启动：${cronExpr}`);
+    console.log(
+      `  同步模式：${cronUseFull ? '全量（多页）' : '快速（每源 1 页，推荐配合高频定时）'}`,
+    );
+    console.log(`  可设置 TMDB_CRAWLER_CRON 覆盖计划；详见脚本头部注释\n`);
+    const scheduleOpts = {};
+    if (process.env.TMDB_CRAWLER_TZ) scheduleOpts.timezone = process.env.TMDB_CRAWLER_TZ;
+    cron.schedule(
+      cronExpr,
+      async () => {
+        console.log(`[${new Date().toISOString()}] 开始定时同步...`);
+        try {
+          await runCrawler({ pagesPerSource: cronPages });
+        } catch (e) {
+          console.error('定时同步失败:', e.message);
+        }
+      },
+      scheduleOpts,
+    );
+    await runCrawler({ pagesPerSource: cronPages });
     process.stdin.resume();
   } else {
     await runCrawler();

@@ -135,8 +135,10 @@ npm run fetch-movies
 ```bash
 cd backend
 set TMDB_API_KEY=你的key
-npm run crawler              # 单次同步
-npm run crawler:cron         # 启动定时任务（每 6 小时同步）
+npm run crawler              # 单次全量同步（多页，见脚本内 PAGES 默认）
+npm run crawler:quick        # 单次快速：每源只抓 1 页（适合频繁手动跑）
+npm run crawler:cron         # 定时同步：默认 **每 30 分钟** + **快速增量**（每源 1 页）；可用 `TMDB_CRAWLER_CRON` 改计划（如 `*/15 * * * *` 每 15 分钟）
+npm run crawler:cron:full    # 定时 **全量**（多页），建议配合较慢的 CRON（如每天一次）
 ```
 
 **为何选 TMDB 不选豆瓣**：豆瓣无公开 API，爬虫易被封且违反 ToS；TMDB 官方接口稳定、数据完整、支持中文。

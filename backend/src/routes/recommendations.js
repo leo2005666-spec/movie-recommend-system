@@ -67,7 +67,8 @@ async function handleHomePersonalized(userId, limit) {
       ...m,
       recommendReason: reasonById[m.id] || '口味相近',
     }));
-    return { list: withLabels, source: 'collab_filter' };
+    const usedHybrid = withLabels.some((m) => m.recommendReason === '混合推荐');
+    return { list: withLabels, source: usedHybrid ? 'hybrid_cf_content' : 'collab_filter' };
   }
   const rawList = userId ? await coldStartPersonalized(userId, limit) : await getPopularRecommendations(limit);
   const tag = userId ? '猜你喜欢' : '热门推荐';

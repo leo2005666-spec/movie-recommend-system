@@ -4,6 +4,7 @@
 function reasonToLabel(reason) {
   const map = {
     collab_filter: '口味相近',
+    hybrid_mix: '混合推荐',
     similar_users: '看过的人也喜欢',
     content_similar: '同类影片',
     popular: '热门推荐',

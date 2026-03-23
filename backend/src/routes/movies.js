@@ -173,7 +173,7 @@ router.get('/:id/cover', asyncHandler(async (req, res) => {
 // 获取影视列表（分页、类型、发行日期、制片国家、评分、人群口味等）
 router.get('/', optionalAuth, asyncHandler(async (req, res) => {
   const page = Math.max(1, parseInt(req.query.page) || 1);
-  const limit = Math.min(500, Math.max(10, parseInt(req.query.limit) || 12));
+  const limit = Math.min(500, Math.max(10, parseInt(req.query.limit) || 15));
   const categoryId = req.query.categoryId ? parseInt(req.query.categoryId, 10) : null;
   const tagId = req.query.tagId ? parseInt(req.query.tagId, 10) : null;
   const keyword = req.query.keyword ? req.query.keyword.trim() : null;

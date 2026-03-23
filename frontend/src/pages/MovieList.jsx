@@ -42,7 +42,7 @@ export default function MovieList() {
 
   const load = useCallback(() => {
     setLoading(true);
-    const params = { page, limit: 12 };
+    const params = { page, limit: 15 };
     if (tasteType) params.tasteType = tasteType;
     if (appliedKeyword) params.keyword = appliedKeyword;
     if (releaseStatus !== 'all') params.releaseStatus = releaseStatus;
@@ -92,7 +92,7 @@ export default function MovieList() {
     setPage(1);
   };
 
-  const totalPages = Math.ceil(total / 12) || 1;
+  const totalPages = Math.ceil(total / 15) || 1;
 
   const clearFilters = () => {
     setTasteType('');
@@ -313,7 +313,7 @@ export default function MovieList() {
 
           {loading ? (
             <div className="movie-grid movie-grid--tmdb-list">
-              {Array.from({ length: 12 }).map((_, i) => (
+              {Array.from({ length: 15 }).map((_, i) => (
                 <div key={i} className="skeleton-card movie-card" style={{ pointerEvents: 'none' }}>
                   <div className="skeleton skeleton-cover" />
                   <div className="skeleton skeleton-title" />

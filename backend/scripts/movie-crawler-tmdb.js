@@ -1,3 +1,6 @@
+/** 从 backend/.env 加载 TMDB_API_KEY、TMDB_CRAWLER_CRON 等（无文件则忽略） */
+require('dotenv').config({ path: require('path').join(__dirname, '../.env'), quiet: true });
+
 /**
  * TMDB 电影数据同步脚本（推荐使用，非爬虫）
  *

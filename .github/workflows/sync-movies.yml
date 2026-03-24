@@ -11,7 +11,7 @@ on:
         default: false
         type: boolean
   schedule:
-    - cron: '0 */6 * * *'  # 每 6 小时
+    - cron: '0 */6 * * *'  # 每 6 小时（快速增量，与本地 crawler:cron 类似）
 
 jobs:
   sync:
@@ -43,4 +43,9 @@ jobs:
         run: |
           EXTRA=""
           if [ "${{ github.event.inputs.replace }}" = "true" ]; then EXTRA="--replace"; fi
-          cd backend && node scripts/movie-crawler-tmdb.js $EXTRA
+          # 定时触发：快速增量（每源 1 页），省流量与时间；手动运行：全量（可配合 replace）
+          if [ "${{ github.event_name }}" = "schedule" ]; then
+            cd backend && node scripts/movie-crawler-tmdb.js --quick $EXTRA
+          else
+            cd backend && node scripts/movie-crawler-tmdb.js $EXTRA
+          fi

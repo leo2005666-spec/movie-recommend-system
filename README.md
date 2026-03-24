@@ -141,6 +141,16 @@ npm run crawler:cron         # 定时同步：默认 **每 30 分钟** + **快�
 npm run crawler:cron:full    # 定时 **全量**（多页），建议配合较慢的 CRON（如每天一次）
 ```
 
+#### 自动定时爬虫（推荐配置）
+
+脚本会读取 **`backend/.env`**（请复制 **`backend/.env.example`** 为 `.env`，填写 **`TMDB_API_KEY`**；可选 **`TMDB_CRAWLER_CRON`**、**`TMDB_CRAWLER_TZ`**）。
+
+| 方式 | 说明 |
+|------|------|
+| **本机常驻** | 在 `backend` 目录执行 **`npm run crawler:cron`**（或 Windows 双击 **`启动-TMDB定时爬虫.ps1`** / Linux 执行 **`start-crawler-cron.sh`**）。进程需**一直开着**才会按 cron 重复执行；关窗口即停止。 |
+| **开机自启（Windows）** | 「任务计划程序」→ 新建任务 → 触发器「用户登录时」→ 操作：程序 **`powershell.exe`**，参数 **`-NoProfile -ExecutionPolicy Bypass -File "…\backend\启动-TMDB定时爬虫.ps1"`**，起始于 **`…\backend`**。 |
+| **云端 Turso + GitHub** | 仓库已含 **`.github/workflows/sync-movies.yml`**：每 **6 小时**跑一次 TMDB 同步（需在 GitHub **Settings → Secrets** 配置 `TMDB_API_KEY`、`TURSO_DATABASE_URL`、`TURSO_AUTH_TOKEN`）。不依赖本机开机。 |
+
 **为何选 TMDB 不选豆瓣**：豆瓣无公开 API，爬虫易被封且违反 ToS；TMDB 官方接口稳定、数据完整、支持中文。
 
 **往线上 Turso 同步**：设置 `TURSO_DATABASE_URL`、`TURSO_AUTH_TOKEN` 后运行，数据会写入线上库。

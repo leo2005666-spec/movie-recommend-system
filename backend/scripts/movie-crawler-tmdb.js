@@ -1,35 +1,23 @@
-/** 从 backend/.env 加载 TMDB_API_KEY、TMDB_CRAWLER_CRON 等（无文件则忽略） */
+// 从 backend/.env 加载 TMDB_API_KEY、TMDB_CRAWLER_CRON 等（无文件则忽略）
 require('dotenv').config({ path: require('path').join(__dirname, '../.env'), quiet: true });
 
-/**
- * TMDB 电影数据同步脚本（推荐使用，非爬虫）
- *
- * 使用 TMDB 官方 API，数据完整稳定，支持中文。
- * 豆瓣无公开 API，爬虫易被封且违反 ToS，不推荐。
- *
- * 字段：电影名、评分(tmdb_rating)、海报、简介、导演、演员、年份、片长、
- *       制片国 origin_countries（TMDB production_countries）、original_language、release_date、tmdb_vote_count
- *
- * 使用方法：
- *   set TMDB_API_KEY=你的key
- *   node scripts/movie-crawler-tmdb.js          # 单次运行（与现有 OMDb 数据合并）
- *   node scripts/movie-crawler-tmdb.js --replace # 清空旧数据，仅保留 TMDB
- *   node scripts/movie-crawler-tmdb.js --cron   # 定时同步（默认每 30 分钟 + 快速增量，见下）
- *   node scripts/movie-crawler-tmdb.js --cron --full  # 定时全量（多页），建议把 TMDB_CRAWLER_CRON 调慢（如每天一次）
- *   node scripts/movie-crawler-tmdb.js --quick   # 单次快速：每源只抓 1 页（适合频繁跑）
- *
- * 环境变量（可选）：
- *   TMDB_CRAWLER_CRON   cron 表达式，默认每 30 分钟一轮（勿在块注释里写「星号+斜杠+30」字面量，见 crontab.guru）
- *   TMDB_CRAWLER_PAGES  每源抓取页数，默认 13；与 --quick 互斥（quick=1）
- *   TMDB_CRAWLER_DELAY_MS  请求间隔毫秒，默认 220（勿低于 ~150，避免触发 TMDB 限流）
- *
- * API Key: https://www.themoviedb.org/settings/api
- */
+// TMDB 电影数据同步脚本（推荐使用，非爬虫）
+// 使用 TMDB 官方 API；豆瓣无公开 API，不推荐爬取。
+// 字段：电影名、评分、海报、简介、导演、演员、年份、片长、制片国、语言、release_date、tmdb_vote_count 等
+// 用法示例：
+//   set TMDB_API_KEY=你的key
+//   node scripts/movie-crawler-tmdb.js
+//   node scripts/movie-crawler-tmdb.js --replace
+//   node scripts/movie-crawler-tmdb.js --cron
+//   node scripts/movie-crawler-tmdb.js --cron --full
+//   node scripts/movie-crawler-tmdb.js --quick
+// 环境变量：TMDB_CRAWLER_CRON（默认约每 30 分钟）、TMDB_CRAWLER_PAGES、TMDB_CRAWLER_DELAY_MS
+// API Key: https://www.themoviedb.org/settings/api
 const API_KEY = process.env.TMDB_API_KEY;
 const POSTER_BASE = 'https://image.tmdb.org/t/p/w500';
 const HTTPS_PROXY = process.env.HTTPS_PROXY || process.env.HTTP_PROXY;
 
-/** 请求间隔（毫秒），TMDB 免费版约 40 次/10 秒；略调低可加快整轮同步 */
+// 请求间隔（毫秒），TMDB 免费版约 40 次/10 秒；略调低可加快整轮同步
 const REQUEST_DELAY = Math.max(
   150,
   parseInt(process.env.TMDB_CRAWLER_DELAY_MS || '220', 10) || 220,
@@ -103,7 +91,7 @@ async function ensureSchema(db) {
   }
 }
 
-/** TMDB /movie/{id} → 库存储格式 |US|GB| */
+// TMDB movie 详情里的国家字段 → 库存储格式，如 |US|GB|
 function formatOriginCountries(detail) {
   if (!detail || typeof detail !== 'object') return null;
   const raw = detail.production_countries;
@@ -304,9 +292,9 @@ async function runCrawler(options = {}) {
 
 async function main() {
   const useCron = process.argv.includes('--cron');
-  /** 默认定时：每 30 分钟；全量模式请加长间隔，例如 TMDB_CRAWLER_CRON="0 3 * * *" */
+  // 默认定时每 30 分钟；全量模式请把 TMDB_CRAWLER_CRON 设慢（如每天凌晨）
   const cronExpr = (process.env.TMDB_CRAWLER_CRON || '*/30 * * * *').trim();
-  /** --cron 时默认「快速增量」（每源 1 页），加 --full 才多页全量 */
+  // --cron 默认快速增量（每源 1 页），加 --full 才多页全量
   const cronUseFull = process.argv.includes('--full');
   const cronPages = cronUseFull ? resolvePagesPerSource(process.argv, process.env.TMDB_CRAWLER_PAGES) : 1;
 

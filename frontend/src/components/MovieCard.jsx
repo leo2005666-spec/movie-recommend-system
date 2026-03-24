@@ -112,6 +112,8 @@ export default function MovieCard({
    * library：影视库 TMDB 式——标题下必有一行日期（无则「日期待定」）
    */
   variant = 'default',
+  /** 首屏横向列表前几项：优先加载封面，其余 lazy，减轻带宽争抢 */
+  imagePriority = false,
 }) {
   const coverUrl = getCoverUrl(movie);
   const fallbackSvg = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="150" fill="%232a2a35"><rect width="100" height="150"/><text x="50" y="75" dominant-baseline="middle" text-anchor="middle" fill="%238a8a9a" font-size="12">暂无封面</text></svg>';
@@ -131,6 +133,9 @@ export default function MovieCard({
           src={coverUrl}
           alt=""
           className="cover"
+          loading={imagePriority ? 'eager' : 'lazy'}
+          decoding="async"
+          fetchPriority={imagePriority ? 'high' : 'low'}
           onError={(e) => { e.target.src = fallbackSvg; }}
         />
         <PraiseRateRing movie={movie} />

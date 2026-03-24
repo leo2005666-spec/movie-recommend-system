@@ -4,19 +4,16 @@ import { MagnifyingGlass } from '@phosphor-icons/react';
 import { api, getProxiedImageUrl } from '../../api/request';
 import { FALLBACK_BACKDROP_URLS } from '../../constants/homeHeroFallbacks';
 
-/** 认为「够清晰」的最小像素宽（TMDB original 通常 ≥ 1280） */
-const MIN_BACKDROP_WIDTH = 960;
-const ROTATE_MS = 9000;
-const FETCH_IDS = 12;
+/** 认为「够清晰」的最小像素宽（略放宽以减少解码等待；仍过滤明显竖图） */
+const MIN_BACKDROP_WIDTH = 800;
+const ROTATE_MS = 8000;
+const RECOMMEND_LIMIT = 10;
+const MAX_CREDITS_FETCH = 8;
+const MAX_SLIDES = 8;
 
 const GRADIENT_OVERLAY =
   'linear-gradient(105deg, rgba(2, 8, 28, 0.88) 0%, rgba(8, 24, 48, 0.72) 42%, rgba(0, 200, 255, 0.38) 100%)';
 
-/**
- * 预加载并校验宽度，不合格则丢弃（避免糊图）
- * @param {string} proxiedSrc
- * @returns {Promise<string|null>}
- */
 function validateBackdrop(proxiedSrc) {
   return new Promise((resolve) => {
     if (!proxiedSrc) return resolve(null);
@@ -30,13 +27,27 @@ function validateBackdrop(proxiedSrc) {
   });
 }
 
+function uniqueProxied(urls) {
+  const seen = new Set();
+  const out = [];
+  for (const u of urls) {
+    if (!u || seen.has(u)) continue;
+    seen.add(u);
+    out.push(u);
+  }
+  return out;
+}
+
 /**
  * 首页顶部：白底细搜索条 + TMDB 风全宽 Hero（左深右亮渐变 + 可轮换高清横版背景）
+ * 加载策略：先用本地兜底图同步铺满 → 并行拉 credits + 并行校验宽度 → 合并去重替换，避免串行 12 次请求卡顿
  */
 export default function HomeWelcomeHero() {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
-  const [slides, setSlides] = useState([]);
+  const [slides, setSlides] = useState(() =>
+    FALLBACK_BACKDROP_URLS.slice(0, 3).map((u) => getProxiedImageUrl(u)),
+  );
   const [slideIndex, setSlideIndex] = useState(0);
 
   const goSearch = useCallback(() => {
@@ -52,68 +63,49 @@ export default function HomeWelcomeHero() {
     [goSearch],
   );
 
-  /** 从热门推荐拉 credits 的 backdrop_path，校验清晰度后合并兜底 */
   useEffect(() => {
     let cancelled = false;
 
     async function loadBackdrops() {
-      const accepted = [];
-      const seen = new Set();
-
-      const pushUnique = async (fullUrl) => {
-        if (!fullUrl || seen.has(fullUrl)) return;
-        const proxied = getProxiedImageUrl(fullUrl);
-        const ok = await validateBackdrop(proxied);
-        if (ok && !cancelled) {
-          seen.add(fullUrl);
-          accepted.push(ok);
-        }
-      };
+      const fallbackProxied = FALLBACK_BACKDROP_URLS.map((u) => getProxiedImageUrl(u));
 
       try {
-        const r = await api.get('/recommend', { limit: FETCH_IDS, prefer: 'popular' });
+        const r = await api.get('/recommend', { limit: RECOMMEND_LIMIT, prefer: 'popular' });
         const list = Array.isArray(r?.data) ? r.data : [];
-        const ids = list.map((m) => m.id).filter(Boolean).slice(0, FETCH_IDS);
+        const ids = list.map((m) => m.id).filter(Boolean).slice(0, MAX_CREDITS_FETCH);
 
-        for (const id of ids) {
-          if (cancelled) return;
-          try {
-            const cr = await api.get(`/movies/${id}/credits`);
-            const bp = cr?.data?.backdrop_path;
-            if (typeof bp === 'string' && bp.startsWith('http')) {
-              await pushUnique(bp);
-            }
-          } catch {
-            /* 单部失败跳过 */
-          }
+        const creditsResults = await Promise.all(
+          ids.map((id) => api.get(`/movies/${id}/credits`).catch(() => null)),
+        );
+
+        if (cancelled) return;
+
+        const rawUrls = [];
+        for (const cr of creditsResults) {
+          const bp = cr?.data?.backdrop_path;
+          if (typeof bp === 'string' && bp.startsWith('http')) rawUrls.push(bp);
+        }
+
+        const proxiedFromApi = rawUrls.map((u) => getProxiedImageUrl(u));
+        const validated = await Promise.all(proxiedFromApi.map((p) => validateBackdrop(p)));
+        const apiOk = validated.filter(Boolean);
+
+        const merged = uniqueProxied([...apiOk, ...fallbackProxied]).slice(0, MAX_SLIDES);
+
+        if (cancelled) return;
+        if (merged.length > 0) {
+          setSlides(merged);
+          setSlideIndex(0);
         }
       } catch {
-        /* 整批失败走兜底 */
-      }
-
-      if (cancelled) return;
-
-      for (const u of FALLBACK_BACKDROP_URLS) {
-        if (accepted.length >= 6) break;
-        await pushUnique(u);
-      }
-
-      if (cancelled) return;
-
-      if (accepted.length === 0) {
-        for (const u of FALLBACK_BACKDROP_URLS) {
-          if (cancelled) return;
-          const proxied = getProxiedImageUrl(u);
-          const ok = await validateBackdrop(proxied);
-          if (ok) {
-            accepted.push(ok);
-            break;
-          }
+        if (cancelled) return;
+        const ok = await Promise.all(fallbackProxied.slice(0, 4).map((p) => validateBackdrop(p)));
+        const merged = uniqueProxied(ok.filter(Boolean).length ? ok.filter(Boolean) : fallbackProxied.slice(0, 2));
+        if (!cancelled && merged.length) {
+          setSlides(merged);
+          setSlideIndex(0);
         }
       }
-
-      setSlides(accepted);
-      setSlideIndex(0);
     }
 
     loadBackdrops();

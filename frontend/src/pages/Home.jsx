@@ -140,9 +140,15 @@ export default function Home() {
         else if (popularList[0]) setLinkMovie(popularList[0]);
 
         if (userId != null && list.length > 0) {
-          list.slice(0, 8).forEach((m) => {
-            api.post('/recommend/events', { scene: SCENE_HOME, movieId: m.id, eventType: 'exposure' }).catch(() => {});
-          });
+          const payload = list.slice(0, 8).map((m) => ({ scene: SCENE_HOME, movieId: m.id, eventType: 'exposure' }));
+          const fire = () => {
+            payload.forEach((body) => api.post('/recommend/events', body).catch(() => {}));
+          };
+          if (typeof window !== 'undefined' && 'requestIdleCallback' in window) {
+            window.requestIdleCallback(fire, { timeout: 2500 });
+          } else {
+            window.setTimeout(fire, 400);
+          }
         }
       } catch {
         if (!cancelled) {
@@ -217,9 +223,14 @@ export default function Home() {
               <div className="home-tmdb-carousel__loading">加载中…</div>
             ) : trendMovies.length ? (
               <div className="home-tmdb-carousel__track">
-                {trendMovies.slice(0, 18).map((m) => (
+                {trendMovies.slice(0, 18).map((m, idx) => (
                   <div key={m.id} className="home-tmdb-carousel__cell">
-                    <MovieCard movie={m} showRecommendReason={false} showPlayOverlay={false} />
+                    <MovieCard
+                      movie={m}
+                      showRecommendReason={false}
+                      showPlayOverlay={false}
+                      imagePriority={idx < 5}
+                    />
                   </div>
                 ))}
               </div>
@@ -267,10 +278,11 @@ export default function Home() {
               <div className="home-tmdb-carousel__loading home-tmdb-carousel__loading--light">加载中…</div>
             ) : trailerList.length ? (
               <div className="home-tmdb-carousel__track home-tmdb-carousel__track--trailers home-tmdb-carousel__track--smooth">
-                {trailerList.slice(0, 16).map((m) => (
+                {trailerList.slice(0, 16).map((m, idx) => (
                   <div key={movieRowKey(m)} className="home-tmdb-carousel__cell home-tmdb-carousel__cell--trailer">
                     <TrailerStripCard
                       movie={m}
+                      imagePriority={idx < 3}
                       onHoverStart={() => setTrailerHoverKey(movieRowKey(m))}
                       onHoverEnd={() => setTrailerHoverKey(null)}
                     />
@@ -304,12 +316,13 @@ export default function Home() {
           ) : recoList.length ? (
             <div className="home-tmdb-carousel">
               <div className="home-tmdb-carousel__track">
-                {recoList.slice(0, 12).map((m) => (
+                {recoList.slice(0, 12).map((m, idx) => (
                   <div key={m.id} className="home-tmdb-carousel__cell">
                     <MovieCard
                       movie={m}
                       showRecommendReason
                       showPlayOverlay={false}
+                      imagePriority={idx < 4}
                       onClick={() => {
                         api.post('/recommend/events', { scene: SCENE_HOME, movieId: m.id, eventType: 'click' }).catch(() => {});
                       }}

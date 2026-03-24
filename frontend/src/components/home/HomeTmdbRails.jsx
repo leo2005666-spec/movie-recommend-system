@@ -69,9 +69,9 @@ export default function HomeTmdbRails() {
             <div className="home-tmdb-carousel__loading">加载中…</div>
           ) : trendList.length ? (
             <div className="home-tmdb-carousel__track home-tmdb-carousel__track--smooth home-tmdb-carousel__track--rail">
-              {trendList.map((it) => (
+              {trendList.map((it, idx) => (
                 <div key={itemKey(it)} className="home-tmdb-carousel__cell home-tmdb-carousel__cell--rail">
-                  <TmdbRailCard item={it} />
+                  <TmdbRailCard item={it} imagePriority={idx < 5} />
                 </div>
               ))}
             </div>

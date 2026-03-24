@@ -5,7 +5,7 @@
 import { Link } from 'react-router-dom';
 import { getPosterOrCoverUrl } from '../../api/request';
 
-export default function TrailerStripCard({ movie, subtitle, onHoverStart, onHoverEnd }) {
+export default function TrailerStripCard({ movie, subtitle, onHoverStart, onHoverEnd, imagePriority = false }) {
   const cover = getPosterOrCoverUrl(movie, { w: 780 });
   const line =
     subtitle ||
@@ -17,7 +17,13 @@ export default function TrailerStripCard({ movie, subtitle, onHoverStart, onHove
     <>
       <div className="trailer-strip-card__thumb">
         {cover ? (
-          <img src={cover} alt="" loading="lazy" decoding="async" />
+          <img
+            src={cover}
+            alt=""
+            loading={imagePriority ? 'eager' : 'lazy'}
+            decoding="async"
+            fetchPriority={imagePriority ? 'high' : 'low'}
+          />
         ) : (
           <div className="trailer-strip-card__thumb-placeholder" aria-hidden />
         )}

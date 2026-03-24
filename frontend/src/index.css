@@ -404,7 +404,7 @@ button { cursor: pointer; }
 }
 
 .home-welcome-hero__bg-layer--fade {
-  animation: homeWelcomeHeroFade 1s ease-out both;
+  animation: homeWelcomeHeroFade 0.45s ease-out both;
 }
 
 @keyframes homeWelcomeHeroFade {
@@ -700,13 +700,13 @@ button { cursor: pointer; }
   object-position: center 22%;
   opacity: 0.44;
   transform: scale(1.02);
-  animation: home-trailer-bg-in 0.42s ease-out both;
+  animation: home-trailer-bg-in 0.22s ease-out both;
 }
 
 @keyframes home-trailer-bg-in {
   from {
     opacity: 0.2;
-    transform: scale(1.06);
+    transform: scale(1.04);
   }
   to {
     opacity: 0.44;

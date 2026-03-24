@@ -64,7 +64,7 @@ function MoreMenu() {
   );
 }
 
-export default function TmdbRailCard({ item }) {
+export default function TmdbRailCard({ item, imagePriority = false }) {
   const src = posterSrc(item);
   const fallbackSvg =
     'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="150" fill="%231e293b"><rect width="100" height="150"/><text x="50" y="75" dominant-baseline="middle" text-anchor="middle" fill="%2394a3b8" font-size="11">无海报</text></svg>';
@@ -74,7 +74,14 @@ export default function TmdbRailCard({ item }) {
   const inner = (
     <>
       <div className="tmdb-rail-card__cover-wrap">
-        <img src={src || fallbackSvg} alt="" loading="lazy" decoding="async" onError={(e) => { e.target.src = fallbackSvg; }} />
+        <img
+          src={src || fallbackSvg}
+          alt=""
+          loading={imagePriority ? 'eager' : 'lazy'}
+          decoding="async"
+          fetchPriority={imagePriority ? 'high' : 'low'}
+          onError={(e) => { e.target.src = fallbackSvg; }}
+        />
         <ScoreRing item={item} />
         <MoreMenu />
       </div>

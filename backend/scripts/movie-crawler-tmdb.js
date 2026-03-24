@@ -19,7 +19,7 @@ require('dotenv').config({ path: require('path').join(__dirname, '../.env'), qui
  *   node scripts/movie-crawler-tmdb.js --quick   # 单次快速：每源只抓 1 页（适合频繁跑）
  *
  * 环境变量（可选）：
- *   TMDB_CRAWLER_CRON   cron 表达式，默认 */30 * * * *（每 30 分钟）。见 https://crontab.guru
+ *   TMDB_CRAWLER_CRON   cron 表达式，默认每 30 分钟一轮（勿在块注释里写「星号+斜杠+30」字面量，见 crontab.guru）
  *   TMDB_CRAWLER_PAGES  每源抓取页数，默认 13；与 --quick 互斥（quick=1）
  *   TMDB_CRAWLER_DELAY_MS  请求间隔毫秒，默认 220（勿低于 ~150，避免触发 TMDB 限流）
  *

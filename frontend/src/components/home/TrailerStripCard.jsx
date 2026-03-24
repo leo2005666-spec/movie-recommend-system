@@ -1,5 +1,6 @@
 /**
- * 首页「最新预告片」横条：固定 16:9 画幅 + 播放角标；本站详情或 TMDB 外链
+ * 首页「最新预告片」横条：固定 16:9 画幅 + 播放角标
+ * 电影：`/movies/tmdb/:id`；剧集：`/tv/tmdb/:id`（均在本站打开，数据与 TMDB 同步）
  */
 import { Link } from 'react-router-dom';
 import { getPosterOrCoverUrl } from '../../api/request';
@@ -39,8 +40,23 @@ export default function TrailerStripCard({ movie, subtitle, onHoverStart, onHove
     onMouseLeave: onHoverEnd,
   };
 
-  /** 仅本站电影库有 id；电视剧走 TMDB 外链 */
-  if (movie.id && movie.media_type !== 'tv') {
+  if (movie.media_type === 'tv' && movie.tmdb_id) {
+    return (
+      <Link to={`/tv/tmdb/${movie.tmdb_id}`} className="trailer-strip-card" {...hoverProps}>
+        {thumb}
+      </Link>
+    );
+  }
+
+  if (movie.tmdb_id) {
+    return (
+      <Link to={`/movies/tmdb/${movie.tmdb_id}`} className="trailer-strip-card" {...hoverProps}>
+        {thumb}
+      </Link>
+    );
+  }
+
+  if (movie.id) {
     return (
       <Link to={`/movies/${movie.id}`} className="trailer-strip-card" {...hoverProps}>
         {thumb}
@@ -49,13 +65,7 @@ export default function TrailerStripCard({ movie, subtitle, onHoverStart, onHove
   }
 
   return (
-    <a
-      href={movie.externalUrl || 'https://www.themoviedb.org/'}
-      target="_blank"
-      rel="noopener noreferrer"
-      className="trailer-strip-card trailer-strip-card--external"
-      {...hoverProps}
-    >
+    <a href="https://www.themoviedb.org/" target="_blank" rel="noopener noreferrer" className="trailer-strip-card trailer-strip-card--external" {...hoverProps}>
       {thumb}
     </a>
   );

@@ -1,5 +1,6 @@
 /**
  * TMDB 首页横滑卡片：竖版海报 + 左下评分环 + 标题 + 日期（对齐 TMDB）
+ * 电影：`/movies/tmdb/:id`（入库同步 TMDB）；剧集：`/tv/tmdb/:id`（详情实时拉 TMDB）
  */
 import { Link } from 'react-router-dom';
 import { getCoverUrl, getProxiedImageUrl } from '../../api/request';
@@ -69,7 +70,6 @@ export default function TmdbRailCard({ item }) {
     'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="150" fill="%231e293b"><rect width="100" height="150"/><text x="50" y="75" dominant-baseline="middle" text-anchor="middle" fill="%2394a3b8" font-size="11">无海报</text></svg>';
   const dl = dateLine(item);
   const isTv = item.media_type === 'tv';
-  const internal = item.id && !isTv;
 
   const inner = (
     <>
@@ -85,7 +85,23 @@ export default function TmdbRailCard({ item }) {
     </>
   );
 
-  if (internal) {
+  if (isTv && item.tmdb_id) {
+    return (
+      <Link to={`/tv/tmdb/${item.tmdb_id}`} className="tmdb-rail-card">
+        {inner}
+      </Link>
+    );
+  }
+
+  if (item.tmdb_id) {
+    return (
+      <Link to={`/movies/tmdb/${item.tmdb_id}`} className="tmdb-rail-card">
+        {inner}
+      </Link>
+    );
+  }
+
+  if (item.id) {
     return (
       <Link to={`/movies/${item.id}`} className="tmdb-rail-card">
         {inner}
@@ -94,12 +110,7 @@ export default function TmdbRailCard({ item }) {
   }
 
   return (
-    <a
-      href={item.externalUrl || 'https://www.themoviedb.org/'}
-      target="_blank"
-      rel="noopener noreferrer"
-      className="tmdb-rail-card tmdb-rail-card--external"
-    >
+    <a href="https://www.themoviedb.org/" target="_blank" rel="noopener noreferrer" className="tmdb-rail-card tmdb-rail-card--external">
       {inner}
     </a>
   );

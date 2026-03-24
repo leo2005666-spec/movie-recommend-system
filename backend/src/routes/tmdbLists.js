@@ -3,6 +3,7 @@
  * GET /api/tmdb/lists?kind=upcoming|now_playing|popular&region=CN
  * GET /api/tmdb/rail?type=trending|free&tab=...（首页仅展示 trending）
  * GET /api/tmdb/trailer-row?tab=hot|streaming|tv|rent|theaters&region=CN
+ * GET /api/tmdb/tv/:tmdbId — 剧集详情（实时 TMDB，短缓存；本站 /tv/tmdb/:id）
  */
 const express = require('express');
 const db = require('../db/db');
@@ -42,7 +43,7 @@ async function tmdbFetch(url) {
   return r.json();
 }
 
-/** 统一为前端卡片：电影可合并本站 id；电视剧仅外链 TMDB */
+/** 统一为前端卡片：电影可合并本站 id；电视剧走本站 /tv/tmdb/:id（externalUrl 仅作备用） */
 function mapMediaItem(raw, forcedMedia) {
   const media = forcedMedia || raw.media_type || (raw.name && !raw.title ? 'tv' : 'movie');
   const isTv = media === 'tv';
@@ -295,6 +296,116 @@ router.get('/trailer-row', asyncHandler(async (req, res) => {
     tab,
     region,
     upcomingOnly: true,
+    cached: false,
+  };
+  setCached(cacheKey, payload);
+  res.json({ code: 0, data: payload });
+}));
+
+function pickTvTrailerUrl(videosJson) {
+  const results = videosJson?.results || [];
+  const v =
+    results.find((x) => x.type === 'Trailer' && x.site === 'YouTube') ||
+    results.find((x) => x.type === 'Teaser' && x.site === 'YouTube');
+  return v?.key ? `https://www.youtube.com/watch?v=${v.key}` : null;
+}
+
+/**
+ * 剧集详情：聚合 TMDB tv/{id}、credits、videos、recommendations（约 5 分钟缓存）
+ */
+router.get('/tv/:tmdbId', asyncHandler(async (req, res) => {
+  const tmdbId = parseInt(req.params.tmdbId, 10);
+  if (!Number.isFinite(tmdbId) || tmdbId < 1) {
+    return res.status(400).json({ code: 400, message: '无效的 TMDB 剧集 ID' });
+  }
+  const TMDB_API_KEY = process.env.TMDB_API_KEY;
+  if (!TMDB_API_KEY) {
+    return res.status(503).json({ code: 503, message: '未配置 TMDB_API_KEY' });
+  }
+
+  const cacheKey = `tmdb:tv:detail:${tmdbId}`;
+  const cached = getCached(cacheKey);
+  if (cached) {
+    return res.json({ code: 0, data: { ...cached, cached: true } });
+  }
+
+  const base = `https://api.themoviedb.org/3/tv/${tmdbId}`;
+  const q = `api_key=${TMDB_API_KEY}&language=zh-CN`;
+  let details;
+  let creditsJson;
+  let videosJson;
+  let recJson;
+  try {
+    [details, creditsJson, videosJson, recJson] = await Promise.all([
+      tmdbFetch(`${base}?${q}`),
+      tmdbFetch(`${base}/credits?${q}`),
+      tmdbFetch(`${base}/videos?${q}`),
+      tmdbFetch(`${base}/recommendations?${q}&page=1`),
+    ]);
+  } catch (e) {
+    const msg = e.message || '';
+    if (/404/.test(msg)) {
+      return res.status(404).json({ code: 404, message: 'TMDB 上不存在该剧集' });
+    }
+    console.error('[tmdb/tv]', tmdbId, msg);
+    return res.status(502).json({ code: 502, message: msg || 'TMDB 请求失败' });
+  }
+
+  const statusMap = {
+    'Returning Series': '播出中',
+    Ended: '已完结',
+    Canceled: '已取消',
+    'In Production': '制作中',
+    Planned: '计划中',
+  };
+
+  const cast = (creditsJson.cast || []).slice(0, 20).map((c) => ({
+    id: c.id,
+    name: c.name,
+    character: c.character,
+    profile_path: c.profile_path ? `${TMDB_IMG}/w342${c.profile_path}` : null,
+    order: c.order,
+  }));
+
+  const creators = (creditsJson.crew || [])
+    .filter((c) => c.job === 'Creator')
+    .slice(0, 8)
+    .map((c) => ({
+      id: c.id,
+      name: c.name,
+      profile_path: c.profile_path ? `${TMDB_IMG}/w185${c.profile_path}` : null,
+    }));
+
+  const recommendations = (recJson.results || []).slice(0, 12).map((t) => ({
+    tmdb_id: t.id,
+    title: t.name || t.original_name || '未命名',
+    poster_path: t.poster_path ? `${TMDB_IMG}/w300${t.poster_path}` : null,
+    first_air_date: t.first_air_date || null,
+    vote_average: t.vote_average,
+  }));
+
+  const payload = {
+    tmdb_id: details.id,
+    name: details.name || details.original_name || '未命名',
+    original_name: details.original_name || null,
+    overview: details.overview || '',
+    first_air_date: details.first_air_date || null,
+    last_air_date: details.last_air_date || null,
+    vote_average: details.vote_average,
+    number_of_seasons: details.number_of_seasons,
+    number_of_episodes: details.number_of_episodes,
+    episode_run_time: details.episode_run_time || [],
+    status: statusMap[details.status] || details.status || null,
+    genres: (details.genres || []).map((g) => ({ id: g.id, name: g.name })),
+    poster_path: details.poster_path ? `${TMDB_IMG}/w500${details.poster_path}` : null,
+    backdrop_path: details.backdrop_path ? `${TMDB_IMG}/original${details.backdrop_path}` : null,
+    homepage: details.homepage || null,
+    cast,
+    creators,
+    trailer_url: pickTvTrailerUrl(videosJson),
+    tmdb_url: `https://www.themoviedb.org/tv/${tmdbId}`,
+    recommendations,
+    fetchedAt: new Date().toISOString(),
     cached: false,
   };
   setCached(cacheKey, payload);

@@ -32,6 +32,155 @@ function parseTypeKeys(raw) {
 const TMDB_API_KEY = process.env.TMDB_API_KEY;
 const TMDB_IMG = 'https://image.tmdb.org/t/p';
 
+/** TMDB /movie/{id} → 库存储格式 |US|GB| */
+function formatOriginCountries(detail) {
+  if (!detail || typeof detail !== 'object') return null;
+  const raw = detail.production_countries;
+  if (Array.isArray(raw) && raw.length) {
+    const codes = raw
+      .map((x) => (x && x.iso_3166_1 ? String(x.iso_3166_1).toUpperCase() : ''))
+      .filter(Boolean);
+    if (codes.length) return `|${codes.join('|')}|`;
+  }
+  const oc = detail.origin_country;
+  if (Array.isArray(oc) && oc.length) {
+    const codes = oc.map((c) => String(c).toUpperCase()).filter(Boolean);
+    if (codes.length) return `|${codes.join('|')}|`;
+  }
+  return null;
+}
+
+/**
+ * 从 TMDB 拉取电影详情并写入/更新本站 movies 表（与爬虫字段对齐，保证与 TMDB 同步）
+ * @returns {Promise<{ id: number, tmdb_id: number, created?: boolean, updated?: boolean } | null>}
+ */
+async function upsertMovieFromTmdb(tmdbId) {
+  const url = `https://api.themoviedb.org/3/movie/${tmdbId}?api_key=${TMDB_API_KEY}&language=zh-CN&append_to_response=credits`;
+  const r = await fetch(url, {
+    headers: { 'User-Agent': 'Mozilla/5.0 (compatible; MovieRecommend/1.0)' },
+    signal: AbortSignal.timeout(25000),
+  });
+  if (r.status === 404) return null;
+  if (!r.ok) throw new Error(`TMDB HTTP ${r.status}`);
+  const detail = await r.json();
+  if (detail == null || (detail.success === false && detail.status_code)) return null;
+
+  const title = (detail.title || detail.original_title || '').trim() || '未知';
+  const cover = detail.poster_path ? `${TMDB_IMG}/w500${detail.poster_path}` : null;
+  const description = (detail.overview || '').trim() || null;
+  const releaseYear = detail.release_date ? parseInt(String(detail.release_date).slice(0, 4), 10) : null;
+  const rating = detail.vote_average != null ? detail.vote_average : null;
+
+  let director = null;
+  let actors = null;
+  let duration = null;
+  if (detail.credits?.crew) {
+    const d = detail.credits.crew.find((c) => c.job === 'Director');
+    if (d) director = d.name;
+  }
+  if (detail.credits?.cast?.length) {
+    actors = detail.credits.cast.slice(0, 5).map((c) => c.name).join(', ');
+  }
+  if (detail.runtime) duration = detail.runtime;
+  const originCountries = formatOriginCountries(detail);
+  const originalLanguage = detail.original_language ? String(detail.original_language).toLowerCase() : null;
+  const releaseDate = detail.release_date || null;
+  let tmdbVoteCount = null;
+  if (detail.vote_count != null && !Number.isNaN(Number(detail.vote_count))) {
+    tmdbVoteCount = Math.round(Number(detail.vote_count));
+  }
+
+  const genreIds = Array.isArray(detail.genres) ? detail.genres.map((g) => g.id).filter(Boolean) : [];
+
+  const existing = await db.prepare('SELECT id FROM movies WHERE tmdb_id = ?').get(tmdbId);
+  if (existing) {
+    await db
+      .prepare(
+        `UPDATE movies SET title=?, cover=?, description=?, release_year=?, director=?, actors=?, duration=?, tmdb_rating=?,
+          origin_countries=COALESCE(?, origin_countries), original_language=COALESCE(?, original_language),
+          release_date=COALESCE(?, release_date), tmdb_vote_count=COALESCE(?, tmdb_vote_count),
+          updated_at=CURRENT_TIMESTAMP WHERE id=?`
+      )
+      .run(
+        title,
+        cover,
+        description,
+        releaseYear,
+        director,
+        actors,
+        duration,
+        rating,
+        originCountries,
+        originalLanguage,
+        releaseDate,
+        tmdbVoteCount,
+        existing.id
+      );
+    return { id: existing.id, tmdb_id: tmdbId, updated: true };
+  }
+
+  await db
+    .prepare(
+      `INSERT INTO movies (title, cover, description, release_year, director, actors, duration, tmdb_id, tmdb_rating,
+        origin_countries, original_language, release_date, tmdb_vote_count)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+    )
+    .run(
+      title,
+      cover,
+      description,
+      releaseYear,
+      director,
+      actors,
+      duration,
+      tmdbId,
+      rating,
+      originCountries,
+      originalLanguage,
+      releaseDate,
+      tmdbVoteCount
+    );
+  const row = await db.prepare('SELECT id FROM movies WHERE tmdb_id = ?').get(tmdbId);
+  const mid = row?.id;
+  if (mid) {
+    try {
+      const genreMap = { 28: 1, 35: 2, 10749: 3, 878: 4, 9648: 5, 16: 6 };
+      for (const gid of genreIds.slice(0, 2)) {
+        const cid = genreMap[gid];
+        if (cid) await db.prepare('INSERT OR IGNORE INTO movie_categories (movie_id, category_id) VALUES (?, ?)').run(mid, cid);
+      }
+      await db.prepare('INSERT OR IGNORE INTO movie_tags (movie_id, tag_id) VALUES (?, ?)').run(mid, 3);
+    } catch (e) {
+      if (!/foreign key|FOREIGN_KEY|SQLITE_CONSTRAINT/i.test(e.message)) throw e;
+    }
+  }
+  return { id: mid, tmdb_id: tmdbId, created: true };
+}
+
+/**
+ * 首页 TMDB 卡片进入本站详情：按 TMDB 电影 ID 拉取并 upsert，再跳转 `/movies/:id`
+ * 无需管理员权限；每次调用会刷新已存在记录的 TMDB 字段
+ */
+router.post('/from-tmdb/:tmdbId', optionalAuth, asyncHandler(async (req, res) => {
+  const tmdbId = parseInt(req.params.tmdbId, 10);
+  if (!Number.isFinite(tmdbId) || tmdbId < 1) {
+    return res.status(400).json({ code: 400, message: '无效的 TMDB 电影 ID' });
+  }
+  if (!TMDB_API_KEY) {
+    return res.status(503).json({ code: 503, message: '未配置 TMDB_API_KEY' });
+  }
+  try {
+    const result = await upsertMovieFromTmdb(tmdbId);
+    if (!result?.id) {
+      return res.status(404).json({ code: 404, message: 'TMDB 上不存在该电影' });
+    }
+    res.json({ code: 0, data: result });
+  } catch (e) {
+    console.error('[movies/from-tmdb]', tmdbId, e.message);
+    res.status(502).json({ code: 502, message: e.message || '从 TMDB 同步失败' });
+  }
+}));
+
 // 从 TMDB 获取演员表（需电影有 tmdb_id，且配置 TMDB_API_KEY）
 router.get('/:id/credits', asyncHandler(async (req, res) => {
   const id = parseInt(req.params.id);

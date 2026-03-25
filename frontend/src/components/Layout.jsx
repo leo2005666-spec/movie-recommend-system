@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Outlet, Link, useLocation } from 'react-router-dom';
-import { getAvatarUrl } from '../api/request';
+import UserAvatar from './UserAvatar';
 import {
   HouseIcon,
   FilmStripIcon,
@@ -33,7 +33,6 @@ export default function Layout() {
   const { user, logout, isAdmin } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const loc = useLocation();
-  const [headerAvatarErr, setHeaderAvatarErr] = useState(false);
   /** 向下滚动时收起顶栏，向上滚动时展开，减少遮挡海报/Hero */
   const [headerScrollHidden, setHeaderScrollHidden] = useState(false);
   const lastScrollY = useRef(0);
@@ -54,10 +53,6 @@ export default function Layout() {
     lastScrollY.current = typeof window !== 'undefined' ? window.scrollY : 0;
     setHeaderScrollHidden(false);
   }, [loc.pathname]);
-
-  useEffect(() => {
-    setHeaderAvatarErr(false);
-  }, [user?.avatar]);
 
   useEffect(() => {
     const onScroll = () => {
@@ -121,21 +116,19 @@ export default function Layout() {
               )}
               <Link to="/profile" className="header-user-link">
                 <span className="header-user-avatar" aria-hidden>
-                  {user.avatar && !headerAvatarErr ? (
-                    <img
-                      key={`${user.id}-${user.avatar}`}
-                      src={getAvatarUrl(user.avatar)}
-                      alt=""
-                      className="header-user-avatar__img"
-                      referrerPolicy="no-referrer"
-                      onError={() => setHeaderAvatarErr(true)}
-                    />
-                  ) : (
-                    <span className="header-user-avatar__fallback">{(user.username || '?')[0].toUpperCase()}</span>
-                  )}
+                  <UserAvatar
+                    userId={user.id}
+                    username={user.username}
+                    nickname={user.nickname}
+                    avatar={user.avatar}
+                    avatarStyle={user.avatar_style}
+                    size={32}
+                    imgClassName="header-user-avatar__img"
+                    className="header-user-avatar__ua"
+                  />
                 </span>
                 <span className="header-user-link__text">
-                  {user.username}
+                  {user.nickname || user.username}
                   {isAdmin && <span className="admin-tag">管理员</span>}
                 </span>
               </Link>

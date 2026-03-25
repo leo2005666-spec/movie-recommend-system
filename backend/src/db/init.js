@@ -170,6 +170,16 @@ async function run() {
     VALUES ('admin', ?, '管理员', 'admin'), ('user', ?, '普通用户', 'user')
   `).run(adminPass, userPass);
 
+  try {
+    await db.exec('ALTER TABLE users ADD COLUMN avatar_style INTEGER');
+  } catch (_) {
+    /* 列已存在 */
+  }
+  await db.exec(`
+    UPDATE users SET avatar_style = (ABS(id * 17 + LENGTH(COALESCE(username,''))) % 12)
+    WHERE avatar_style IS NULL
+  `);
+
   await db.exec(`
     INSERT OR IGNORE INTO categories (name, description) VALUES
     ('动作', '动作片'), ('喜剧', '喜剧片'), ('爱情', '爱情片'),

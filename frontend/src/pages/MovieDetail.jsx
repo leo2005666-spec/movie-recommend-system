@@ -4,6 +4,7 @@ import MovieCard, { getScoreColor } from '../components/MovieCard';
 import { useAuth } from '../context/AuthContext';
 import { api, getCoverUrl } from '../api/request';
 import { normalizeMovieListResponse } from '../utils/recommendApi';
+import UserAvatar from '../components/UserAvatar';
 import DetailPageLoading from '../components/DetailPageLoading';
 
 const SCENE_SIMILAR = 'similar';
@@ -357,7 +358,16 @@ export default function MovieDetail() {
             <div className="social-discuss-list">
               {comments.map((c) => (
                 <div key={c.id} className="social-discuss-item">
-                  <div className="social-discuss-avatar">{(c.nickname || c.username || '?')[0]}</div>
+                  <div className="social-discuss-avatar">
+                    <UserAvatar
+                      userId={c.user_id}
+                      username={c.username}
+                      nickname={c.nickname}
+                      avatar={c.avatar}
+                      avatarStyle={c.avatar_style}
+                      size={40}
+                    />
+                  </div>
                   <div className="social-discuss-content">
                     <div className="social-discuss-title-row">
                       <div className="social-discuss-title">{c.content.length > 80 ? c.content.slice(0, 80) + '…' : c.content}</div>

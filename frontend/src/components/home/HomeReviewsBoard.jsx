@@ -3,6 +3,7 @@
  */
 import { Link } from 'react-router-dom';
 import { StarIcon } from '@phosphor-icons/react';
+import UserAvatar from '../UserAvatar';
 
 function Stars({ n }) {
   const v = Math.min(5, Math.max(0, Math.round(Number(n) || 0)));
@@ -28,6 +29,11 @@ export default function HomeReviewsBoard({ realComments = [], mockReviews = [], 
       key: `real-${c.id}`,
       real: true,
       username: c.nickname || c.username,
+      userId: c.user_id,
+      userUsername: c.username,
+      userNickname: c.nickname,
+      avatar: c.avatar,
+      avatarStyle: c.avatar_style,
       content: c.content.length > 160 ? c.content.slice(0, 160) + '…' : c.content,
       movieTitle: c.movie_title,
       movieId: c.movie_id,
@@ -73,9 +79,15 @@ export default function HomeReviewsBoard({ realComments = [], mockReviews = [], 
               <article key={item.key} className="home-reviews-board__card">
                 <div className="home-reviews-board__avatar">
                   {item.real ? (
-                    <span className="home-reviews-board__avatar-fallback">
-                      {(item.username || '?')[0].toUpperCase()}
-                    </span>
+                    <UserAvatar
+                      userId={item.userId}
+                      username={item.userUsername}
+                      nickname={item.userNickname}
+                      avatar={item.avatar}
+                      avatarStyle={item.avatarStyle}
+                      size={44}
+                      className="home-reviews-board__ua"
+                    />
                   ) : (
                     <span className="home-reviews-board__avatar-mock" style={{ background: item.color }}>
                       {item.initial}

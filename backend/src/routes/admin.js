@@ -61,7 +61,7 @@ router.get('/explore/comments', asyncHandler(async (req, res) => {
   const total = (await db.prepare('SELECT COUNT(*) as n FROM comments').get())?.n ?? 0;
   const list = await db.prepare(`
     SELECT c.id, c.user_id, c.movie_id, c.content, c.created_at,
-           u.username, u.nickname,
+           u.username, u.nickname, u.avatar, u.avatar_style,
            m.title as movie_title
     FROM comments c
     LEFT JOIN users u ON c.user_id = u.id
@@ -83,7 +83,7 @@ router.get('/explore/favorites', asyncHandler(async (req, res) => {
   const total = (await db.prepare('SELECT COUNT(*) as n FROM favorites').get())?.n ?? 0;
   const list = await db.prepare(`
     SELECT f.id, f.user_id, f.movie_id, f.created_at,
-           u.username, u.nickname,
+           u.username, u.nickname, u.avatar, u.avatar_style,
            m.title as movie_title
     FROM favorites f
     LEFT JOIN users u ON f.user_id = u.id

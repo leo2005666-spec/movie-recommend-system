@@ -17,7 +17,8 @@
     "translate-chinese": "node scripts/translate-to-chinese.js",
     "fill-covers": "node scripts/fill-missing-covers.js",
     "remove-no-cover": "node scripts/remove-no-cover.js",
-    "backfill-origin": "node scripts/backfill-origin-countries.js"
+    "backfill-origin": "node scripts/backfill-origin-countries.js",
+    "normalize-demo-users": "node scripts/normalize-demo-users.js"
   },
   "dependencies": {
     "@libsql/client": "^0.17.0",

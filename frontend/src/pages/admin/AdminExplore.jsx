@@ -3,6 +3,7 @@ import { Link, useParams } from 'react-router-dom';
 import { ArrowLeftIcon } from '@phosphor-icons/react';
 import AdminNav from '../../components/AdminNav';
 import { api } from '../../api/request';
+import UserAvatar from '../../components/UserAvatar';
 
 /**
  * 管理端：从数据概览下钻 — 全站评论明细 / 全站收藏明细
@@ -89,7 +90,20 @@ export default function AdminExplore() {
                   <tr key={row.id}>
                     <td>{row.id}</td>
                     <td>
-                      {row.nickname || row.username || '—'} <span className="admin-explore-id">(用户ID {row.user_id})</span>
+                      <div className="admin-explore-user-cell">
+                        <UserAvatar
+                          userId={row.user_id}
+                          username={row.username}
+                          nickname={row.nickname}
+                          avatar={row.avatar}
+                          avatarStyle={row.avatar_style}
+                          size={36}
+                        />
+                        <span>
+                          {row.nickname || row.username || '—'}{' '}
+                          <span className="admin-explore-id">(用户ID {row.user_id})</span>
+                        </span>
+                      </div>
                     </td>
                     <td>
                       {row.movie_title || '—'} <span className="admin-explore-id">(影片ID {row.movie_id})</span>

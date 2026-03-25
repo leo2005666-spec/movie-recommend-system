@@ -9,7 +9,8 @@ import {
   PencilSimpleIcon,
 } from '@phosphor-icons/react';
 import { useAuth } from '../context/AuthContext';
-import { api, getAvatarUrl } from '../api/request';
+import { api } from '../api/request';
+import UserAvatar from '../components/UserAvatar';
 
 /** 头像上传大小限制（与后端一致，用于提示） */
 const AVATAR_MAX_MB = 10;
@@ -25,14 +26,11 @@ export default function Profile() {
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
-  const [avatarLoadErr, setAvatarLoadErr] = useState(false);
-
   const loadProfile = () =>
     api.get('/users/me').then((r) => {
       setProfile(r.data);
       setUsername(r.data?.username || '');
       setEmail(r.data?.email || '');
-      setAvatarLoadErr(false);
     });
 
   useEffect(() => {
@@ -53,7 +51,6 @@ export default function Profile() {
     setPassword('');
     setMsg('');
     setIsEditing(false);
-    setAvatarLoadErr(false);
   };
 
   const handleSubmit = async (e) => {
@@ -73,11 +70,12 @@ export default function Profile() {
       setProfile(r.data);
       setUsername(r.data?.username || '');
       setEmail(r.data?.email || '');
-      setAvatarLoadErr(false);
       updateUser({
         username: r.data?.username,
         email: r.data?.email ?? null,
         avatar: r.data?.avatar || null,
+        avatar_style: r.data?.avatar_style != null ? Number(r.data.avatar_style) : null,
+        nickname: r.data?.nickname ?? undefined,
       });
       setIsEditing(false);
     } catch (err) {
@@ -99,11 +97,12 @@ export default function Profile() {
       const r = await api.postForm('/users/me/avatar', fd);
       const u = r.data;
       setProfile((prev) => ({ ...prev, ...u }));
-      setAvatarLoadErr(false);
       updateUser({
         username: u?.username,
         email: u?.email ?? null,
         avatar: u?.avatar || null,
+        avatar_style: u?.avatar_style != null ? Number(u.avatar_style) : null,
+        nickname: u?.nickname ?? undefined,
       });
       setMsg('头像已更新，可继续修改资料后点「保存」或直接关闭编辑');
     } catch (err) {
@@ -115,7 +114,6 @@ export default function Profile() {
 
   if (!profile) return <p className="empty-hint">加载中...</p>;
 
-  const initial = (profile.username?.[0] || '?').toUpperCase();
   const roleLabel = profile.role === 'admin' ? '管理员' : '用户';
   const createdAt = profile.created_at
     ? new Date(profile.created_at).toLocaleString('zh-CN', { dateStyle: 'medium', timeStyle: 'short' })
@@ -124,18 +122,16 @@ export default function Profile() {
   const avatarBlock = (
     <div className={`profile-hero__avatar-wrap ${isEditing ? 'profile-hero__avatar-wrap--editable' : ''}`}>
       <div className="profile-overview__avatar profile-hero__avatar">
-        {profile.avatar && !avatarLoadErr ? (
-          <img
-            key={profile.avatar}
-            src={getAvatarUrl(profile.avatar)}
-            alt=""
-            className="profile-overview__avatar-img"
-            referrerPolicy="no-referrer"
-            onError={() => setAvatarLoadErr(true)}
-          />
-        ) : (
-          initial
-        )}
+        <UserAvatar
+          userId={profile.id}
+          username={profile.username}
+          nickname={profile.nickname}
+          avatar={profile.avatar}
+          avatarStyle={profile.avatar_style}
+          size={64}
+          imgClassName="profile-overview__avatar-img"
+          className="profile-hero__user-avatar"
+        />
       </div>
       {isEditing && (
         <>

@@ -37,8 +37,11 @@ router.post(
       await db.prepare(
         'INSERT INTO users (username, password, nickname, role) VALUES (?, ?, ?, ?)'
       ).run(username, hash, nickname, 'user');
+      const { id: newId } = await db.prepare('SELECT last_insert_rowid() as id').get();
+      const style = Math.abs(Number(newId) * 17 + username.length) % 12;
+      await db.prepare('UPDATE users SET avatar_style = ? WHERE id = ?').run(style, newId);
       const user = await db.prepare(
-        'SELECT id, username, nickname, email, avatar, role FROM users WHERE username = ?'
+        'SELECT id, username, nickname, email, avatar, avatar_style, role FROM users WHERE username = ?'
       ).get(username);
       const token = jwt.sign({ userId: user.id }, JWT_SECRET, { expiresIn: '7d' });
       res.json({ code: 0, data: { user, token } });

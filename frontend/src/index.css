@@ -393,25 +393,41 @@ button { cursor: pointer; }
 .header-user-avatar {
   width: 32px;
   height: 32px;
-  border-radius: 50%;
-  overflow: hidden;
   flex-shrink: 0;
-  background: linear-gradient(135deg, var(--accent) 0%, var(--accent-hover) 100%);
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
+  line-height: 0;
+}
+.header-user-avatar__ua.user-avatar--fallback {
+  border-radius: 50%;
 }
 .header-user-avatar__img {
   width: 100%;
   height: 100%;
   object-fit: cover;
   display: block;
+  border-radius: 50%;
 }
-.header-user-avatar__fallback {
-  font-size: 0.8rem;
-  font-weight: var(--fw-bold);
-  color: #fff;
-  line-height: 1;
+
+/** UserAvatar：顶栏 / 评论 / 管理台共用 */
+.user-avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border-radius: 50%;
+  font-weight: 600;
+  box-sizing: border-box;
+  vertical-align: middle;
+}
+.user-avatar--img {
+  object-fit: cover;
+  border-radius: 50%;
+  display: block;
+}
+.user-avatar--fallback {
+  border-radius: 50%;
 }
 .header-user-link__text {
   display: inline-flex;
@@ -4029,6 +4045,11 @@ a.admin-dashboard-card--link:hover {
   color: var(--text-muted);
   font-size: 0.8rem;
 }
+.admin-explore-user-cell {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+}
 .admin-explore-content {
   max-width: 28rem;
   word-break: break-word;
@@ -5990,17 +6011,8 @@ a.admin-dashboard-card--link:hover {
   border-color: var(--border-strong);
 }
 .social-discuss-avatar {
-  width: 40px;
-  height: 40px;
   flex-shrink: 0;
-  border-radius: 50%;
-  background: linear-gradient(135deg, var(--accent) 0%, var(--tmdb-green) 100%);
-  color: #fff;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 600;
-  font-size: 1rem;
+  line-height: 0;
 }
 .social-discuss-content { flex: 1; min-width: 0; }
 .social-discuss-title-row {

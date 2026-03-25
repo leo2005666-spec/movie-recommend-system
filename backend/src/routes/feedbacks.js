@@ -46,7 +46,7 @@ router.get('/me', authMiddleware, asyncHandler(async (req, res) => {
 // 管理员：查看所有反馈（仅查询，无「已读即消失」逻辑，可随时重复打开查看）
 router.get('/', authMiddleware, requireAdmin, asyncHandler(async (req, res) => {
   const list = await db.prepare(`
-    SELECT f.id, f.user_id, u.username, u.nickname, f.content, f.type, f.status, f.created_at
+    SELECT f.id, f.user_id, u.username, f.content, f.type, f.status, f.created_at
     FROM feedbacks f LEFT JOIN users u ON f.user_id = u.id
     ORDER BY f.id DESC
   `).all();

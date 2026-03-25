@@ -14,7 +14,6 @@ function userPayloadEqual(a, b) {
   return (
     a.id === b.id &&
     a.username === b.username &&
-    (a.nickname || '') === (b.nickname || '') &&
     (a.email || '') === (b.email || '') &&
     (a.avatar || '') === (b.avatar || '') &&
     normAvatarStyle(a.avatar_style) === normAvatarStyle(b.avatar_style) &&
@@ -45,7 +44,6 @@ export function AuthProvider({ children }) {
         const next = {
           id: me.id,
           username: me.username,
-          nickname: me.nickname ?? prev?.nickname ?? me.username,
           email: me.email ?? null,
           avatar: me.avatar != null && me.avatar !== '' ? String(me.avatar).trim() : null,
           avatar_style: me.avatar_style != null && me.avatar_style !== '' ? Number(me.avatar_style) : null,
@@ -66,12 +64,13 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     if (!localStorage.getItem('token')) return undefined;
     return syncUserFromServer(user);
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- 仅挂载时用本地 user 作 nickname 兜底
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- 挂载时与服务端对齐一次
   }, []);
 
   const login = (userData, token) => {
+    const { nickname: _omitNick, ...rest } = userData || {};
     const normalized = {
-      ...userData,
+      ...rest,
       avatar:
         userData?.avatar != null && String(userData.avatar).trim() !== ''
           ? String(userData.avatar).trim()

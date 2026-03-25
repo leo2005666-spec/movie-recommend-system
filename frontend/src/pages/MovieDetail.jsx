@@ -362,7 +362,6 @@ export default function MovieDetail() {
                     <UserAvatar
                       userId={c.user_id}
                       username={c.username}
-                      nickname={c.nickname}
                       avatar={c.avatar}
                       avatarStyle={c.avatar_style}
                       size={40}
@@ -384,7 +383,7 @@ export default function MovieDetail() {
                     <div className="social-discuss-meta">
                       <span>开放</span>
                       <span>·</span>
-                      <span>{c.nickname || c.username}</span>
+                      <span>{c.username}</span>
                       <span>·</span>
                       <span>{c.created_at}</span>
                     </div>

@@ -18,7 +18,6 @@ router.post(
   [
     body('username').trim().notEmpty().withMessage('请输入用户名').isLength({ min: 2, max: 20 }).withMessage('用户名2-20字符'),
     body('password').notEmpty().withMessage('请输入密码').isLength({ min: 6 }).withMessage('密码至少6位'),
-    body('nickname').optional().trim(),
   ],
   asyncHandler(async (req, res) => {
     const errors = validationResult(req);
@@ -28,7 +27,6 @@ router.post(
     }
     const username = (req.body.username || '').trim();
     const password = req.body.password;
-    const nickname = (req.body.nickname || '').trim() || username;
     if (!username || !password) {
       return res.status(400).json({ code: 400, message: '用户名和密码不能为空' });
     }
@@ -36,12 +34,12 @@ router.post(
     try {
       await db.prepare(
         'INSERT INTO users (username, password, nickname, role) VALUES (?, ?, ?, ?)'
-      ).run(username, hash, nickname, 'user');
+      ).run(username, hash, username, 'user');
       const { id: newId } = await db.prepare('SELECT last_insert_rowid() as id').get();
       const style = Math.abs(Number(newId) * 17 + username.length) % 12;
       await db.prepare('UPDATE users SET avatar_style = ? WHERE id = ?').run(style, newId);
       const user = await db.prepare(
-        'SELECT id, username, nickname, email, avatar, avatar_style, role FROM users WHERE username = ?'
+        'SELECT id, username, email, avatar, avatar_style, role FROM users WHERE username = ?'
       ).get(username);
       const token = jwt.sign({ userId: user.id }, JWT_SECRET, { expiresIn: '7d' });
       res.json({ code: 0, data: { user, token } });
@@ -75,7 +73,7 @@ router.post(
       return res.status(401).json({ code: 401, message: '用户名或密码错误' });
     }
     const token = jwt.sign({ userId: user.id }, JWT_SECRET, { expiresIn: '7d' });
-    const { password: _, ...safeUser } = user;
+    const { password: _, nickname: __, ...safeUser } = user;
     if (safeUser.avatar === undefined) safeUser.avatar = null;
     await log.logActivity(req, 'LOGIN', 'user', user.id, '用户登录');
     res.json({ code: 0, data: { user: safeUser, token } });

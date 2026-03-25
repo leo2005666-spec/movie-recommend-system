@@ -119,7 +119,6 @@ export default function Layout() {
                   <UserAvatar
                     userId={user.id}
                     username={user.username}
-                    nickname={user.nickname}
                     avatar={user.avatar}
                     avatarStyle={user.avatar_style}
                     size={32}
@@ -128,7 +127,7 @@ export default function Layout() {
                   />
                 </span>
                 <span className="header-user-link__text">
-                  {user.nickname || user.username}
+                  {user.username}
                   {isAdmin && <span className="admin-tag">管理员</span>}
                 </span>
               </Link>

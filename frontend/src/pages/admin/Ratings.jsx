@@ -51,7 +51,7 @@ export default function AdminRatings() {
               {list.map((r) => (
                 <tr key={r.id} style={{ borderBottom: '1px solid var(--border)' }}>
                   <td style={{ padding: '0.75rem' }}>{r.id}</td>
-                  <td style={{ padding: '0.75rem' }}>{r.nickname || r.username || '-'} (ID:{r.user_id})</td>
+                  <td style={{ padding: '0.75rem' }}>{r.username || '-'} (ID:{r.user_id})</td>
                   <td style={{ padding: '0.75rem' }}>{r.movie_title || '-'} (ID:{r.movie_id})</td>
                   <td style={{ padding: '0.75rem' }}>{r.score} 分</td>
                   <td style={{ padding: '0.75rem' }}>{r.created_at}</td>

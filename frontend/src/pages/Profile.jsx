@@ -75,7 +75,6 @@ export default function Profile() {
         email: r.data?.email ?? null,
         avatar: r.data?.avatar || null,
         avatar_style: r.data?.avatar_style != null ? Number(r.data.avatar_style) : null,
-        nickname: r.data?.nickname ?? undefined,
       });
       setIsEditing(false);
     } catch (err) {
@@ -102,7 +101,6 @@ export default function Profile() {
         email: u?.email ?? null,
         avatar: u?.avatar || null,
         avatar_style: u?.avatar_style != null ? Number(u.avatar_style) : null,
-        nickname: u?.nickname ?? undefined,
       });
       setMsg('头像已更新，可继续修改资料后点「保存」或直接关闭编辑');
     } catch (err) {
@@ -125,7 +123,6 @@ export default function Profile() {
         <UserAvatar
           userId={profile.id}
           username={profile.username}
-          nickname={profile.nickname}
           avatar={profile.avatar}
           avatarStyle={profile.avatar_style}
           size={64}

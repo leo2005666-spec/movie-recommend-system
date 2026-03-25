@@ -27,8 +27,7 @@ function styleIndex(userId, avatarStyle) {
 
 /**
  * @param {object} props
- * @param {string} [props.username]
- * @param {string} [props.nickname]
+ * @param {string} [props.username] 无头像时用于首字展示
  * @param {string|null} [props.avatar] 相对路径如 /uploads/avatars/...
  * @param {number|null|undefined} [props.avatarStyle] 后端 users.avatar_style
  * @param {number|string} [props.userId] 兜底算色
@@ -38,7 +37,6 @@ function styleIndex(userId, avatarStyle) {
  */
 export default function UserAvatar({
   username,
-  nickname,
   avatar,
   avatarStyle,
   userId,
@@ -52,9 +50,9 @@ export default function UserAvatar({
   }, [avatar]);
   const src = avatar && String(avatar).trim() && !imgBroken ? getAvatarUrl(avatar) : '';
   const letter = useMemo(() => {
-    const s = (nickname || username || '?').trim();
+    const s = (username || '?').trim();
     return s ? s[0].toUpperCase() : '?';
-  }, [nickname, username]);
+  }, [username]);
   const idx = styleIndex(userId, avatarStyle);
   const p = PALETTES[idx];
   const dim = typeof size === 'number' ? `${size}px` : size;

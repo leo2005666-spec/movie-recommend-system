@@ -50,7 +50,7 @@ export default function QADetail() {
         <h2 style={{ marginBottom: '0.5rem' }}>{question.title}</h2>
         <p style={{ marginBottom: '0.5rem', whiteSpace: 'pre-wrap' }}>{question.content}</p>
         <div style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>
-          {question.nickname || question.username} · {question.created_at}
+          {question.username} · {question.created_at}
         </div>
       </div>
 
@@ -68,7 +68,7 @@ export default function QADetail() {
           <div key={a.id} className="card" style={{ padding: '1rem', borderLeft: '3px solid var(--accent)' }}>
             <p style={{ whiteSpace: 'pre-wrap', marginBottom: '0.5rem' }}>{a.content}</p>
             <div className="empty-hint" style={{ fontSize: '0.9rem' }}>
-              {a.nickname || a.username} · {a.created_at}
+              {a.username} · {a.created_at}
             </div>
           </div>
         ))}

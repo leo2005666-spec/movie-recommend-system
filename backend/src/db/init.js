@@ -298,6 +298,9 @@ async function run() {
     console.log('已插入示例影视数据');
   }
 
+  // 展示名统一为「用户名」：保留 nickname 列兼容旧库，内容与 username 对齐
+  await db.exec(`UPDATE users SET nickname = username`);
+
   save();
   console.log('数据库初始化完成！');
 }

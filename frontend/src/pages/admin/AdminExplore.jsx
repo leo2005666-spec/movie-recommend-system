@@ -94,13 +94,12 @@ export default function AdminExplore() {
                         <UserAvatar
                           userId={row.user_id}
                           username={row.username}
-                          nickname={row.nickname}
                           avatar={row.avatar}
                           avatarStyle={row.avatar_style}
                           size={36}
                         />
                         <span>
-                          {row.nickname || row.username || '—'}{' '}
+                          {row.username || '—'}{' '}
                           <span className="admin-explore-id">(用户ID {row.user_id})</span>
                         </span>
                       </div>

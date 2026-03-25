@@ -48,7 +48,6 @@ export default function AdminUsers() {
             <tr style={{ borderBottom: '1px solid var(--border)' }}>
               <th style={{ padding: '0.75rem', textAlign: 'left' }}>ID</th>
               <th style={{ padding: '0.75rem', textAlign: 'left' }}>用户名</th>
-              <th style={{ padding: '0.75rem', textAlign: 'left' }}>昵称</th>
               <th style={{ padding: '0.75rem', textAlign: 'left' }}>角色</th>
               <th style={{ padding: '0.75rem', textAlign: 'left' }}>注册时间</th>
               <th style={{ padding: '0.75rem', textAlign: 'left' }}>操作</th>
@@ -59,7 +58,6 @@ export default function AdminUsers() {
               <tr key={u.id} style={{ borderBottom: '1px solid var(--border)' }}>
                 <td style={{ padding: '0.75rem' }}>{u.id}</td>
                 <td style={{ padding: '0.75rem' }}>{u.username}</td>
-                <td style={{ padding: '0.75rem' }}>{u.nickname || '-'}</td>
                 <td style={{ padding: '0.75rem' }}>
                   <span style={{
                     padding: '0.2rem 0.5rem', borderRadius: 4, fontSize: 12,

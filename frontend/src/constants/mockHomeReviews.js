@@ -6,7 +6,6 @@ export const MOCK_HOME_REVIEWS = [
   {
     id: 'mock-r1',
     username: '影迷阿哲',
-    nickname: '影迷阿哲',
     initial: '哲',
     color: '#0ea5e9',
     rating: 5,
@@ -16,7 +15,6 @@ export const MOCK_HOME_REVIEWS = [
   {
     id: 'mock-r2',
     username: '糖炒栗子',
-    nickname: '糖炒栗子',
     initial: '糖',
     color: '#a855f7',
     rating: 4,
@@ -26,7 +24,6 @@ export const MOCK_HOME_REVIEWS = [
   {
     id: 'mock-r3',
     username: 'NightOwl_07',
-    nickname: 'NightOwl_07',
     initial: 'N',
     color: '#22c55e',
     rating: 5,
@@ -36,7 +33,6 @@ export const MOCK_HOME_REVIEWS = [
   {
     id: 'mock-r4',
     username: '小陈不沉',
-    nickname: '小陈不沉',
     initial: '陈',
     color: '#f97316',
     rating: 4,
@@ -46,7 +42,6 @@ export const MOCK_HOME_REVIEWS = [
   {
     id: 'mock-r5',
     username: 'SeaBreeze',
-    nickname: 'SeaBreeze',
     initial: 'S',
     color: '#ec4899',
     rating: 3,
@@ -56,7 +51,6 @@ export const MOCK_HOME_REVIEWS = [
   {
     id: 'mock-r6',
     username: '木子李',
-    nickname: '木子李',
     initial: '李',
     color: '#14b8a6',
     rating: 5,

@@ -70,16 +70,16 @@ router.post(
     await db.prepare('UPDATE users SET avatar = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?').run(publicPath, req.user.id);
     await logActivity(req, 'UPDATE_USER', 'user', req.user.id, '上传头像');
     const user = await db.prepare(
-      'SELECT id, username, nickname, email, avatar, avatar_style, role FROM users WHERE id = ?'
+      'SELECT id, username, email, avatar, avatar_style, role FROM users WHERE id = ?'
     ).get(req.user.id);
     res.json({ code: 0, data: user });
   })
 );
 
-// 获取当前用户信息（不含昵称编辑入口：前台以用户名 + 邮箱为主）
+// 获取当前用户信息（展示名即用户名）
 router.get('/me', asyncHandler(async (req, res) => {
   const user = await db.prepare(
-    'SELECT id, username, nickname, email, avatar, avatar_style, role, created_at FROM users WHERE id = ?'
+    'SELECT id, username, email, avatar, avatar_style, role, created_at FROM users WHERE id = ?'
   ).get(req.user.id);
   if (!user) return res.status(404).json({ code: 404, message: '用户不存在' });
   res.json({ code: 0, data: user });
@@ -156,7 +156,13 @@ router.put(
 
     const updates = [];
     const values = [];
-    if (username !== undefined && username.trim()) { updates.push('username = ?'); values.push(username.trim()); }
+    if (username !== undefined && username.trim()) {
+      const u = username.trim();
+      updates.push('username = ?');
+      values.push(u);
+      updates.push('nickname = ?');
+      values.push(u);
+    }
     if (email !== undefined) { updates.push('email = ?'); values.push(email === '' ? null : String(email).trim()); }
     if (password) {
       updates.push('password = ?');
@@ -170,7 +176,7 @@ router.put(
     await db.prepare(`UPDATE users SET ${updates.join(', ')} WHERE id = ?`).run(...values);
     await logActivity(req, 'UPDATE_USER', 'user', req.user.id, '修改个人信息');
     const user = await db.prepare(
-      'SELECT id, username, nickname, email, avatar, avatar_style, role FROM users WHERE id = ?'
+      'SELECT id, username, email, avatar, avatar_style, role FROM users WHERE id = ?'
     ).get(req.user.id);
     res.json({ code: 0, data: user });
   })
@@ -179,7 +185,7 @@ router.put(
 // 管理员：获取用户列表
 router.get('/', requireAdmin, asyncHandler(async (req, res) => {
   const list = await db.prepare(
-    'SELECT id, username, nickname, role, created_at FROM users ORDER BY id'
+    'SELECT id, username, role, created_at FROM users ORDER BY id'
   ).all();
   res.json({ code: 0, data: list });
 }));

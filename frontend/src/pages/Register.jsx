@@ -3,7 +3,7 @@
  */
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { User, Lock, Eye, EyeSlash, UserCircle } from '@phosphor-icons/react';
+import { User, Lock, Eye, EyeSlash } from '@phosphor-icons/react';
 import { api } from '../api/request';
 import AuthLayout from '../components/AuthLayout';
 
@@ -11,7 +11,6 @@ export default function Register() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [nickname, setNickname] = useState('');
   const [showPw, setShowPw] = useState(false);
   const [showPw2, setShowPw2] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -30,7 +29,6 @@ export default function Register() {
       const body = {
         username: username.trim(),
         password,
-        nickname: nickname?.trim() || undefined,
       };
       await api.post('/auth/register', body);
       nav('/login');
@@ -123,22 +121,6 @@ export default function Register() {
               >
                 {showPw2 ? <EyeSlash size={20} /> : <Eye size={20} />}
               </button>
-            </div>
-          </div>
-          <div className="auth-field">
-            <label className="sr-only" htmlFor="reg-nickname">
-              昵称
-            </label>
-            <div className="auth-input-shell">
-              <UserCircle className="auth-input-shell__icon" size={20} weight="duotone" aria-hidden />
-              <input
-                id="reg-nickname"
-                className="auth-input auth-input--shell"
-                value={nickname}
-                onChange={(e) => setNickname(e.target.value)}
-                placeholder="昵称（选填）"
-                autoComplete="nickname"
-              />
             </div>
           </div>
           {err && <div className="auth-error">{err}</div>}

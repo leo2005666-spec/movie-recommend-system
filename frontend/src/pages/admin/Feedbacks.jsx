@@ -48,9 +48,7 @@ export default function AdminFeedbacks() {
 
   const displayUser = (f) => {
     if (!f.user_id) return '匿名';
-    const nick = f.nickname?.trim();
-    const name = f.username || '';
-    return nick ? `${nick}（${name}）` : name || '用户';
+    return (f.username || '').trim() || '用户';
   };
 
   return (

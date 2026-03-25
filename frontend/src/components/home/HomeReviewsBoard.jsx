@@ -28,10 +28,9 @@ export default function HomeReviewsBoard({ realComments = [], mockReviews = [], 
     items.push({
       key: `real-${c.id}`,
       real: true,
-      username: c.nickname || c.username,
+      username: c.username,
       userId: c.user_id,
       userUsername: c.username,
-      userNickname: c.nickname,
       avatar: c.avatar,
       avatarStyle: c.avatar_style,
       content: c.content.length > 160 ? c.content.slice(0, 160) + '…' : c.content,
@@ -49,7 +48,7 @@ export default function HomeReviewsBoard({ realComments = [], mockReviews = [], 
     items.push({
       key: m.id,
       real: false,
-      username: m.nickname || m.username,
+      username: m.username,
       initial: m.initial,
       color: m.color,
       content: m.content,
@@ -70,7 +69,7 @@ export default function HomeReviewsBoard({ realComments = [], mockReviews = [], 
     <section className="home-reviews-board">
       <div className="home-reviews-board__head">
         <h2 className="home-reviews-board__title">影迷热议</h2>
-        <p className="home-reviews-board__hint">站内热门影评与社区展示昵称（部分为虚拟用户，仅作氛围展示）</p>
+        <p className="home-reviews-board__hint">站内热门影评与社区用户名（部分为虚拟用户，仅作氛围展示）</p>
       </div>
       <div className="home-reviews-board__cols">
         {[colA, colB].map((col, ci) => (
@@ -82,7 +81,6 @@ export default function HomeReviewsBoard({ realComments = [], mockReviews = [], 
                     <UserAvatar
                       userId={item.userId}
                       username={item.userUsername}
-                      nickname={item.userNickname}
                       avatar={item.avatar}
                       avatarStyle={item.avatarStyle}
                       size={44}

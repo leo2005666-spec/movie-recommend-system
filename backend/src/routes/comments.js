@@ -15,7 +15,7 @@ const router = express.Router();
 router.get('/hot', optionalAuth, asyncHandler(async (req, res) => {
   const limit = Math.min(20, Math.max(5, parseInt(req.query.limit) || 8));
   const list = await db.prepare(`
-    SELECT c.id, c.user_id, u.username, u.nickname, u.avatar, u.avatar_style,
+    SELECT c.id, c.user_id, u.username, u.avatar, u.avatar_style,
            c.content, c.created_at, c.movie_id,
            m.title as movie_title
     FROM comments c
@@ -35,7 +35,7 @@ router.get('/movie/:movieId', optionalAuth, asyncHandler(async (req, res) => {
   const offset = (page - 1) * limit;
 
   const list = await db.prepare(`
-    SELECT c.id, c.user_id, u.username, u.nickname, u.avatar, u.avatar_style,
+    SELECT c.id, c.user_id, u.username, u.avatar, u.avatar_style,
            c.content, c.created_at
     FROM comments c
     INNER JOIN users u ON c.user_id = u.id

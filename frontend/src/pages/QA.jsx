@@ -91,7 +91,7 @@ export default function QA() {
                 </div>
                 <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>{q.content?.slice(0, 100)}...</p>
                 <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
-                  {q.nickname || q.username} · {q.created_at}
+                  {q.username} · {q.created_at}
                 </div>
               </Link>
             ))}

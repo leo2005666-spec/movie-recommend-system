@@ -17,7 +17,7 @@ router.get('/', optionalAuth, asyncHandler(async (req, res) => {
   const offset = (page - 1) * limit;
 
   const list = await db.prepare(`
-    SELECT p.id, p.user_id, u.username, u.nickname, p.title, p.content, p.is_answer, p.parent_id, p.created_at,
+    SELECT p.id, p.user_id, u.username, p.title, p.content, p.is_answer, p.parent_id, p.created_at,
            (SELECT COUNT(*) FROM qa_posts WHERE parent_id = p.id) as answer_count
     FROM qa_posts p
     INNER JOIN users u ON p.user_id = u.id
@@ -33,14 +33,14 @@ router.get('/', optionalAuth, asyncHandler(async (req, res) => {
 router.get('/:id', optionalAuth, asyncHandler(async (req, res) => {
   const id = parseInt(req.params.id);
   const question = await db.prepare(`
-    SELECT p.*, u.username, u.nickname
+    SELECT p.*, u.username
     FROM qa_posts p INNER JOIN users u ON p.user_id = u.id
     WHERE p.id = ? AND p.parent_id IS NULL
   `).get(id);
   if (!question) return res.status(404).json({ code: 404, message: '问题不存在' });
 
   const answers = await db.prepare(`
-    SELECT p.*, u.username, u.nickname
+    SELECT p.*, u.username
     FROM qa_posts p INNER JOIN users u ON p.user_id = u.id
     WHERE p.parent_id = ? ORDER BY p.created_at ASC
   `).all(id);

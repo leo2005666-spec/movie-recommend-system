@@ -185,6 +185,14 @@ button { cursor: pointer; }
   transform: translateY(-100%);
 }
 
+/** 登录/注册：顶栏不收起、仅 Logo，避免空白区误触滚动 */
+.header--auth-minimal.header--scroll-hidden {
+  transform: none;
+}
+.header--auth-minimal {
+  justify-content: flex-start;
+}
+
 @media (max-width: 640px) {
   .header { padding: var(--space-sm) var(--space-md); gap: var(--space-sm); }
   .nav { flex-wrap: wrap; }
@@ -328,6 +336,33 @@ button { cursor: pointer; }
   padding-left: clamp(0.35rem, 2vw, 1.5rem);
   padding-right: clamp(0.35rem, 2vw, 1.5rem);
   padding-bottom: var(--space-2xl);
+}
+
+/** 认证页：全宽、去侧栏留白，主体在视口内垂直居中 */
+.main--auth {
+  max-width: none;
+  margin: 0;
+  padding: 0;
+  padding-top: var(--header-height);
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  min-height: 100vh;
+  min-height: 100dvh;
+}
+
+.layout:has(.api-status-banner) .main--auth {
+  padding-top: calc(5.5rem + var(--header-height));
+}
+
+@media (max-width: 640px) {
+  .main--auth {
+    padding: 0;
+    padding-top: var(--header-height);
+  }
+  .layout:has(.api-status-banner) .main--auth {
+    padding-top: calc(5.5rem + var(--header-height));
+  }
 }
 
 .home-page--tmdb-wide {
@@ -1941,16 +1976,23 @@ button { cursor: pointer; }
 
 /* ========== 认证页 · 分屏布局 ========== */
 .auth-split {
-  min-height: calc(100vh - 64px);
+  flex: 1;
+  width: 100%;
+  min-height: calc(100vh - var(--header-height));
+  min-height: calc(100dvh - var(--header-height));
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  align-items: stretch;
 }
 
 .auth-split__form {
   display: flex;
   flex-direction: column;
-  padding: var(--space-2xl);
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-xl) var(--space-2xl);
   overflow-y: auto;
+  background: var(--bg-canvas);
 }
 
 .auth-split__logo {
@@ -1964,55 +2006,95 @@ button { cursor: pointer; }
 
 .auth-split__logo:hover { color: var(--accent); }
 
-/* 火龙果 · 暖米白背景，突出图案 */
+/* 右侧：海报拼图 + 青蓝品牌渐变遮罩（与主按钮同色体系） */
 .auth-split__brand {
   position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: var(--space-2xl);
-  background: var(--dragon-skin);
+  padding: var(--space-xl);
+  min-height: 320px;
+  overflow: hidden;
+  background: linear-gradient(145deg, #0c4a6e 0%, #0369a1 40%, #0284c7 100%);
+}
+
+.auth-split__mosaic {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(3, 1fr);
+  gap: 3px;
+  z-index: 0;
+}
+
+.auth-split__mosaic-cell {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  filter: saturate(1.05);
+}
+
+.auth-split__brand-scrim {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background: linear-gradient(
+    125deg,
+    rgba(2, 12, 40, 0.72) 0%,
+    rgba(1, 80, 120, 0.55) 45%,
+    rgba(1, 180, 228, 0.38) 100%
+  );
 }
 
 .auth-split__brand-content {
   position: relative;
-  z-index: 1;
+  z-index: 2;
   text-align: center;
-  color: var(--text-primary);
+  color: #fff;
+  max-width: 22rem;
+  padding: var(--space-md);
 }
 
-.auth-split__icon {
-  width: 100px;
-  height: 100px;
-  margin: 0 auto var(--space-lg);
+.auth-split__brand-badge {
+  width: 4.25rem;
+  height: 4.25rem;
+  margin: 0 auto var(--space-md);
   border-radius: 50%;
-  background: linear-gradient(135deg, var(--accent) 0%, var(--tmdb-green) 100%);
-  box-shadow: 0 8px 32px rgba(1, 180, 228, 0.35);
+  background: linear-gradient(145deg, var(--accent) 0%, var(--accent-hover) 100%);
+  box-shadow: 0 10px 40px rgba(1, 180, 228, 0.45);
   position: relative;
 }
-.auth-split__icon::before {
-  content: '';
+
+.auth-split__brand-badge-play {
   position: absolute;
   inset: 0;
-  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='white'%3E%3Cpath d='M8 5v14l11-7z'/%3E%3C/svg%3E") center/36% no-repeat;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='white'%3E%3Cpath d='M8 5v14l11-7z'/%3E%3C/svg%3E") center/38% no-repeat;
+  opacity: 0.95;
 }
 
 .auth-split__brand-title {
-  font-size: 2rem;
-  font-weight: 700;
+  font-size: clamp(1.5rem, 3.5vw, 2rem);
+  font-weight: var(--fw-bold);
   margin-bottom: var(--space-sm);
+  letter-spacing: -0.02em;
+  text-shadow: 0 2px 24px rgba(0, 0, 0, 0.35);
 }
 
 .auth-split__brand-desc {
-  font-size: 1rem;
-  opacity: 0.92;
+  font-size: 0.95rem;
+  line-height: 1.55;
+  opacity: 0.95;
+  text-shadow: 0 1px 12px rgba(0, 0, 0, 0.3);
 }
 
 .auth-split__brand-features {
   list-style: none;
   text-align: left;
   max-width: 320px;
-  margin: 0 auto;
+  margin: var(--space-md) auto 0;
   padding: 0;
 }
 
@@ -2039,30 +2121,51 @@ button { cursor: pointer; }
 @media (max-width: 768px) {
   .auth-split {
     grid-template-columns: 1fr;
+    min-height: auto;
   }
   .auth-split__brand {
-    min-height: 200px;
+    min-height: 220px;
     order: -1;
   }
-  .auth-split__icon {
-    width: 72px;
-    height: 72px;
-    margin-bottom: var(--space-md);
+  .auth-split__brand-badge {
+    width: 3.5rem;
+    height: 3.5rem;
   }
 }
 
 .auth-card {
   width: 100%;
-  max-width: 400px;
+  max-width: 420px;
   margin: 0 auto;
   text-align: left;
+  padding: var(--space-xl) var(--space-xl);
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
 }
 
 .auth-title {
   font-size: 1.5rem;
-  font-weight: 600;
+  font-weight: var(--fw-semibold);
   color: var(--text-primary);
   margin-bottom: var(--space-xs);
+}
+
+/** 登录/注册主标题：层级高于顶栏 Logo，不再重复站点名 */
+.auth-title--hero {
+  font-size: clamp(1.75rem, 4.2vw, 2.125rem);
+  font-weight: var(--fw-bold);
+  letter-spacing: -0.03em;
+  line-height: 1.2;
+  margin-bottom: var(--space-sm);
+}
+
+.auth-kicker {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  margin-bottom: var(--space-lg);
 }
 
 .auth-subtitle {
@@ -2075,7 +2178,7 @@ button { cursor: pointer; }
 .auth-form {
   display: flex;
   flex-direction: column;
-  gap: var(--space-md);
+  gap: 0.75rem;
 }
 
 .auth-field {
@@ -2114,6 +2217,70 @@ button { cursor: pointer; }
   box-shadow: 0 0 0 1px var(--text-primary);
 }
 
+/** 带图标的输入行：圆角与按钮统一为 --radius-md */
+.auth-input-shell {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0 var(--space-md);
+  min-height: 3rem;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  transition: border-color var(--duration-fast), box-shadow var(--duration-fast);
+}
+
+.auth-input-shell:focus-within {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-muted);
+}
+
+.auth-input-shell__icon {
+  flex-shrink: 0;
+  color: var(--text-tertiary);
+}
+
+.auth-input--shell {
+  flex: 1;
+  min-width: 0;
+  width: auto;
+  padding: var(--space-sm) 0;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+  background: transparent;
+}
+
+.auth-input--shell:focus {
+  outline: none;
+  border-color: transparent;
+  box-shadow: none;
+}
+
+.auth-input-shell__toggle {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-xs);
+  border: none;
+  background: transparent;
+  color: var(--text-tertiary);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: color var(--duration-fast), background var(--duration-fast);
+}
+
+.auth-input-shell__toggle:hover {
+  color: var(--text-primary);
+  background: var(--bg-muted);
+}
+
+.auth-field--remember {
+  margin-top: 0.125rem;
+  margin-bottom: 0;
+}
+
 .auth-input--flex { flex: 1; }
 
 .auth-input--short { width: 100px; flex-shrink: 0; }
@@ -2143,8 +2310,12 @@ button { cursor: pointer; }
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
+  width: 100%;
+  margin-top: 0.25rem;
+  min-height: 3rem;
   background: var(--accent);
   color: #fff;
+  border-radius: var(--radius-md);
   box-shadow: 0 2px 12px rgba(1, 180, 228, 0.35);
 }
 

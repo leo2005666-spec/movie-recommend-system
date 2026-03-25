@@ -40,6 +40,8 @@ export default function Layout() {
   const isMovieList = loc.pathname === '/movies' || loc.pathname === '/movies/';
   /** 首页：TMDB 式全宽趋势/预告片 */
   const isHome = loc.pathname === '/' || loc.pathname === '';
+  /** 登录/注册：顶栏仅保留 Logo，主区垂直居中 */
+  const isAuthPage = loc.pathname === '/login' || loc.pathname === '/register';
 
   const isActive = (to) =>
     loc.pathname === to || (to !== '/' && loc.pathname.startsWith(to + '/'));
@@ -55,6 +57,7 @@ export default function Layout() {
 
   useEffect(() => {
     const onScroll = () => {
+      if (loc.pathname === '/login' || loc.pathname === '/register') return;
       const y = window.scrollY || 0;
       const delta = y - lastScrollY.current;
       lastScrollY.current = y;
@@ -67,14 +70,19 @@ export default function Layout() {
     };
     window.addEventListener('scroll', onScroll, { passive: true });
     return () => window.removeEventListener('scroll', onScroll);
-  }, []);
+  }, [loc.pathname]);
 
   return (
     <div className="layout">
       <BackgroundFX />
       <ApiStatus />
-      <header className={`header${headerScrollHidden ? ' header--scroll-hidden' : ''}`}>
-        <Link to="/" className="logo">影视推荐</Link>
+      <header
+        className={`header${headerScrollHidden ? ' header--scroll-hidden' : ''}${isAuthPage ? ' header--auth-minimal' : ''}`}
+      >
+        <Link to="/" className="logo">
+          影视推荐
+        </Link>
+        {!isAuthPage && (
         <nav className="nav">
           {navItems.map(({ to, label, Icon }) => (
             <Link
@@ -87,6 +95,8 @@ export default function Layout() {
             </Link>
           ))}
         </nav>
+        )}
+        {!isAuthPage ? (
         <div className="user-area">
           {user ? (
             <>
@@ -142,9 +152,10 @@ export default function Layout() {
             </>
           )}
         </div>
+        ) : null}
       </header>
       <main
-        className={`main${isMovieDetail ? ' main--movie-detail' : ''}${isMovieList ? ' main--movie-list' : ''}${isHome ? ' main--home-tmdb' : ''}`}
+        className={`main${isMovieDetail ? ' main--movie-detail' : ''}${isMovieList ? ' main--movie-list' : ''}${isHome ? ' main--home-tmdb' : ''}${isAuthPage ? ' main--auth' : ''}`}
       >
         <Outlet />
       </main>

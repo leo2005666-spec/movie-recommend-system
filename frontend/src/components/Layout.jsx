@@ -13,8 +13,11 @@ import {
   SignInIcon,
   UserPlusIcon,
   SignOutIcon,
+  Moon,
+  Sun,
 } from '@phosphor-icons/react';
 import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
 import BackgroundFX from './BackgroundFX';
 import ApiStatus from './ApiStatus';
 
@@ -28,6 +31,7 @@ const navItems = [
 
 export default function Layout() {
   const { user, logout, isAdmin } = useAuth();
+  const { theme, toggleTheme } = useTheme();
   const loc = useLocation();
   const [headerAvatarErr, setHeaderAvatarErr] = useState(false);
   /** 向下滚动时收起顶栏，向上滚动时展开，减少遮挡海报/Hero */
@@ -83,7 +87,7 @@ export default function Layout() {
           影视推荐
         </Link>
         {!isAuthPage && (
-        <nav className="nav">
+        <nav className="nav" aria-label="主导航">
           {navItems.map(({ to, label, Icon }) => (
             <Link
               key={to}
@@ -96,6 +100,15 @@ export default function Layout() {
           ))}
         </nav>
         )}
+        <button
+          type="button"
+          className="header-theme-toggle"
+          onClick={toggleTheme}
+          aria-label={theme === 'dark' ? '切换到浅色主题' : '切换到深色主题'}
+          title={theme === 'dark' ? '浅色' : '深色'}
+        >
+          {theme === 'dark' ? <Sun size={22} weight="regular" /> : <Moon size={22} weight="regular" />}
+        </button>
         {!isAuthPage ? (
         <div className="user-area">
           {user ? (

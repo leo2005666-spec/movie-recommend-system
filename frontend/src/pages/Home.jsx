@@ -6,6 +6,7 @@ import { normalizeMovieListResponse } from '../utils/recommendApi';
 import MovieCard from '../components/MovieCard';
 import TrailerStripCard from '../components/home/TrailerStripCard';
 import HomeTmdbRails from '../components/home/HomeTmdbRails';
+import HomePosterSkeletonRow from '../components/home/HomePosterSkeletonRow';
 import HomeReviewsBoard from '../components/home/HomeReviewsBoard';
 import HomeWelcomeHero from '../components/home/HomeWelcomeHero';
 import { MOCK_HOME_REVIEWS } from '../constants/mockHomeReviews';
@@ -220,7 +221,9 @@ export default function Home() {
           <div className="home-tmdb-wave" aria-hidden />
           <div className="home-tmdb-carousel">
             {!chartsLoaded ? (
-              <div className="home-tmdb-carousel__loading">加载中…</div>
+              <div className="home-tmdb-carousel__track home-tmdb-carousel__track--smooth">
+                <HomePosterSkeletonRow count={10} variant="carousel" />
+              </div>
             ) : trendMovies.length ? (
               <div className="home-tmdb-carousel__track">
                 {trendMovies.slice(0, 18).map((m, idx) => (
@@ -275,7 +278,9 @@ export default function Home() {
           </div>
           <div className="home-tmdb-carousel home-tmdb-carousel--trailers">
             {trailerLoading ? (
-              <div className="home-tmdb-carousel__loading home-tmdb-carousel__loading--light">加载中…</div>
+              <div className="home-tmdb-carousel__track home-tmdb-carousel__track--trailers home-tmdb-carousel__track--smooth">
+                <HomePosterSkeletonRow count={6} variant="trailer" onDark />
+              </div>
             ) : trailerList.length ? (
               <div className="home-tmdb-carousel__track home-tmdb-carousel__track--trailers home-tmdb-carousel__track--smooth">
                 {trailerList.slice(0, 16).map((m, idx) => (
@@ -312,7 +317,11 @@ export default function Home() {
           </div>
           <h3 className="home-tmdb-subtitle">猜你喜欢</h3>
           {recoLoading ? (
-            <div className="home-tmdb-carousel__loading">加载中…</div>
+            <div className="home-tmdb-carousel">
+              <div className="home-tmdb-carousel__track home-tmdb-carousel__track--smooth">
+                <HomePosterSkeletonRow count={8} variant="carousel" />
+              </div>
+            </div>
           ) : recoList.length ? (
             <div className="home-tmdb-carousel">
               <div className="home-tmdb-carousel__track">

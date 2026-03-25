@@ -1,6 +1,7 @@
 import { lazy, Suspense } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
+import { ThemeProvider } from './context/ThemeContext';
 import Layout from './components/Layout';
 
 /** 路由级懒加载：减小首包、加快首页打开；进入子页再拉对应 chunk */
@@ -49,6 +50,7 @@ function ProtectedRoute({ children, admin }) {
 export default function App() {
   return (
     <AuthProvider>
+      <ThemeProvider>
       <Suspense fallback={<RouteFallback />}>
         <Routes>
           <Route path="/" element={<Layout />}>
@@ -180,6 +182,7 @@ export default function App() {
           </Route>
         </Routes>
       </Suspense>
+      </ThemeProvider>
     </AuthProvider>
   );
 }

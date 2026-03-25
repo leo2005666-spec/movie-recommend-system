@@ -4,6 +4,7 @@
 import { useEffect, useState } from 'react';
 import { api } from '../../api/request';
 import TmdbRailCard from './TmdbRailCard';
+import HomePosterSkeletonRow from './HomePosterSkeletonRow';
 
 const REGION = import.meta.env.VITE_TMDB_REGION || 'CN';
 
@@ -66,7 +67,9 @@ export default function HomeTmdbRails() {
         </div>
         <div className="home-tmdb-carousel home-tmdb-carousel--rail">
           {trendLoading ? (
-            <div className="home-tmdb-carousel__loading">加载中…</div>
+            <div className="home-tmdb-carousel__track home-tmdb-carousel__track--smooth home-tmdb-carousel__track--rail">
+              <HomePosterSkeletonRow count={10} variant="rail" />
+            </div>
           ) : trendList.length ? (
             <div className="home-tmdb-carousel__track home-tmdb-carousel__track--smooth home-tmdb-carousel__track--rail">
               {trendList.map((it, idx) => (

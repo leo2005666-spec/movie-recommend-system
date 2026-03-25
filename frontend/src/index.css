@@ -1477,10 +1477,9 @@ button { cursor: pointer; }
   margin: 0 auto;
   padding: var(--space-2xl) var(--space-xl);
   text-align: center;
-  background: var(--bg-surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-md);
+  background: transparent;
+  border: none;
+  box-shadow: none;
 }
 .detail-loading-icons {
   position: relative;

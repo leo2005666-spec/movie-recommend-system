@@ -184,9 +184,10 @@ router.put(
 
 // 管理员：获取用户列表
 router.get('/', requireAdmin, asyncHandler(async (req, res) => {
-  const list = await db.prepare(
-    'SELECT id, username, role, created_at FROM users ORDER BY id'
-  ).all();
+  const list = await db.prepare(`
+    SELECT id, username, role, created_at FROM users
+    ORDER BY CASE WHEN role = 'admin' THEN 0 ELSE 1 END, datetime(created_at) ASC
+  `).all();
   res.json({ code: 0, data: list });
 }));
 

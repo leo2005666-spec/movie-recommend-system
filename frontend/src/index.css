@@ -94,31 +94,45 @@
   --shadow-sm: 0 4px 14px rgba(0, 0, 0, 0.32);
   --shadow-md: 0 12px 32px rgba(0, 0, 0, 0.45);
   --dragon-skin: #122028;
-  --header-bg: #161b22;
+  /** 顶栏与浅色内容区对齐：白底 + 深字，画布仍深色 */
+  --header-bg: #ffffff;
   --poster-card-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
   --poster-card-shadow-hover: 0 14px 36px rgba(0, 0, 0, 0.52);
   --home-rail-pill-track: #2d333b;
 }
 
 [data-theme="dark"] .nav a {
-  color: var(--text-secondary);
+  color: #475569;
 }
 [data-theme="dark"] .nav a:hover {
-  color: var(--text-primary);
-  background: var(--bg-muted);
+  color: #0f172a;
+  background: #f1f5f9;
 }
 [data-theme="dark"] .nav a.active {
-  color: var(--accent);
-  background: rgba(1, 180, 228, 0.16);
+  color: #ffffff;
+  background: var(--accent);
+  font-weight: var(--fw-semibold);
 }
 [data-theme="dark"] .user-area a,
 [data-theme="dark"] .user-area button {
-  color: var(--text-secondary);
+  color: #475569;
 }
 [data-theme="dark"] .user-area a:hover,
 [data-theme="dark"] .user-area button:hover {
   color: var(--accent);
-  background: var(--bg-muted);
+  background: #f1f5f9;
+}
+[data-theme="dark"] .header-theme-toggle {
+  color: #475569;
+}
+[data-theme="dark"] .header-theme-toggle:hover {
+  color: var(--accent);
+  background: rgba(1, 180, 228, 0.12);
+}
+
+[data-theme="dark"] .header {
+  border-bottom-color: #ebeef5;
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.06);
 }
 
 [data-theme="dark"] .home-tmdb-pill-toggle {
@@ -239,7 +253,7 @@ button { cursor: pointer; }
   padding: var(--space-sm) var(--space-xl);
   background: var(--header-bg);
   border-bottom: 1px solid var(--border);
-  box-shadow: 0 1px 0 rgba(15, 23, 42, 0.04);
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.06);
   position: fixed;
   top: 0;
   left: 0;
@@ -5057,81 +5071,194 @@ a.admin-dashboard-card--link:hover {
   }
 }
 
-/* ========== 榜单表格 ========== */
-.chart-table {
-  background: var(--bg-surface);
-  border-radius: var(--radius-lg);
-  border: 1px solid var(--border);
-  box-shadow: var(--shadow-xs);
+/* ========== 榜单页：浅色卡片 + Tab（与全站深色画布可并存） ========== */
+.charts-page__intro {
+  margin: 0 0 var(--space-lg);
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  line-height: 1.55;
+}
+
+.charts-page .chart-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: var(--space-lg);
+}
+
+.charts-page .chart-tab {
+  padding: 0.5rem 1.05rem;
+  border-radius: 8px;
+  border: none;
+  background: #f0f2f5;
+  color: #333333;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.charts-page .chart-tab:hover {
+  background: #e4e7ec;
+  color: #1a1a1a;
+}
+
+.charts-page .chart-tab--active {
+  background: var(--accent);
+  color: #ffffff;
+  box-shadow: none;
+}
+
+.charts-page .chart-tab:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* ========== 榜单表格（白底卡片，深浅主题下视觉一致） ========== */
+.charts-page .chart-table {
+  background: #ffffff;
+  border-radius: 8px;
+  border: 1px solid #ebeef5;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
   overflow: hidden;
   margin-bottom: var(--space-xl);
 }
 
-.chart-table table { width: 100%; border-collapse: collapse; }
-.chart-table th,
-.chart-table td {
-  padding: var(--space-md) var(--space-lg);
+.chart-table table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.charts-page .chart-table th,
+.charts-page .chart-table td {
+  padding: 1rem 1.25rem;
   text-align: left;
-  border-bottom: 1px solid var(--border);
+  vertical-align: middle;
+  border-bottom: 1px solid #ebeef5;
 }
 
-.chart-table th {
-  background: var(--bg-muted);
-  color: var(--text-secondary);
-  font-weight: 500;
-  font-size: 0.875rem;
-}
-
-.chart-table tr:last-child td { border-bottom: none; }
-.chart-table tr:hover td { background: var(--bg-muted); }
-
-.chart-rank {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 28px;
-  height: 28px;
-  border-radius: var(--radius-sm);
-  background: var(--bg-muted);
-  color: var(--text-tertiary);
+.charts-page .chart-table th {
+  background: #f7f8fa;
+  color: #666666;
   font-weight: 600;
+  font-size: 0.8125rem;
+  letter-spacing: 0.02em;
 }
 
-.chart-rank.top3 {
-  background: var(--accent-muted);
+.charts-page .chart-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.charts-page .chart-table tbody tr:hover td {
+  background: #fafbfc;
+}
+
+.charts-page .chart-movie {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  text-decoration: none;
+  color: inherit;
+}
+
+.charts-page .chart-movie:hover .chart-title {
   color: var(--accent);
 }
 
-.chart-movie {
+.charts-page .chart-movie__meta {
   display: flex;
-  align-items: center;
-  gap: var(--space-md);
-  color: var(--text-primary);
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.35rem;
+  min-width: 0;
 }
 
-.chart-movie:hover { color: var(--accent); }
+.charts-page .chart-title {
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: #333333;
+  line-height: 1.35;
+}
 
-.chart-poster {
-  width: 40px;
-  height: 56px;
+.charts-page .chart-year {
+  font-size: 0.8125rem;
+  font-weight: 400;
+  color: #999999;
+  margin: 0;
+}
+
+.charts-page .chart-poster {
+  width: 48px;
+  height: 68px;
   object-fit: cover;
-  border-radius: var(--radius-sm);
-  background: var(--bg-muted);
+  border-radius: 6px;
+  background: #f0f2f5;
+  flex-shrink: 0;
 }
 
-.chart-title { font-weight: 500; }
-.chart-year { margin-left: var(--space-sm); color: var(--text-tertiary); font-size: 0.875rem; }
-.chart-score { font-weight: 600; color: var(--accent); }
+.charts-page .chart-score {
+  font-weight: 600;
+  font-size: 1rem;
+  color: var(--accent);
+}
 
-.chart-skeleton {
-  height: 280px;
-  background: var(--bg-muted);
-  border-radius: var(--radius-lg);
+.charts-page .chart-table td.empty-hint,
+.charts-page .chart-table .empty-hint {
+  color: #999999;
+  font-size: 0.875rem;
+}
+
+.charts-page .chart-rank {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 32px;
+  height: 32px;
+  padding: 0 6px;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 0.875rem;
+  line-height: 1;
+}
+
+.charts-page .chart-rank--gold {
+  background: linear-gradient(145deg, #ffd54a 0%, #e6a800 100%);
+  color: #5c4510;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35);
+}
+
+.charts-page .chart-rank--silver {
+  background: linear-gradient(145deg, #eef1f5 0%, #b8c0ce 100%);
+  color: #3d4550;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6);
+}
+
+.charts-page .chart-rank--bronze {
+  background: linear-gradient(145deg, #e8b08c 0%, #b8734a 100%);
+  color: #4a2f18;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25);
+}
+
+.charts-page .chart-rank--rest {
+  background: #f0f0f0;
+  color: #666666;
+  font-weight: 600;
+}
+
+.charts-page .chart-skeleton {
+  height: 300px;
+  background: #ffffff;
+  border-radius: 8px;
+  border: 1px solid #ebeef5;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
   animation: skeleton-pulse 1.8s ease-in-out infinite;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .chart-skeleton { animation: none; }
+  .charts-page .chart-skeleton {
+    animation: none;
+    opacity: 0.85;
+  }
 }
 
 .link-more {

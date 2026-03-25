@@ -23,22 +23,31 @@ export default function Charts() {
 
   const list = data[activeTab] || [];
 
+  function rankClass(rank) {
+    if (rank === 1) return 'chart-rank chart-rank--gold';
+    if (rank === 2) return 'chart-rank chart-rank--silver';
+    if (rank === 3) return 'chart-rank chart-rank--bronze';
+    return 'chart-rank chart-rank--rest';
+  }
+
   return (
-    <div>
+    <div className="charts-page">
       <h1 className="page-title">
         <ChartBarIcon size={24} weight="regular" className="page-title__icon" />
         榜单
       </h1>
-      <p className="empty-hint" style={{ marginBottom: 'var(--space-lg)' }}>
+      <p className="charts-page__intro">
         口碑榜基于用户行为；高分榜、热门榜由系统自动排序，TMDB 同步后更新
       </p>
 
-      <div className="taste-chips">
+      <div className="chart-tabs" role="tablist" aria-label="榜单类型">
         {tabs.map((t) => (
           <button
             key={t.key}
             type="button"
-            className={`taste-chip ${activeTab === t.key ? 'active' : ''}`}
+            role="tab"
+            aria-selected={activeTab === t.key}
+            className={`chart-tab ${activeTab === t.key ? 'chart-tab--active' : ''}`}
             onClick={() => setActiveTab(t.key)}
             title={t.desc}
           >
@@ -64,7 +73,7 @@ export default function Charts() {
               {list.map((m) => (
                 <tr key={m.id}>
                   <td>
-                    <span className={`chart-rank ${m.rank <= 3 ? 'top3' : ''}`}>{m.rank}</span>
+                    <span className={rankClass(m.rank)}>{m.rank}</span>
                   </td>
                   <td>
                     <Link to={`/movies/${m.id}`} className="chart-movie">
@@ -72,11 +81,15 @@ export default function Charts() {
                         src={getCoverUrl(m)}
                         alt=""
                         className="chart-poster"
+                        loading="lazy"
+                        decoding="async"
                         onError={(e) => { e.target.src = ''; e.target.style.display = 'none'; }}
                       />
-                      <div>
+                      <div className="chart-movie__meta">
                         <span className="chart-title">{m.title}</span>
-                        {m.release_year && <span className="chart-year">{m.release_year}</span>}
+                        {m.release_year != null && m.release_year !== '' ? (
+                          <span className="chart-year">{m.release_year}</span>
+                        ) : null}
                       </div>
                     </Link>
                   </td>

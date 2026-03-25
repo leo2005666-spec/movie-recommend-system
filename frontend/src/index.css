@@ -4101,6 +4101,10 @@ a.admin-dashboard-card--link:hover {
   align-items: flex-end;
 }
 
+.rec-spotlight__hero-banner-container {
+  isolation: isolate;
+}
+
 .rec-spotlight__bg-layer {
   position: absolute;
   inset: 0;
@@ -4146,24 +4150,21 @@ a.admin-dashboard-card--link:hover {
   mix-blend-mode: overlay;
 }
 
+/** 左深右透 + 下深上淡：保护左侧文案，右侧保留画面冲击，底部与海报轨无缝 */
 .rec-spotlight__gradient {
   position: absolute;
   inset: 0;
-  z-index: 1;
+  z-index: 2;
   background:
-    linear-gradient(
-      92deg,
-      rgba(15, 20, 28, 0.94) 0%,
-      rgba(15, 20, 28, 0.5) 48%,
-      rgba(15, 20, 28, 0.12) 100%
-    ),
-    linear-gradient(180deg, rgba(8, 10, 14, 0.15) 0%, transparent 42%, rgba(8, 10, 14, 0.88) 100%);
+    linear-gradient(to right, rgba(15, 23, 42, 0.9) 0%, rgba(15, 23, 42, 0.3) 50%, transparent 100%),
+    linear-gradient(to top, rgba(15, 23, 42, 1) 0%, rgba(15, 23, 42, 0) 40%);
   pointer-events: none;
 }
 
-.rec-spotlight__hero-inner {
+.rec-spotlight__hero-inner,
+.rec-spotlight__hero-content {
   position: relative;
-  z-index: 2;
+  z-index: 10;
   padding: var(--space-xl) var(--space-xl) calc(var(--space-2xl) + 14px);
   max-width: min(620px, 94%);
   animation: rec-spot-content-in 0.45s ease-out both;
@@ -4208,11 +4209,6 @@ a.admin-dashboard-card--link:hover {
   border-color: rgba(56, 189, 248, 0.22);
 }
 
-.rec-spotlight__reason {
-  font-size: 0.78rem;
-  color: rgba(226, 232, 240, 0.78);
-}
-
 .rec-spotlight__title {
   font-size: clamp(1.55rem, 3.4vw, 2.15rem);
   font-weight: 700;
@@ -4226,15 +4222,7 @@ a.admin-dashboard-card--link:hover {
 .rec-spotlight__desc {
   font-size: 0.92rem;
   line-height: 1.58;
-  color: rgba(226, 232, 240, 0.78);
-  margin-bottom: 0.45rem;
-  max-width: 34rem;
-}
-
-.rec-spotlight__extra {
-  font-size: 0.8rem;
-  line-height: 1.45;
-  color: rgba(148, 163, 184, 0.95);
+  color: rgba(226, 232, 240, 0.88);
   margin-bottom: 1rem;
   max-width: 34rem;
 }
@@ -4243,7 +4231,7 @@ a.admin-dashboard-card--link:hover {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 0.65rem 1rem;
+  gap: 0.65rem;
 }
 
 .rec-spotlight__cta {
@@ -4279,33 +4267,19 @@ a.admin-dashboard-card--link:hover {
   transform: translateX(3px);
 }
 
-.rec-spotlight__hint {
-  font-size: 0.75rem;
-  color: rgba(148, 163, 184, 0.85);
-}
-
 .rec-spotlight__rail-outer {
   position: relative;
   margin-top: -48px;
   z-index: 2;
   padding: 0 var(--space-sm) var(--space-md);
-  padding-top: 8px;
-  background: linear-gradient(180deg, rgba(12, 16, 22, 0) 0%, rgba(12, 16, 22, 0.65) 18%, #0c1016 100%);
+  padding-top: 12px;
+  background: linear-gradient(180deg, transparent 0%, rgba(15, 23, 42, 0.92) 28%, #0f172a 100%);
 }
 
 @media (max-width: 640px) {
   .rec-spotlight__rail-outer {
     margin-top: -36px;
   }
-}
-
-.rec-spotlight__rail-title {
-  font-size: 0.72rem;
-  font-weight: 600;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: rgba(148, 163, 184, 0.65);
-  margin: 0 0 0.5rem 0.35rem;
 }
 
 .rec-spotlight__rail-mask {
@@ -4320,19 +4294,15 @@ a.admin-dashboard-card--link:hover {
   display: flex;
   gap: 0.75rem;
   overflow-x: auto;
-  padding: 0.25rem 8px 0.45rem;
+  padding: 0.35rem 8px 0.65rem;
   scroll-snap-type: x proximity;
   -webkit-overflow-scrolling: touch;
-  scrollbar-width: thin;
-  scrollbar-color: rgba(255, 255, 255, 0.18) transparent;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
 }
 
 .rec-spotlight__rail::-webkit-scrollbar {
-  height: 5px;
-}
-.rec-spotlight__rail::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.18);
-  border-radius: 4px;
+  display: none;
 }
 
 .rec-spotlight__thumb {
@@ -4343,45 +4313,43 @@ a.admin-dashboard-card--link:hover {
   padding: 0;
   background: transparent;
   cursor: pointer;
-  text-align: left;
+  text-align: center;
   font: inherit;
-  color: rgba(226, 232, 240, 0.72);
+  color: #a1a1aa;
   transition:
-    transform 0.2s ease,
-    color 0.2s ease;
+    transform var(--poster-card-duration, 0.22s) var(--ease, ease),
+    color var(--poster-card-duration, 0.22s) var(--ease, ease);
 }
 
 .rec-spotlight__thumb:hover {
-  transform: translateY(-3px);
-  color: rgba(248, 250, 252, 0.92);
+  transform: translateY(var(--poster-card-translate-y, -4px));
+  color: #d4d4d8;
 }
 
 .rec-spotlight__thumb--active {
-  color: rgba(248, 250, 252, 0.98);
+  color: #e4e4e7;
 }
 
 .rec-spotlight__thumb-frame {
   position: relative;
   display: block;
   aspect-ratio: 2 / 3;
-  border-radius: 11px;
+  border-radius: 8px;
   overflow: hidden;
-  border: 2px solid rgba(255, 255, 255, 0.12);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: var(--poster-card-shadow, 0 2px 10px rgba(0, 0, 0, 0.2));
   transition:
     border-color 0.25s ease,
     box-shadow 0.25s ease,
     transform 0.25s ease,
     opacity 0.25s ease;
-  opacity: 0.9;
+  opacity: 0.92;
 }
 
 .rec-spotlight__thumb--active .rec-spotlight__thumb-frame {
-  border-color: rgba(255, 255, 255, 0.88);
-  box-shadow:
-    0 10px 32px rgba(0, 0, 0, 0.4),
-    0 0 0 1px rgba(255, 255, 255, 0.08);
-  transform: scale(1.025);
+  border-color: rgba(255, 255, 255, 0.55);
+  box-shadow: var(--poster-card-shadow-hover, 0 12px 28px rgba(0, 0, 0, 0.35));
+  transform: scale(1.03);
   opacity: 1;
 }
 
@@ -4419,13 +4387,23 @@ a.admin-dashboard-card--link:hover {
 
 .rec-spotlight__thumb-label {
   display: block;
-  margin-top: 0.4rem;
-  font-size: 0.7rem;
-  line-height: 1.38;
+  margin-top: 0.5rem;
+  padding: 0 2px;
+  font-size: 0.65rem;
+  font-weight: 500;
+  line-height: 1.35;
+  text-align: center;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   max-width: 100px;
+  margin-left: auto;
+  margin-right: auto;
+  color: #a1a1aa;
+}
+
+.rec-spotlight__thumb--active .rec-spotlight__thumb-label {
+  color: #d4d4d8;
 }
 
 .rec-spotlight--loading .rec-spotlight__hero {
@@ -4488,8 +4466,12 @@ a.admin-dashboard-card--link:hover {
     opacity: 1;
     transform: scale(1.04);
   }
-  .rec-spotlight__hero-inner {
+  .rec-spotlight__hero-inner,
+  .rec-spotlight__hero-content {
     animation: none;
+  }
+  .rec-spotlight__thumb:hover {
+    transform: none;
   }
   .rec-spotlight__skeleton-bg,
   .rec-spotlight__thumb--skeleton .rec-spotlight__thumb-frame {

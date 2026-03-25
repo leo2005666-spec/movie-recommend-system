@@ -55,33 +55,45 @@ function titleForItem(item) {
   return item.ad.title || item.ad.label || '推荐';
 }
 
+function formatRuntimeMinutes(mins) {
+  if (mins == null || mins === '' || Number(mins) < 1) return null;
+  const n = Number(mins);
+  if (Number.isNaN(n)) return null;
+  return `${Math.round(n)} 分钟`;
+}
+
+/** 副标题：仅元数据，不再重复推荐理由（理由只出现在顶部单 Tag） */
+function metadataLineForMovie(m) {
+  if (!m) return '';
+  const parts = [];
+  const y = m.release_year || (m.release_date && String(m.release_date).trim().slice(0, 4));
+  if (y) parts.push(String(y));
+  const rt = formatRuntimeMinutes(m.duration);
+  if (rt) parts.push(rt);
+  if (m.tmdb_rating != null && !Number.isNaN(Number(m.tmdb_rating))) {
+    parts.push(`TMDB ${Number(m.tmdb_rating).toFixed(1)} 分`);
+  }
+  if (m.avg_score != null && !Number.isNaN(Number(m.avg_score))) {
+    parts.push(`站内 ${Number(m.avg_score).toFixed(1)} 分`);
+  }
+  return parts.join(' · ');
+}
+
 function subtitleForItem(item) {
   if (!item) return '';
   if (item.kind === 'movie') {
-    const m = item.movie;
-    const y = m.release_year || (m.release_date && String(m.release_date).slice(0, 4));
-    const parts = [];
-    if (y) parts.push(y);
-    if (m.recommendReason) parts.push(m.recommendReason);
-    else if (m.genre) parts.push(m.genre);
-    return parts.join(' · ') || '根据你的偏好，从片库里挑了这一部';
+    return metadataLineForMovie(item.movie) || '';
   }
   return item.ad.subtitle || '';
 }
 
-/** 副一行：评分 / 导演，让信息更饱满又不挤 */
-function extraLineForItem(item) {
-  if (!item || item.kind !== 'movie') return null;
+function pillLabelForItem(item) {
+  if (!item) return '';
+  if (item.kind === 'ad') return '小编精选';
   const m = item.movie;
-  const bits = [];
-  if (m.tmdb_rating != null && !Number.isNaN(Number(m.tmdb_rating))) {
-    bits.push(`TMDB ${Number(m.tmdb_rating).toFixed(1)}`);
-  }
-  if (m.director && String(m.director).trim()) {
-    bits.push(String(m.director).split(/[,，]/)[0].trim().slice(0, 18));
-  }
-  if (!bits.length) return null;
-  return bits.join(' · ');
+  if (m?.genre && String(m.genre).trim()) return String(m.genre).split(/[,，]/)[0].trim().slice(0, 8);
+  if (m?.recommendReason && String(m.recommendReason).trim()) return String(m.recommendReason).trim();
+  return '推荐';
 }
 
 export default function RecommendSpotlight({ movies, loading }) {
@@ -121,7 +133,6 @@ export default function RecommendSpotlight({ movies, loading }) {
           </div>
         </div>
         <div className="rec-spotlight__rail-outer">
-          <p className="rec-spotlight__rail-title">加载焦点推荐…</p>
           <div className="rec-spotlight__rail-mask">
             <div className="rec-spotlight__rail">
               {Array.from({ length: 7 }).map((_, i) => (
@@ -138,12 +149,12 @@ export default function RecommendSpotlight({ movies, loading }) {
 
   const detailLink =
     current?.kind === 'movie' ? `/movies/${current.movie.id}` : current?.ad?.to || '/movies';
-  const extraLine = extraLineForItem(current);
   const pillAd = current?.kind === 'ad';
+  const metaLine = subtitleForItem(current);
 
   return (
     <section className="rec-spotlight" aria-label="推荐焦点与片单预览">
-      <div className="rec-spotlight__hero">
+      <div className="rec-spotlight__hero rec-spotlight__hero-banner-container">
         <div className="rec-spotlight__bg-layer" aria-hidden>
           {bg ? (
             <img key={bg} className="rec-spotlight__bg" src={bg} alt="" decoding="async" />
@@ -152,19 +163,15 @@ export default function RecommendSpotlight({ movies, loading }) {
           )}
         </div>
         <div className="rec-spotlight__grain" aria-hidden />
-        <div className="rec-spotlight__gradient" />
-        <div className="rec-spotlight__hero-inner" key={safeIndex}>
+        <div className="rec-spotlight__gradient" aria-hidden />
+        <div className="rec-spotlight__hero-inner rec-spotlight__hero-content" key={safeIndex}>
           <div className="rec-spotlight__meta-row">
             <span className={`rec-spotlight__pill ${pillAd ? 'rec-spotlight__pill--soft' : ''}`}>
-              {pillAd ? '小编精选' : '猜你喜欢'}
+              {pillLabelForItem(current)}
             </span>
-            {current?.kind === 'movie' && current.movie?.recommendReason ? (
-              <span className="rec-spotlight__reason">{current.movie.recommendReason}</span>
-            ) : null}
           </div>
           <h2 className="rec-spotlight__title">{titleForItem(current)}</h2>
-          <p className="rec-spotlight__desc">{subtitleForItem(current)}</p>
-          {extraLine ? <p className="rec-spotlight__extra">{extraLine}</p> : null}
+          {metaLine ? <p className="rec-spotlight__desc">{metaLine}</p> : null}
           <div className="rec-spotlight__cta-row">
             <Link to={detailLink} className="rec-spotlight__cta">
               {pillAd ? '去看看' : '进入详情'}
@@ -172,13 +179,11 @@ export default function RecommendSpotlight({ movies, loading }) {
                 →
               </span>
             </Link>
-            <span className="rec-spotlight__hint">点击下方海报快速切换</span>
           </div>
         </div>
       </div>
 
       <div className="rec-spotlight__rail-outer">
-        <p className="rec-spotlight__rail-title">本页为你挑选 · 左右滑动查看更多</p>
         <div className="rec-spotlight__rail-mask">
           <div
             className="rec-spotlight__rail"

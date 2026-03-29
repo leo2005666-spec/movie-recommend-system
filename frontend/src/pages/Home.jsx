@@ -50,6 +50,8 @@ export default function Home() {
   const [trailerLoading, setTrailerLoading] = useState(true);
   /** 悬停某部时切换背景；null 表示用列表第一项 */
   const [trailerHoverKey, setTrailerHoverKey] = useState(null);
+  /** 趋势横条：悬停卡片时切换 TMDB 式模糊背景 */
+  const [trendHoverKey, setTrendHoverKey] = useState(null);
 
   const [hotComments, setHotComments] = useState([]);
   const [linkMovie, setLinkMovie] = useState(null);
@@ -81,6 +83,22 @@ export default function Home() {
     }
     return hot;
   }, [trendTab, charts]);
+
+  useEffect(() => {
+    setTrendHoverKey(null);
+  }, [trendTab]);
+
+  const trendBgMovie = useMemo(() => {
+    if (!trendMovies.length) return null;
+    if (trendHoverKey == null) return trendMovies[0];
+    return trendMovies.find((m) => String(m.id) === String(trendHoverKey)) || trendMovies[0];
+  }, [trendMovies, trendHoverKey]);
+
+  const trendBackdropUrl = useMemo(() => {
+    const m = trendBgMovie;
+    if (!m) return '';
+    return getCoverUrl(m, { w: 1280 });
+  }, [trendBgMovie]);
 
   const loadTrailerTab = useCallback(async (key) => {
     setTrailerLoading(true);
@@ -189,30 +207,45 @@ export default function Home() {
     <div className="home-page home-page--tmdb-wide">
       <HomeWelcomeHero />
 
-      {/* 趋势：白底全宽（与 TMDB 上方浅色横条一致），内容区左右留白由 inner 控制 */}
+      {/* 趋势：全宽 + TMDB 式模糊悬停背景；标题与 Tab 居中成组，「更多」在右侧 */}
       <section className="home-tmdb-section home-tmdb-section--trend home-tmdb-section--full-bleed">
+        <div className="home-tmdb-trend-bg-slot" aria-hidden>
+          {trendBackdropUrl ? (
+            <img
+              key={trendBackdropUrl}
+              src={trendBackdropUrl}
+              alt=""
+              className="home-tmdb-trend-bg-img"
+              decoding="async"
+            />
+          ) : null}
+          <div className="home-tmdb-trend-bg-gradient" />
+        </div>
         <div className="home-tmdb-section__inner home-tmdb-section__inner--trend">
-          <div className="home-tmdb-row__head home-tmdb-row__head--trend-light">
-            <h2 className="home-tmdb-row__title">趋势</h2>
-            <div className="home-tmdb-pill-toggle" role="tablist" aria-label="趋势周期">
-              <button
-                type="button"
-                role="tab"
-                aria-selected={trendTab === 'today'}
-                className={`home-tmdb-pill-toggle__btn ${trendTab === 'today' ? 'active' : ''}`}
-                onClick={() => setTrendTab('today')}
-              >
-                今日
-              </button>
-              <button
-                type="button"
-                role="tab"
-                aria-selected={trendTab === 'week'}
-                className={`home-tmdb-pill-toggle__btn ${trendTab === 'week' ? 'active' : ''}`}
-                onClick={() => setTrendTab('week')}
-              >
-                本周
-              </button>
+          <div className="home-tmdb-row__head home-tmdb-row__head--trend-light home-tmdb-row__head--trend-centered">
+            <span className="home-tmdb-trend-head-spacer" aria-hidden />
+            <div className="home-tmdb-trend-head-center">
+              <h2 className="home-tmdb-row__title">趋势</h2>
+              <div className="home-tmdb-pill-toggle" role="tablist" aria-label="趋势周期">
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={trendTab === 'today'}
+                  className={`home-tmdb-pill-toggle__btn ${trendTab === 'today' ? 'active' : ''}`}
+                  onClick={() => setTrendTab('today')}
+                >
+                  今日
+                </button>
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={trendTab === 'week'}
+                  className={`home-tmdb-pill-toggle__btn ${trendTab === 'week' ? 'active' : ''}`}
+                  onClick={() => setTrendTab('week')}
+                >
+                  本周
+                </button>
+              </div>
             </div>
             <Link to="/charts" className="home-tmdb-row__more">
               更多 »
@@ -227,7 +260,12 @@ export default function Home() {
             ) : trendMovies.length ? (
               <div className="home-tmdb-carousel__track home-tmdb-carousel__track--smooth">
                 {trendMovies.slice(0, 18).map((m, idx) => (
-                  <div key={m.id} className="home-tmdb-carousel__cell">
+                  <div
+                    key={m.id}
+                    className="home-tmdb-carousel__cell"
+                    onMouseEnter={() => setTrendHoverKey(m.id)}
+                    onMouseLeave={() => setTrendHoverKey(null)}
+                  >
                     <MovieCard
                       movie={m}
                       showRecommendReason={false}
@@ -259,10 +297,10 @@ export default function Home() {
           <div className="home-tmdb-trailer-bg-gradient" />
         </div>
         <div className="home-tmdb-section__inner home-tmdb-section__inner--trailers">
-          <div className="home-tmdb-row__head home-tmdb-row__head--on-dark home-tmdb-row__head--cinematic home-tmdb-row__head--trailers-line">
+          <div className="home-tmdb-row__head home-tmdb-row__head--on-dark home-tmdb-row__head--trailers-tight">
             <h2 className="home-tmdb-row__title">最新预告片</h2>
             <div
-              className="home-tmdb-tab-row home-tmdb-tab-row--bordered home-tmdb-tab-row--push-end"
+              className="home-tmdb-tab-row home-tmdb-tab-row--bordered home-tmdb-tab-row--trailers-inline"
               role="tablist"
               aria-label="预告片分类"
             >

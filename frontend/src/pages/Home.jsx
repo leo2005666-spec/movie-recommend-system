@@ -185,72 +185,26 @@ export default function Home() {
     return getPosterOrCoverUrl(m, { w: 1280 });
   }, [trailerBgMovie]);
 
+  const trendBackdropUrl = useMemo(() => {
+    const m = trendMovies[0];
+    if (!m) return '';
+    if (m.backdropUrl) return getProxiedImageUrl(m.backdropUrl);
+    return getCoverUrl(m, { w: 1280 });
+  }, [trendMovies]);
+
+  const cinematicBackdropUrl = trailerBackdropUrl || trendBackdropUrl;
+
   return (
     <div className="home-page home-page--tmdb-wide">
       <HomeWelcomeHero />
 
-      {/* 趋势 */}
-      <section className="home-tmdb-section home-tmdb-section--trend">
-        <div className="home-tmdb-section__inner">
-          <div className="home-tmdb-row__head">
-            <h2 className="home-tmdb-row__title">趋势</h2>
-            <div className="home-tmdb-pill-toggle" role="tablist" aria-label="趋势周期">
-              <button
-                type="button"
-                role="tab"
-                aria-selected={trendTab === 'today'}
-                className={`home-tmdb-pill-toggle__btn ${trendTab === 'today' ? 'active' : ''}`}
-                onClick={() => setTrendTab('today')}
-              >
-                今日
-              </button>
-              <button
-                type="button"
-                role="tab"
-                aria-selected={trendTab === 'week'}
-                className={`home-tmdb-pill-toggle__btn ${trendTab === 'week' ? 'active' : ''}`}
-                onClick={() => setTrendTab('week')}
-              >
-                本周
-              </button>
-            </div>
-            <Link to="/charts" className="home-tmdb-row__more">
-              更多 »
-            </Link>
-          </div>
-          <div className="home-tmdb-wave" aria-hidden />
-          <div className="home-tmdb-carousel">
-            {!chartsLoaded ? (
-              <div className="home-tmdb-carousel__track home-tmdb-carousel__track--smooth">
-                <HomePosterSkeletonRow count={10} variant="carousel" />
-              </div>
-            ) : trendMovies.length ? (
-              <div className="home-tmdb-carousel__track">
-                {trendMovies.slice(0, 18).map((m, idx) => (
-                  <div key={m.id} className="home-tmdb-carousel__cell">
-                    <MovieCard
-                      movie={m}
-                      showRecommendReason={false}
-                      showPlayOverlay={false}
-                      imagePriority={idx < 5}
-                    />
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="empty-hint home-tmdb-carousel__empty">暂无榜单数据，请先去影视库浏览或稍后再试。</p>
-            )}
-          </div>
-        </div>
-      </section>
-
-      {/* 最新预告片（横版 16:9 + Tab）· 背景随悬停切换，数据来自 TMDB 实时接口 */}
-      <section className="home-tmdb-section home-tmdb-section--trailers">
+      {/* 趋势 + 最新预告片：同一深色沉浸式条带（与 TMDB 参考一致），背景优先取预告悬停剧照，否则取趋势首张 */}
+      <section className="home-tmdb-section home-tmdb-section--trailers home-tmdb-section--cinematic">
         <div className="home-tmdb-trailer-bg-slot" aria-hidden>
-          {trailerBackdropUrl ? (
+          {cinematicBackdropUrl ? (
             <img
-              key={trailerBackdropUrl}
-              src={trailerBackdropUrl}
+              key={cinematicBackdropUrl}
+              src={cinematicBackdropUrl}
               alt=""
               className="home-tmdb-trailer-bg-img"
               decoding="async"
@@ -259,44 +213,108 @@ export default function Home() {
           <div className="home-tmdb-trailer-bg-gradient" />
         </div>
         <div className="home-tmdb-section__inner home-tmdb-section__inner--trailers">
-          <div className="home-tmdb-row__head home-tmdb-row__head--on-dark">
-            <h2 className="home-tmdb-row__title">最新预告片</h2>
-            <div className="home-tmdb-tab-row" role="tablist" aria-label="预告片分类">
-              {TRAILER_TABS.map((t) => (
-                <button
-                  key={t.key}
-                  type="button"
-                  role="tab"
-                  aria-selected={trailerTab === t.key}
-                  className={`home-tmdb-tab ${trailerTab === t.key ? 'home-tmdb-tab--active' : ''}`}
-                  onClick={() => setTrailerTab(t.key)}
-                >
-                  {t.label}
-                </button>
-              ))}
+          <div className="home-tmdb-cinematic-block">
+            <div className="home-tmdb-row__head home-tmdb-row__head--on-dark home-tmdb-row__head--cinematic">
+              <div className="home-tmdb-cinematic-title-block">
+                <h2 className="home-tmdb-row__title">趋势</h2>
+                <div className="home-tmdb-tab-row home-tmdb-tab-row--bordered" role="tablist" aria-label="趋势周期">
+                  <button
+                    type="button"
+                    role="tab"
+                    aria-selected={trendTab === 'today'}
+                    className={`home-tmdb-tab ${trendTab === 'today' ? 'home-tmdb-tab--active' : ''}`}
+                    onClick={() => setTrendTab('today')}
+                  >
+                    今日
+                  </button>
+                  <button
+                    type="button"
+                    role="tab"
+                    aria-selected={trendTab === 'week'}
+                    className={`home-tmdb-tab ${trendTab === 'week' ? 'home-tmdb-tab--active' : ''}`}
+                    onClick={() => setTrendTab('week')}
+                  >
+                    本周
+                  </button>
+                </div>
+              </div>
+              <Link to="/charts" className="home-tmdb-row__more home-tmdb-row__more--on-dark">
+                更多 »
+              </Link>
+            </div>
+            <div className="home-tmdb-carousel home-tmdb-carousel--cinematic home-tmdb-carousel--cinematic-trend">
+              {!chartsLoaded ? (
+                <div className="home-tmdb-carousel__track home-tmdb-carousel__track--smooth home-tmdb-carousel__track--cinematic">
+                  <HomePosterSkeletonRow count={10} variant="carousel" onDark />
+                </div>
+              ) : trendMovies.length ? (
+                <div className="home-tmdb-carousel__track home-tmdb-carousel__track--cinematic">
+                  {trendMovies.slice(0, 18).map((m, idx) => (
+                    <div key={m.id} className="home-tmdb-carousel__cell">
+                      <MovieCard
+                        movie={m}
+                        showRecommendReason={false}
+                        showPlayOverlay={false}
+                        imagePriority={idx < 5}
+                        className="movie-card--cinematic-rail"
+                      />
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="empty-hint home-tmdb-carousel__empty home-tmdb-carousel__empty--light">
+                  暂无榜单数据，请先去影视库浏览或稍后再试。
+                </p>
+              )}
             </div>
           </div>
-          <div className="home-tmdb-carousel home-tmdb-carousel--trailers">
-            {trailerLoading ? (
-              <div className="home-tmdb-carousel__track home-tmdb-carousel__track--trailers home-tmdb-carousel__track--smooth">
-                <HomePosterSkeletonRow count={6} variant="trailer" onDark />
-              </div>
-            ) : trailerList.length ? (
-              <div className="home-tmdb-carousel__track home-tmdb-carousel__track--trailers home-tmdb-carousel__track--smooth">
-                {trailerList.slice(0, 16).map((m, idx) => (
-                  <div key={movieRowKey(m)} className="home-tmdb-carousel__cell home-tmdb-carousel__cell--trailer">
-                    <TrailerStripCard
-                      movie={m}
-                      imagePriority={idx < 3}
-                      onHoverStart={() => setTrailerHoverKey(movieRowKey(m))}
-                      onHoverEnd={() => setTrailerHoverKey(null)}
-                    />
-                  </div>
+
+          <div className="home-tmdb-cinematic-sep" aria-hidden />
+
+          <div className="home-tmdb-cinematic-block">
+            <div className="home-tmdb-row__head home-tmdb-row__head--on-dark home-tmdb-row__head--cinematic home-tmdb-row__head--trailers-line">
+              <h2 className="home-tmdb-row__title">最新预告片</h2>
+              <div
+                className="home-tmdb-tab-row home-tmdb-tab-row--bordered home-tmdb-tab-row--push-end"
+                role="tablist"
+                aria-label="预告片分类"
+              >
+                {TRAILER_TABS.map((t) => (
+                  <button
+                    key={t.key}
+                    type="button"
+                    role="tab"
+                    aria-selected={trailerTab === t.key}
+                    className={`home-tmdb-tab ${trailerTab === t.key ? 'home-tmdb-tab--active' : ''}`}
+                    onClick={() => setTrailerTab(t.key)}
+                  >
+                    {t.label}
+                  </button>
                 ))}
               </div>
-            ) : (
-              <p className="home-tmdb-carousel__empty home-tmdb-carousel__empty--light">暂无内容</p>
-            )}
+            </div>
+            <div className="home-tmdb-carousel home-tmdb-carousel--trailers home-tmdb-carousel--cinematic">
+              {trailerLoading ? (
+                <div className="home-tmdb-carousel__track home-tmdb-carousel__track--trailers home-tmdb-carousel__track--smooth home-tmdb-carousel__track--cinematic">
+                  <HomePosterSkeletonRow count={6} variant="trailer" onDark />
+                </div>
+              ) : trailerList.length ? (
+                <div className="home-tmdb-carousel__track home-tmdb-carousel__track--trailers home-tmdb-carousel__track--smooth home-tmdb-carousel__track--cinematic">
+                  {trailerList.slice(0, 16).map((m, idx) => (
+                    <div key={movieRowKey(m)} className="home-tmdb-carousel__cell home-tmdb-carousel__cell--trailer">
+                      <TrailerStripCard
+                        movie={m}
+                        imagePriority={idx < 3}
+                        onHoverStart={() => setTrailerHoverKey(movieRowKey(m))}
+                        onHoverEnd={() => setTrailerHoverKey(null)}
+                      />
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="home-tmdb-carousel__empty home-tmdb-carousel__empty--light">暂无内容</p>
+              )}
+            </div>
           </div>
         </div>
       </section>

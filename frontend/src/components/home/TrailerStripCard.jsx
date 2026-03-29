@@ -5,13 +5,27 @@
 import { Link } from 'react-router-dom';
 import { getPosterOrCoverUrl } from '../../api/request';
 
+function buildTrailerSubtitle(movie) {
+  const date =
+    movie.release_date && String(movie.release_date).trim()
+      ? String(movie.release_date).slice(0, 10)
+      : movie.release_year
+        ? String(movie.release_year)
+        : null;
+  const typeLabel = movie.media_type === 'tv' ? '剧集' : '电影';
+  const va = movie.vote_average;
+  const score =
+    va != null && !Number.isNaN(Number(va)) ? `TMDB ${Number(va).toFixed(1)} 分` : null;
+  const line1 = [date, typeLabel, score].filter(Boolean).join(' · ');
+  const ov = (movie.description || '').trim();
+  const line2 =
+    ov.length > 96 ? `${ov.slice(0, 96)}…` : ov || '点击查看详情与预告信息';
+  return { line1, line2 };
+}
+
 export default function TrailerStripCard({ movie, subtitle, onHoverStart, onHoverEnd, imagePriority = false }) {
   const cover = getPosterOrCoverUrl(movie, { w: 780 });
-  const line =
-    subtitle ||
-    (movie.description && movie.description.length > 42
-      ? movie.description.slice(0, 42) + '…'
-      : movie.description || '点击观看详情与简介');
+  const { line1, line2 } = subtitle ? { line1: subtitle, line2: '' } : buildTrailerSubtitle(movie);
 
   const thumb = (
     <>
@@ -27,6 +41,13 @@ export default function TrailerStripCard({ movie, subtitle, onHoverStart, onHove
         ) : (
           <div className="trailer-strip-card__thumb-placeholder" aria-hidden />
         )}
+        <span className="trailer-strip-card__kebab" aria-hidden>
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+            <circle cx="12" cy="6" r="1.6" />
+            <circle cx="12" cy="12" r="1.6" />
+            <circle cx="12" cy="18" r="1.6" />
+          </svg>
+        </span>
         <span className="trailer-strip-card__play" aria-hidden>
           <svg viewBox="0 0 24 24" width="44" height="44">
             <circle cx="12" cy="12" r="11" fill="rgba(255,255,255,0.25)" />
@@ -36,7 +57,8 @@ export default function TrailerStripCard({ movie, subtitle, onHoverStart, onHove
       </div>
       <div className="trailer-strip-card__text">
         <div className="trailer-strip-card__title">{movie.title}</div>
-        <div className="trailer-strip-card__sub">{line}</div>
+        {line1 ? <div className="trailer-strip-card__meta">{line1}</div> : null}
+        {line2 ? <div className="trailer-strip-card__sub">{line2}</div> : null}
       </div>
     </>
   );

@@ -681,14 +681,6 @@ button { cursor: pointer; }
   padding: var(--space-lg) 0 var(--space-xl);
 }
 
-.home-tmdb-section--trend {
-  background: var(--bg-canvas, #f1f5f9);
-}
-
-.home-tmdb-section--trend .home-tmdb-section__inner {
-  padding-bottom: calc(var(--space-xl) + 12px);
-}
-
 .home-tmdb-row__head {
   display: flex;
   flex-wrap: wrap;
@@ -724,6 +716,63 @@ button { cursor: pointer; }
 
 .home-tmdb-row__more:hover {
   text-decoration: underline;
+}
+
+.home-tmdb-row__more--on-dark {
+  color: rgba(255, 255, 255, 0.9);
+  text-shadow: 0 1px 12px rgba(0, 0, 0, 0.35);
+}
+
+.home-tmdb-row__more--on-dark:hover {
+  color: #fff;
+}
+
+/** 沉浸式横条：趋势 + 预告片 标题行（与 TMDB 参考一致） */
+.home-tmdb-row__head--cinematic {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.65rem 1rem;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.home-tmdb-cinematic-title-block {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.85rem;
+  min-width: 0;
+}
+
+.home-tmdb-row__head--trailers-line {
+  justify-content: flex-start;
+}
+
+.home-tmdb-tab-row--bordered {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  padding: 3px 5px;
+  border-radius: 999px;
+  border: 1px solid rgba(1, 180, 228, 0.5);
+  background: rgba(0, 0, 0, 0.28);
+  margin-left: 0;
+  max-width: min(100%, 960px);
+}
+
+.home-tmdb-tab-row--push-end {
+  margin-left: auto;
+}
+
+.home-tmdb-cinematic-block {
+  margin-bottom: 0;
+}
+
+.home-tmdb-cinematic-sep {
+  height: 1px;
+  margin: var(--space-xl) 0;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.12) 15%, rgba(255, 255, 255, 0.12) 85%, transparent);
 }
 
 /** 今日 / 本周 胶囊切换 */
@@ -842,6 +891,13 @@ button { cursor: pointer; }
   border-bottom: 1px solid rgba(255, 255, 255, 0.06);
 }
 
+.home-tmdb-section--cinematic .home-tmdb-trailer-bg-img {
+  filter: blur(26px) saturate(1.08);
+  transform: scale(1.08);
+  opacity: 0.4;
+  animation: none;
+}
+
 .home-tmdb-trailer-bg-slot {
   position: absolute;
   inset: 0;
@@ -899,6 +955,19 @@ button { cursor: pointer; }
   max-width: 100%;
 }
 
+.home-tmdb-tab-row--bordered.home-tmdb-tab-row--push-end {
+  justify-content: flex-end;
+}
+
+/** 带边框的 tab 条需覆盖 .home-tmdb-tab-row 的 margin-left:auto */
+.home-tmdb-tab-row.home-tmdb-tab-row--bordered {
+  margin-left: 0;
+}
+
+.home-tmdb-tab-row.home-tmdb-tab-row--bordered.home-tmdb-tab-row--push-end {
+  margin-left: auto;
+}
+
 .home-tmdb-tab {
   border: none;
   border-radius: 999px;
@@ -926,11 +995,44 @@ button { cursor: pointer; }
   overflow: visible;
 }
 
+.home-tmdb-carousel--cinematic {
+  margin-top: var(--space-md);
+}
+
+.home-tmdb-carousel--cinematic-trend {
+  margin-top: var(--space-md);
+}
+
 .home-tmdb-carousel__track--trailers {
   gap: 1rem;
   padding-bottom: 0.5rem;
   contain: content;
   scroll-snap-type: x mandatory;
+}
+
+/** 横条滚动条：贴近底部、低对比（避免抢眼） */
+.home-tmdb-carousel__track--cinematic {
+  padding-bottom: 0.35rem;
+  margin-bottom: 0.15rem;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
+}
+
+.home-tmdb-carousel__track--cinematic::-webkit-scrollbar {
+  height: 3px;
+}
+
+.home-tmdb-carousel__track--cinematic::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.home-tmdb-carousel__track--cinematic::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.22);
+  border-radius: 999px;
+}
+
+.home-tmdb-carousel__track--cinematic::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.32);
 }
 
 /** 横向滚动更顺滑（减少合成层抖动） */
@@ -941,16 +1043,16 @@ button { cursor: pointer; }
 }
 
 .home-tmdb-carousel__cell--trailer {
-  flex: 0 0 280px;
-  width: 280px;
-  min-width: 280px;
+  flex: 0 0 300px;
+  width: 300px;
+  min-width: 300px;
 }
 
 @media (max-width: 640px) {
   .home-tmdb-carousel__cell--trailer {
-    flex-basis: 240px;
-    width: 240px;
-    min-width: 240px;
+    flex-basis: 252px;
+    width: 252px;
+    min-width: 252px;
   }
 }
 
@@ -999,6 +1101,23 @@ button { cursor: pointer; }
   gap: 0.35rem;
 }
 
+.trailer-strip-card__kebab {
+  position: absolute;
+  top: 0.45rem;
+  right: 0.45rem;
+  z-index: 2;
+  width: 1.85rem;
+  height: 1.85rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  color: rgba(255, 255, 255, 0.92);
+  background: rgba(0, 0, 0, 0.45);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  pointer-events: none;
+}
+
 .trailer-strip-card__play {
   position: absolute;
   inset: 0;
@@ -1007,6 +1126,7 @@ button { cursor: pointer; }
   justify-content: center;
   opacity: 0.92;
   transition: opacity 0.2s;
+  z-index: 1;
 }
 
 .trailer-strip-card:hover .trailer-strip-card__play {
@@ -1014,27 +1134,38 @@ button { cursor: pointer; }
 }
 
 .trailer-strip-card__text {
-  padding: 0.65rem 0.75rem 0.85rem;
+  padding: 0.7rem 0.8rem 0.95rem;
+  text-align: left;
 }
 
 .trailer-strip-card__title {
-  font-size: 0.88rem;
-  font-weight: 700;
+  font-size: 0.95rem;
+  font-weight: 800;
   color: #fff;
-  line-height: 1.35;
+  line-height: 1.3;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
+  letter-spacing: -0.01em;
+}
+
+.trailer-strip-card__meta {
+  margin-top: 0.3rem;
+  font-size: 0.74rem;
+  font-weight: 600;
+  color: rgba(226, 232, 240, 0.88);
+  line-height: 1.45;
 }
 
 .trailer-strip-card__sub {
-  margin-top: 0.25rem;
+  margin-top: 0.2rem;
   font-size: 0.72rem;
-  color: rgba(226, 232, 240, 0.75);
-  line-height: 1.4;
+  font-weight: 500;
+  color: rgba(203, 213, 225, 0.78);
+  line-height: 1.45;
   display: -webkit-box;
-  -webkit-line-clamp: 2;
+  -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
@@ -3857,6 +3988,26 @@ button { cursor: pointer; }
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
+}
+
+.home-tmdb-carousel--cinematic-trend .movie-card.movie-card--cinematic-rail {
+  background: rgba(15, 23, 42, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 10px 32px rgba(0, 0, 0, 0.4);
+}
+
+.home-tmdb-carousel--cinematic-trend .movie-card.movie-card--cinematic-rail .info {
+  padding: 0.55rem 0.6rem 0.7rem;
+  background: transparent;
+}
+
+.home-tmdb-carousel--cinematic-trend .movie-card.movie-card--cinematic-rail .title {
+  color: #fff;
+}
+
+.home-tmdb-carousel--cinematic-trend .movie-card.movie-card--cinematic-rail .meta,
+.home-tmdb-carousel--cinematic-trend .movie-card.movie-card--cinematic-rail .movie-card__date-line {
+  color: rgba(226, 232, 240, 0.82);
 }
 
 /* 好评率圆环：海报左下与信息区交界重叠（参考 TMDB，优于下方重复的旧选择器） */

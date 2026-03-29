@@ -14,11 +14,13 @@ const TMDB_IMG = 'https://image.tmdb.org/t/p';
 
 const cache = new Map();
 const TTL_MS = 5 * 60 * 1000;
+/** 首页「最新预告片」横条：更短缓存，减少「长时间不刷新」观感 */
+const TRAILER_ROW_TTL_MS = 90 * 1000;
 
-function getCached(key) {
+function getCached(key, ttlMs = TTL_MS) {
   const row = cache.get(key);
   if (!row) return null;
-  if (Date.now() - row.at > TTL_MS) {
+  if (Date.now() - row.at > ttlMs) {
     cache.delete(key);
     return null;
   }
@@ -69,6 +71,7 @@ function mapMediaItem(raw, forcedMedia) {
       release_date: date || null,
       release_year: date ? parseInt(String(date).slice(0, 4), 10) : null,
       vote_average: raw.vote_average,
+      tmdb_rating: raw.vote_average,
       backdropUrl: backdrop,
       externalUrl: `https://www.themoviedb.org/movie/${tid}`,
       source: 'tmdb',
@@ -84,6 +87,7 @@ function mapMediaItem(raw, forcedMedia) {
     description: raw.overview || '',
     release_date: date || null,
     vote_average: raw.vote_average,
+    tmdb_rating: raw.vote_average,
     backdropUrl: backdrop,
     externalUrl: `https://www.themoviedb.org/tv/${tid}`,
     source: 'tmdb',
@@ -245,7 +249,7 @@ router.get('/trailer-row', asyncHandler(async (req, res) => {
 
   /** v2：全部为 upcoming/discover 未上映，与旧缓存区分 */
   const cacheKey = `trailer:v2:${tab}:${region}`;
-  const cached = getCached(cacheKey);
+  const cached = getCached(cacheKey, TRAILER_ROW_TTL_MS);
   if (cached) {
     return res.json({ code: 0, data: { ...cached, cached: true } });
   }

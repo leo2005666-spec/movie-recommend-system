@@ -23,7 +23,7 @@ const TRAILER_TABS = [
   { key: 'streaming', label: '流媒体', trailerTab: 'streaming' },
   { key: 'tv', label: '电视播出', trailerTab: 'tv' },
   { key: 'rent', label: '可供租借', trailerTab: 'rent' },
-  { key: 'theaters', label: '即将上映', trailerTab: 'theaters' },
+  { key: 'theaters', label: '影院上映中', trailerTab: 'theaters' },
 ];
 
 function movieRowKey(m) {
@@ -52,6 +52,10 @@ export default function Home() {
   const [trailerHoverKey, setTrailerHoverKey] = useState(null);
   /** 趋势横条：悬停卡片时切换 TMDB 式模糊背景 */
   const [trendHoverKey, setTrendHoverKey] = useState(null);
+
+  useEffect(() => {
+    setTrailerHoverKey(null);
+  }, [trailerTab]);
 
   const [hotComments, setHotComments] = useState([]);
   const [linkMovie, setLinkMovie] = useState(null);
@@ -297,10 +301,10 @@ export default function Home() {
           <div className="home-tmdb-trailer-bg-gradient" />
         </div>
         <div className="home-tmdb-section__inner home-tmdb-section__inner--trailers">
-          <div className="home-tmdb-row__head home-tmdb-row__head--on-dark home-tmdb-row__head--trailers-tight">
+          <div className="home-tmdb-row__head home-tmdb-row__head--on-dark home-tmdb-row__head--trailers-tight home-tmdb-row__head--popular-line">
             <h2 className="home-tmdb-row__title">最新预告片</h2>
             <div
-              className="home-tmdb-tab-row home-tmdb-tab-row--bordered home-tmdb-tab-row--trailers-inline"
+              className="home-tmdb-tab-row home-tmdb-tab-row--trailers-inline home-tmdb-tab-row--trailers-pill"
               role="tablist"
               aria-label="预告片分类"
             >
@@ -324,15 +328,17 @@ export default function Home() {
                 <HomePosterSkeletonRow count={6} variant="trailer" onDark />
               </div>
             ) : trailerList.length ? (
-              <div className="home-tmdb-carousel__track home-tmdb-carousel__track--trailers home-tmdb-carousel__track--smooth home-tmdb-carousel__track--cinematic">
+              <div
+                className="home-tmdb-carousel__track home-tmdb-carousel__track--trailers home-tmdb-carousel__track--smooth home-tmdb-carousel__track--cinematic"
+                onMouseLeave={() => setTrailerHoverKey(null)}
+              >
                 {trailerList.slice(0, 16).map((m, idx) => (
-                  <div key={movieRowKey(m)} className="home-tmdb-carousel__cell home-tmdb-carousel__cell--trailer">
-                    <TrailerStripCard
-                      movie={m}
-                      imagePriority={idx < 3}
-                      onHoverStart={() => setTrailerHoverKey(movieRowKey(m))}
-                      onHoverEnd={() => setTrailerHoverKey(null)}
-                    />
+                  <div
+                    key={movieRowKey(m)}
+                    className="home-tmdb-carousel__cell home-tmdb-carousel__cell--trailer"
+                    onMouseEnter={() => setTrailerHoverKey(movieRowKey(m))}
+                  >
+                    <TrailerStripCard movie={m} imagePriority={idx < 3} />
                   </div>
                 ))}
               </div>

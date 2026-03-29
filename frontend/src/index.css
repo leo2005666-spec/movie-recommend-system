@@ -1028,9 +1028,9 @@ button { cursor: pointer; }
 }
 
 .home-tmdb-section--cinematic .home-tmdb-trailer-bg-img {
-  filter: blur(14px) saturate(1.06);
+  filter: blur(12px) saturate(1.08);
   transform: scale(1.05);
-  opacity: 0.52;
+  opacity: 0.68;
   animation: none;
 }
 
@@ -1048,18 +1048,18 @@ button { cursor: pointer; }
   height: 100%;
   object-fit: cover;
   object-position: center 22%;
-  opacity: 0.44;
+  opacity: 0.55;
   transform: scale(1.02);
   animation: home-trailer-bg-in 0.22s ease-out both;
 }
 
 @keyframes home-trailer-bg-in {
   from {
-    opacity: 0.2;
+    opacity: 0.22;
     transform: scale(1.04);
   }
   to {
-    opacity: 0.44;
+    opacity: 0.55;
     transform: scale(1.02);
   }
 }
@@ -1069,9 +1069,9 @@ button { cursor: pointer; }
   inset: 0;
   background: linear-gradient(
     105deg,
-    rgba(3, 12, 28, 0.94) 0%,
-    rgba(12, 20, 40, 0.8) 45%,
-    rgba(8, 15, 30, 0.62) 100%
+    rgba(3, 12, 28, 0.88) 0%,
+    rgba(12, 20, 40, 0.72) 42%,
+    rgba(8, 15, 30, 0.55) 100%
   );
 }
 
@@ -1110,11 +1110,16 @@ button { cursor: pointer; }
 /** 最新预告片：标题与 Tab 同一行紧挨（不靠右甩开） */
 .home-tmdb-row__head--trailers-tight {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   align-items: center;
-  gap: 0.35rem 0.55rem;
+  gap: 0.75rem 1.25rem;
   margin-bottom: var(--space-lg);
   width: 100%;
+}
+
+/** 与 TMDB「热门」条一致：左标题、右胶囊 Tab，整行 space-between */
+.home-tmdb-row__head--trailers-tight.home-tmdb-row__head--popular-line {
+  justify-content: space-between;
 }
 
 .home-tmdb-row__head--trailers-tight .home-tmdb-row__title {
@@ -1125,6 +1130,50 @@ button { cursor: pointer; }
 .home-tmdb-tab-row.home-tmdb-tab-row--trailers-inline {
   margin-left: 0;
   flex: 0 1 auto;
+  min-width: 0;
+  max-width: min(100%, 920px);
+}
+
+/** 预告片 Tab：浅灰轨道 + 选中 #032541（对齐 TMDB 深色区） */
+.home-tmdb-tab-row.home-tmdb-tab-row--trailers-pill {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.2rem;
+  padding: 4px 6px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.14);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-sizing: border-box;
+}
+
+.home-tmdb-tab-row--trailers-pill .home-tmdb-tab {
+  border: none;
+  border-radius: 999px;
+  padding: 0.38rem 0.82rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.78);
+  transition: background 0.18s, color 0.18s, box-shadow 0.18s;
+}
+
+.home-tmdb-tab-row--trailers-pill .home-tmdb-tab:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: #ffffff;
+}
+
+.home-tmdb-tab-row--trailers-pill .home-tmdb-tab--active {
+  background: #032541;
+  color: #ffffff;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.35);
+}
+
+@media (max-width: 900px) {
+  .home-tmdb-row__head--trailers-tight {
+    flex-wrap: wrap;
+  }
 }
 
 .home-tmdb-tab {
@@ -1342,10 +1391,16 @@ button { cursor: pointer; }
 }
 .home-tmdb-rail-head {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   align-items: center;
-  gap: 0.75rem 1rem;
+  justify-content: space-between;
+  gap: 0.75rem 1.25rem;
   margin-bottom: var(--space-md);
+  width: 100%;
+}
+/** 与「最新预告片」标题行同一逻辑：左「热门」、右胶囊 */
+.home-tmdb-rail-head--tmdb-popular {
+  box-sizing: border-box;
 }
 .home-tmdb-rail-title {
   font-size: 1.5rem;
@@ -1353,17 +1408,36 @@ button { cursor: pointer; }
   letter-spacing: -0.02em;
   color: var(--text-primary);
   margin: 0;
+  flex-shrink: 0;
 }
 .home-tmdb-rail-pill-row {
   display: inline-flex;
   flex-wrap: wrap;
+  align-items: center;
   gap: 0.35rem;
-  padding: 4px;
+  padding: 4px 6px;
   border-radius: 999px;
   background: var(--home-rail-pill-track);
-  margin-left: auto;
+  margin-left: 0;
   justify-content: flex-end;
-  max-width: 100%;
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: min(100%, 920px);
+}
+@media (max-width: 768px) {
+  .home-tmdb-rail-head {
+    flex-wrap: wrap;
+  }
+  .home-tmdb-rail-pill-row {
+    flex-basis: 100%;
+    justify-content: flex-start;
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    max-width: 100%;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 6px;
+    scrollbar-width: thin;
+  }
 }
 .home-tmdb-rail-pill {
   border: none;

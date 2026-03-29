@@ -1,6 +1,7 @@
 /**
  * 首页「最新预告片」横条：固定 16:9 画幅 + 播放角标
  * 电影：`/movies/tmdb/:id`；剧集：`/tv/tmdb/:id`（均在本站打开，数据与 TMDB 同步）
+ * 可选 onHoverStart/onHoverEnd：默认由首页轨道统一处理背景，避免卡片间移动闪动。
  */
 import { Link } from 'react-router-dom';
 import { getPosterOrCoverUrl } from '../../api/request';

@@ -32,6 +32,26 @@ function parseTypeKeys(raw) {
 const TMDB_API_KEY = process.env.TMDB_API_KEY;
 const TMDB_IMG = 'https://image.tmdb.org/t/p';
 
+/** TMDB credits.crew → 详情 Hero 主创网格（与 TMDB 页：姓名+下划线、下一行职位） */
+function buildFeaturedCrew(crew) {
+  if (!Array.isArray(crew)) return [];
+  const used = new Set();
+  const out = [];
+  const take = (pred, roleLabel) => {
+    for (const c of crew) {
+      if (!c || c.id == null || !c.name || !pred(c) || used.has(c.id)) continue;
+      used.add(c.id);
+      out.push({ name: c.name, role: roleLabel });
+    }
+  };
+  take((c) => c.job === 'Director', 'Director');
+  take((c) => c.job === 'Novel', 'Novel');
+  take((c) => c.job === 'Original Story', 'Original Story');
+  take((c) => c.job === 'Screenplay', 'Screenplay');
+  take((c) => c.job === 'Writer', 'Writer');
+  return out.slice(0, 12);
+}
+
 /** TMDB /movie/{id} → 库存储格式 |US|GB| */
 function formatOriginCountries(detail) {
   if (!detail || typeof detail !== 'object') return null;
@@ -195,7 +215,7 @@ router.get('/:id/credits', asyncHandler(async (req, res) => {
     posters: [],
   };
   const emptyData = {
-    cast: [], recommendations: [], backdrop_path: null, tagline: null,
+    cast: [], featured_crew: [], recommendations: [], backdrop_path: null, tagline: null,
     tmdb_details: { original_title: null, status: null, original_language: null, budget: null, revenue: null, keywords: [], tmdb_id: null, homepage: null, facebook_id: null, instagram_id: null, twitter_id: null },
     media: emptyMedia,
   };
@@ -226,6 +246,7 @@ router.get('/:id/credits', asyncHandler(async (req, res) => {
       profile_path: c.profile_path ? `${TMDB_IMG}/w342${c.profile_path}` : null,
       order: c.order,
     }));
+    const featured_crew = buildFeaturedCrew(credits.crew || []);
     const recList = (rec.results || []).slice(0, 12);
     const recommendations = [];
     for (const m of recList) {
@@ -333,7 +354,7 @@ router.get('/:id/credits', asyncHandler(async (req, res) => {
       instagram_id: externalIds.instagram_id || null,
       twitter_id: externalIds.twitter_id || null,
     };
-    res.json({ code: 0, data: { cast, recommendations, backdrop_path, tagline, tmdb_details, media } });
+    res.json({ code: 0, data: { cast, featured_crew, recommendations, backdrop_path, tagline, tmdb_details, media } });
   } catch (e) {
     res.json({ code: 0, data: emptyData });
   }

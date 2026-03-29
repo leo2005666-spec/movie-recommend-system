@@ -6,6 +6,7 @@ import { useParams, Link } from 'react-router-dom';
 import { api, getProxiedImageUrl } from '../api/request';
 import { getScoreColor } from '../components/MovieCard';
 import DetailPageLoading from '../components/DetailPageLoading';
+import { castNameInitial, castPlaceholderGradient } from '../utils/castCard';
 
 function formatEpRuntime(minsArr) {
   if (!Array.isArray(minsArr) || !minsArr.length) return null;
@@ -188,7 +189,13 @@ export default function TvDetail() {
                           {c.profile_path ? (
                             <img src={c.profile_path} alt={c.name} onError={(e) => { e.target.style.display = 'none'; }} />
                           ) : (
-                            <div className="cast-placeholder cast-placeholder--filmstrip" />
+                            <div
+                              className="cast-placeholder cast-placeholder--filmstrip"
+                              style={{ background: castPlaceholderGradient(c.id || i) }}
+                              aria-hidden
+                            >
+                              {castNameInitial(c.name)}
+                            </div>
                           )}
                         </div>
                         <div className="cast-info cast-info--filmstrip">

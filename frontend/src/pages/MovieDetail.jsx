@@ -7,6 +7,7 @@ import { normalizeMovieListResponse } from '../utils/recommendApi';
 import UserAvatar from '../components/UserAvatar';
 import DetailPageLoading from '../components/DetailPageLoading';
 import MovieDetailMedia from '../components/detail/MovieDetailMedia';
+import { castNameInitial, castPlaceholderGradient } from '../utils/castCard';
 
 const SCENE_SIMILAR = 'similar';
 
@@ -47,6 +48,7 @@ export default function MovieDetail() {
   const [tagline, setTagline] = useState(null);
   const [tmdbDetails, setTmdbDetails] = useState(null);
   const [detailMedia, setDetailMedia] = useState(null);
+  const [featuredCrew, setFeaturedCrew] = useState([]);
   const [comments, setComments] = useState([]);
   const [commentTotal, setCommentTotal] = useState(0);
   const [commentPage, setCommentPage] = useState(1);
@@ -97,6 +99,7 @@ export default function MovieDetail() {
     if (!id) return;
     let cancelled = false;
     setDetailMedia(null);
+    setFeaturedCrew([]);
     setCommentPage(1);
     loadCommentsPage(1, false);
     Promise.all([
@@ -106,6 +109,7 @@ export default function MovieDetail() {
       if (cancelled) return;
       const cd = creditsRes.data || {};
       setCast(cd.cast || []);
+      setFeaturedCrew(cd.featured_crew || []);
       setTmdbRecs(cd.recommendations || []);
       setBackdropPath(cd.backdrop_path || null);
       setTagline(cd.tagline || null);
@@ -304,11 +308,22 @@ export default function MovieDetail() {
               <h3 className="detail-synopsis-title">简介</h3>
               <p className="detail-synopsis">{movie.description || '暂无简介'}</p>
 
-              {movie.director && (
-                <div className="detail-crew">
-                  <strong>导演</strong> {movie.director}
-                  {movie.actors && <><br /><strong>主演</strong> {movie.actors}</>}
+              {featuredCrew.length > 0 ? (
+                <div className="detail-featured-crew">
+                  {featuredCrew.map((fc, idx) => (
+                    <div key={`${fc.name}-${fc.role}-${idx}`} className="detail-crew-credit">
+                      <span className="detail-crew-credit__name">{fc.name}</span>
+                      <span className="detail-crew-credit__role">{fc.role}</span>
+                    </div>
+                  ))}
                 </div>
+              ) : (
+                movie.director && (
+                  <div className="detail-crew">
+                    <strong>导演</strong> {movie.director}
+                    {movie.actors && <><br /><strong>主演</strong> {movie.actors}</>}
+                  </div>
+                )
               )}
             </div>
           </div>
@@ -331,7 +346,13 @@ export default function MovieDetail() {
                           {c.profile_path ? (
                             <img src={c.profile_path} alt={c.name} onError={(e) => { e.target.style.display = 'none'; }} />
                           ) : (
-                            <div className="cast-placeholder cast-placeholder--filmstrip" />
+                            <div
+                              className="cast-placeholder cast-placeholder--filmstrip"
+                              style={{ background: castPlaceholderGradient(c.id) }}
+                              aria-hidden
+                            >
+                              {castNameInitial(c.name)}
+                            </div>
                           )}
                         </div>
                         <div className="cast-info cast-info--filmstrip">
@@ -345,7 +366,13 @@ export default function MovieDetail() {
                           {c.profile_path ? (
                             <img src={c.profile_path} alt={c.name} onError={(e) => { e.target.style.display = 'none'; }} />
                           ) : (
-                            <div className="cast-placeholder cast-placeholder--filmstrip" />
+                            <div
+                              className="cast-placeholder cast-placeholder--filmstrip"
+                              style={{ background: castPlaceholderGradient(c.id || i) }}
+                              aria-hidden
+                            >
+                              {castNameInitial(c.name)}
+                            </div>
                           )}
                         </div>
                         <div className="cast-info cast-info--filmstrip">

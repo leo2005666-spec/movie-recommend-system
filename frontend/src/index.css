@@ -5775,6 +5775,49 @@ a.admin-dashboard-card--link:hover {
 .detail-hero .detail-crew strong {
   color: #ffffff;
 }
+/* Hero 主创网格（TMDB：姓名加下划线 + 下一行职位） */
+.detail-featured-crew {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem 1.25rem;
+  margin-top: 1.35rem;
+  max-width: 52rem;
+}
+.detail-crew-credit {
+  text-align: left;
+  min-width: 0;
+}
+.detail-crew-credit__name {
+  display: inline;
+  font-size: 0.98rem;
+  font-weight: 700;
+  color: #ffffff;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.28rem;
+  text-shadow: 0 1px 10px rgba(0, 0, 0, 0.45);
+}
+.detail-crew-credit__role {
+  display: block;
+  margin-top: 0.28rem;
+  font-size: 0.875rem;
+  font-weight: 400;
+  line-height: 1.35;
+  color: rgba(255, 255, 255, 0.95);
+  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.4);
+}
+@media (max-width: 768px) {
+  .detail-featured-crew {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.85rem 1rem;
+  }
+  .detail-crew-credit__name {
+    font-size: 0.92rem;
+  }
+  .detail-crew-credit__role {
+    font-size: 0.8125rem;
+  }
+}
 .detail-hero .detail-score-value {
   color: #ffffff;
   text-shadow: 0 1px 8px rgba(0, 0, 0, 0.4);
@@ -6488,6 +6531,15 @@ a.admin-dashboard-card--link:hover {
   background: #e4e9ef;
   overflow: hidden;
 }
+.cast-photo--filmstrip:has(.cast-placeholder--filmstrip) {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 0.65rem 0 0.5rem;
+  box-sizing: border-box;
+  background: #f8fafc;
+}
 .cast-photo--filmstrip img {
   width: 100%;
   height: 100%;
@@ -6495,10 +6547,23 @@ a.admin-dashboard-card--link:hover {
   display: block;
 }
 .cast-placeholder--filmstrip {
-  width: 100%;
-  height: 100%;
-  min-height: 100%;
-  background: linear-gradient(155deg, #e2e8f0 0%, #cbd5e1 100%);
+  width: 78%;
+  max-width: 104px;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  margin: 0 auto;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  font-size: clamp(1.65rem, 11vw, 2.35rem);
+  font-weight: 600;
+  line-height: 1;
+  color: rgba(15, 23, 42, 0.92);
+  letter-spacing: 0;
+  box-sizing: border-box;
+  user-select: none;
 }
 .cast-info--filmstrip {
   padding: 0.55rem 0.65rem 0.75rem;

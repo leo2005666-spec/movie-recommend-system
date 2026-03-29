@@ -73,6 +73,12 @@
 
   --header-bg: #ffffff;
   --home-rail-pill-track: #e2e8f0;
+
+  /** 火龙果影视 · 品牌渐变（仅用于 Logo/标题字与胶囊选中态，不改整页底图） */
+  --brand-gradient-text: linear-gradient(92deg, #f472b6 0%, #ec4899 35%, #db2777 65%, #c026d3 100%);
+  --brand-pill-active: linear-gradient(135deg, #9d174d 0%, #be185d 28%, #db2777 55%, #f472b6 100%);
+  --brand-pill-glow: 0 2px 14px rgba(219, 39, 119, 0.42);
+  --brand-pill-border: rgba(244, 114, 182, 0.55);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -99,6 +105,7 @@
   --poster-card-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
   --poster-card-shadow-hover: 0 14px 36px rgba(0, 0, 0, 0.52);
   --home-rail-pill-track: #2d333b;
+  --brand-pill-border: rgba(251, 113, 133, 0.42);
 }
 
 [data-theme="dark"] .nav a {
@@ -290,6 +297,19 @@ button { cursor: pointer; }
   font-weight: var(--fw-bold);
   color: var(--accent);
   letter-spacing: 0.02em;
+  text-decoration: none;
+}
+
+/** 站点名：火龙果色系渐变字（TMDB Logo 式渐变质感） */
+.brand-text-gradient {
+  color: transparent;
+  background: var(--brand-gradient-text);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+a.brand-text-gradient:hover {
+  filter: brightness(1.07) saturate(1.06);
 }
 
 .nav {
@@ -1107,19 +1127,15 @@ button { cursor: pointer; }
   margin-left: auto;
 }
 
-/** 最新预告片：标题与 Tab 同一行紧挨（不靠右甩开） */
+/** 最新预告片：标题与胶囊 Tab 紧挨一排（flex-start，非两端拉开） */
 .home-tmdb-row__head--trailers-tight {
   display: flex;
   flex-wrap: nowrap;
   align-items: center;
-  gap: 0.75rem 1.25rem;
+  justify-content: flex-start;
+  gap: 0.45rem 0.65rem;
   margin-bottom: var(--space-lg);
   width: 100%;
-}
-
-/** 与 TMDB「热门」条一致：左标题、右胶囊 Tab，整行 space-between */
-.home-tmdb-row__head--trailers-tight.home-tmdb-row__head--popular-line {
-  justify-content: space-between;
 }
 
 .home-tmdb-row__head--trailers-tight .home-tmdb-row__title {
@@ -1134,7 +1150,7 @@ button { cursor: pointer; }
   max-width: min(100%, 920px);
 }
 
-/** 预告片 Tab：浅灰轨道 + 选中 #032541（对齐 TMDB 深色区） */
+/** 预告片 Tab：浅底轨道 + 火龙果描边；选中为粉紫渐变（深色条内） */
 .home-tmdb-tab-row.home-tmdb-tab-row--trailers-pill {
   display: inline-flex;
   flex-wrap: wrap;
@@ -1142,8 +1158,8 @@ button { cursor: pointer; }
   gap: 0.2rem;
   padding: 4px 6px;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.14);
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--brand-pill-border);
   box-sizing: border-box;
 }
 
@@ -1165,9 +1181,9 @@ button { cursor: pointer; }
 }
 
 .home-tmdb-tab-row--trailers-pill .home-tmdb-tab--active {
-  background: #032541;
+  background: var(--brand-pill-active);
   color: #ffffff;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.35);
+  box-shadow: var(--brand-pill-glow);
 }
 
 @media (max-width: 900px) {
@@ -1393,12 +1409,11 @@ button { cursor: pointer; }
   display: flex;
   flex-wrap: nowrap;
   align-items: center;
-  justify-content: space-between;
-  gap: 0.75rem 1.25rem;
+  justify-content: flex-start;
+  gap: 0.45rem 0.65rem;
   margin-bottom: var(--space-md);
   width: 100%;
 }
-/** 与「最新预告片」标题行同一逻辑：左「热门」、右胶囊 */
 .home-tmdb-rail-head--tmdb-popular {
   box-sizing: border-box;
 }
@@ -1410,6 +1425,10 @@ button { cursor: pointer; }
   margin: 0;
   flex-shrink: 0;
 }
+/** 渐变标题与右侧胶囊紧挨；不设 min-width 防把 Tab 挤太远 */
+.home-tmdb-rail-title.brand-text-gradient {
+  line-height: 1.15;
+}
 .home-tmdb-rail-pill-row {
   display: inline-flex;
   flex-wrap: wrap;
@@ -1418,8 +1437,9 @@ button { cursor: pointer; }
   padding: 4px 6px;
   border-radius: 999px;
   background: var(--home-rail-pill-track);
+  border: 1px solid rgba(236, 72, 153, 0.22);
   margin-left: 0;
-  justify-content: flex-end;
+  justify-content: flex-start;
   flex: 0 1 auto;
   min-width: 0;
   max-width: min(100%, 920px);
@@ -1454,9 +1474,9 @@ button { cursor: pointer; }
   color: var(--text-primary);
 }
 .home-tmdb-rail-pill--active {
-  background: #032541;
+  background: var(--brand-pill-active);
   color: #fff;
-  box-shadow: 0 2px 10px rgba(3, 37, 65, 0.28);
+  box-shadow: var(--brand-pill-glow);
 }
 .home-tmdb-carousel--rail {
   overflow: visible;
@@ -2496,7 +2516,9 @@ button { cursor: pointer; }
   margin-bottom: var(--space-2xl);
 }
 
-.auth-split__logo:hover { color: var(--accent); }
+.auth-split__logo.brand-text-gradient:hover {
+  filter: brightness(1.07) saturate(1.06);
+}
 
 /* 右侧：海报拼图 + 青蓝品牌渐变遮罩（与主按钮同色体系） */
 .auth-split__brand {

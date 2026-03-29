@@ -49,8 +49,8 @@ export default function HomeTmdbRails() {
     <section className="home-tmdb-rail-section">
       <div className="home-tmdb-section__inner home-tmdb-rail-section__inner">
         <div className="home-tmdb-rail-head home-tmdb-rail-head--tmdb-popular">
-          <h2 className="home-tmdb-rail-title">热门</h2>
-          <div className="home-tmdb-rail-pill-row" role="tablist" aria-label="热门分类">
+          <h2 className="home-tmdb-rail-title brand-text-gradient">火龙果影视</h2>
+          <div className="home-tmdb-rail-pill-row" role="tablist" aria-label="片单分类">
             {TREND_TABS.map((t) => (
               <button
                 key={t.key}

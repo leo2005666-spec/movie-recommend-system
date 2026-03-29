@@ -301,7 +301,7 @@ export default function Home() {
           <div className="home-tmdb-trailer-bg-gradient" />
         </div>
         <div className="home-tmdb-section__inner home-tmdb-section__inner--trailers">
-          <div className="home-tmdb-row__head home-tmdb-row__head--on-dark home-tmdb-row__head--trailers-tight home-tmdb-row__head--popular-line">
+          <div className="home-tmdb-row__head home-tmdb-row__head--on-dark home-tmdb-row__head--trailers-tight">
             <h2 className="home-tmdb-row__title">最新预告片</h2>
             <div
               className="home-tmdb-tab-row home-tmdb-tab-row--trailers-inline home-tmdb-tab-row--trailers-pill"

@@ -78,8 +78,8 @@ export default function Layout() {
       <header
         className={`header${headerScrollHidden ? ' header--scroll-hidden' : ''}${isAuthPage ? ' header--auth-minimal' : ''}`}
       >
-        <Link to="/" className="logo">
-          影视推荐
+        <Link to="/" className="logo brand-text-gradient" title="火龙果影视">
+          火龙果影视
         </Link>
         {!isAuthPage && (
         <nav className="nav" aria-label="主导航">

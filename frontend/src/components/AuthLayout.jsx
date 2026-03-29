@@ -10,7 +10,7 @@ export default function AuthLayout({
   sideTitle = '欢迎回来',
   sideDesc = '发现你喜欢的影视',
   sideFeatures = [],
-  /** 左侧是否显示「影视推荐」链接：建议 false，顶栏已有 Logo */
+  /** 左侧是否显示站点名链接：建议 false，顶栏已有 Logo */
   showLogo = false,
 }) {
   const mosaic = [...AUTH_PAGE_POSTER_URLS, ...AUTH_PAGE_POSTER_URLS].slice(0, 9);
@@ -19,8 +19,8 @@ export default function AuthLayout({
     <div className="auth-split">
       <div className="auth-split__form">
         {showLogo ? (
-          <Link to="/" className="auth-split__logo">
-            影视推荐
+          <Link to="/" className="auth-split__logo brand-text-gradient">
+            火龙果影视
           </Link>
         ) : null}
         {children}

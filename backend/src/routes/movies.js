@@ -185,16 +185,26 @@ router.post('/from-tmdb/:tmdbId', optionalAuth, asyncHandler(async (req, res) =>
 router.get('/:id/credits', asyncHandler(async (req, res) => {
   const id = parseInt(req.params.id);
   const row = await db.prepare('SELECT tmdb_id FROM movies WHERE id = ?').get(id);
+  const emptyMedia = {
+    videoCount: 0,
+    backdropCount: 0,
+    posterCount: 0,
+    popular: [],
+    videos: [],
+    backdrops: [],
+    posters: [],
+  };
   const emptyData = {
     cast: [], recommendations: [], backdrop_path: null, tagline: null,
     tmdb_details: { original_title: null, status: null, original_language: null, budget: null, revenue: null, keywords: [], tmdb_id: null, homepage: null, facebook_id: null, instagram_id: null, twitter_id: null },
+    media: emptyMedia,
   };
   if (!row?.tmdb_id || !TMDB_API_KEY) {
     return res.json({ code: 0, data: emptyData });
   }
   const langMap = { en: '英语', ja: '日语', ko: '韩语', zh: '中文', 'zh-CN': '中文', fr: '法语', es: '西班牙语', de: '德语', it: '意大利语', pt: '葡萄牙语', ru: '俄语', hi: '印地语', th: '泰语', vi: '越南语', ar: '阿拉伯语', tr: '土耳其语', pl: '波兰语', nl: '荷兰语', sv: '瑞典语', da: '丹麦语', no: '挪威语', fi: '芬兰语' };
   try {
-    const [creditsRes, recRes, detailsRes, keywordsRes, releaseRes, videosRes, externalRes] = await Promise.all([
+    const [creditsRes, recRes, detailsRes, keywordsRes, releaseRes, videosRes, externalRes, imagesRes] = await Promise.all([
       fetch(`https://api.themoviedb.org/3/movie/${row.tmdb_id}/credits?api_key=${TMDB_API_KEY}&language=zh-CN`),
       fetch(`https://api.themoviedb.org/3/movie/${row.tmdb_id}/recommendations?api_key=${TMDB_API_KEY}&language=zh-CN&page=1`),
       fetch(`https://api.themoviedb.org/3/movie/${row.tmdb_id}?api_key=${TMDB_API_KEY}&language=zh-CN`),
@@ -202,6 +212,7 @@ router.get('/:id/credits', asyncHandler(async (req, res) => {
       fetch(`https://api.themoviedb.org/3/movie/${row.tmdb_id}/release_dates?api_key=${TMDB_API_KEY}`),
       fetch(`https://api.themoviedb.org/3/movie/${row.tmdb_id}/videos?api_key=${TMDB_API_KEY}&language=zh-CN`),
       fetch(`https://api.themoviedb.org/3/movie/${row.tmdb_id}/external_ids?api_key=${TMDB_API_KEY}`),
+      fetch(`https://api.themoviedb.org/3/movie/${row.tmdb_id}/images?api_key=${TMDB_API_KEY}`),
     ]);
     const credits = creditsRes.ok ? await creditsRes.json() : {};
     const rec = recRes.ok ? await recRes.json() : {};
@@ -245,11 +256,60 @@ router.get('/:id/credits', asyncHandler(async (req, res) => {
     } catch (_) {}
 
     let trailerUrl = null;
+    let videosJson = {};
     try {
-      const videosJson = videosRes.ok ? await videosRes.json() : {};
+      videosJson = videosRes.ok ? await videosRes.json() : {};
       const trailer = (videosJson.results || []).find((v) => v.type === 'Trailer' && v.site === 'YouTube');
       if (trailer?.key) trailerUrl = `https://www.youtube.com/watch?v=${trailer.key}`;
     } catch (_) {}
+
+    let imagesJson = {};
+    try {
+      imagesJson = imagesRes.ok ? await imagesRes.json() : {};
+    } catch (_) {}
+
+    const backdropRows = imagesJson.backdrops || [];
+    const posterRows = imagesJson.posters || [];
+    const backdrops = backdropRows
+      .slice(0, 40)
+      .map((b) => (b.file_path ? `${TMDB_IMG}/w780${b.file_path}` : null))
+      .filter(Boolean);
+    const posters = posterRows
+      .slice(0, 60)
+      .map((p) => (p.file_path ? `${TMDB_IMG}/w500${p.file_path}` : null))
+      .filter(Boolean);
+
+    const videoList = (videosJson.results || [])
+      .filter((v) => v.site === 'YouTube' && v.key)
+      .slice(0, 30)
+      .map((v) => ({
+        key: v.key,
+        name: v.name || v.type || 'Video',
+        type: v.type || 'Clip',
+        thumb: `https://img.youtube.com/vi/${v.key}/mqdefault.jpg`,
+        url: `https://www.youtube.com/watch?v=${v.key}`,
+      }));
+
+    /** 「最热门」横条：先横版再竖版交错，贴近 TMDB 媒体区 */
+    const popular = [];
+    const maxPop = 24;
+    let bi = 0;
+    let pi = 0;
+    while (popular.length < maxPop && (bi < backdrops.length || pi < posters.length)) {
+      if (bi < backdrops.length) popular.push({ url: backdrops[bi++], kind: 'backdrop' });
+      if (popular.length >= maxPop) break;
+      if (pi < posters.length) popular.push({ url: posters[pi++], kind: 'poster' });
+    }
+
+    const media = {
+      videoCount: videoList.length,
+      backdropCount: backdropRows.length,
+      posterCount: posterRows.length,
+      popular,
+      videos: videoList,
+      backdrops,
+      posters,
+    };
 
     let externalIds = {};
     try {
@@ -273,7 +333,7 @@ router.get('/:id/credits', asyncHandler(async (req, res) => {
       instagram_id: externalIds.instagram_id || null,
       twitter_id: externalIds.twitter_id || null,
     };
-    res.json({ code: 0, data: { cast, recommendations, backdrop_path, tagline, tmdb_details } });
+    res.json({ code: 0, data: { cast, recommendations, backdrop_path, tagline, tmdb_details, media } });
   } catch (e) {
     res.json({ code: 0, data: emptyData });
   }

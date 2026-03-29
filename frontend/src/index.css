@@ -5716,7 +5716,7 @@ a.admin-dashboard-card--link:hover {
   align-items: flex-start;
   justify-content: flex-start;
   width: 100%;
-  max-width: 1280px;
+  max-width: 1600px;
   margin: 0 auto;
 }
 
@@ -6024,8 +6024,8 @@ a.admin-dashboard-card--link:hover {
   display: grid;
   grid-template-columns: 1fr 280px;
   gap: var(--space-2xl);
-  padding: var(--space-2xl) var(--space-xl);
-  max-width: 1280px;
+  padding: var(--space-2xl) var(--space-lg);
+  max-width: 1600px;
   margin: 0 auto;
 }
 .detail-page--tmdb-light .detail-body {
@@ -6534,6 +6534,265 @@ a.admin-dashboard-card--link:hover {
   }
   .cast-character--filmstrip {
     font-size: 0.7rem;
+  }
+}
+
+/* 详情页 · 媒体横条（TMDB：标题 + Tab 下划线 + 横向无缝图带） */
+.detail-section--media {
+  margin-top: var(--space-2xl);
+}
+.detail-media-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 1rem 1.75rem;
+  margin-bottom: 0.75rem;
+}
+.detail-media-bar__title {
+  margin: 0;
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: #0f172a;
+  letter-spacing: -0.01em;
+  line-height: 1.2;
+}
+.detail-media-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0 1.5rem;
+}
+.detail-media-tab {
+  margin: 0;
+  padding: 0.4rem 0 0.5rem;
+  font: inherit;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  color: #0f172a;
+  background: none;
+  border: none;
+  border-bottom: 3px solid transparent;
+  cursor: pointer;
+  border-radius: 0;
+  transition: color 0.15s, border-color 0.15s;
+}
+.detail-media-tab:hover:not(:disabled) {
+  color: #000;
+}
+.detail-media-tab--active {
+  font-weight: 700;
+  border-bottom-color: #0f172a;
+}
+.detail-media-tab:disabled {
+  opacity: 0.38;
+  cursor: not-allowed;
+}
+.detail-media-gallery {
+  margin: 0 -2px;
+}
+.detail-media-strip {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  gap: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+}
+.detail-media-strip::-webkit-scrollbar {
+  height: 6px;
+}
+.detail-media-strip::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 3px;
+}
+.detail-media-img {
+  display: block;
+  flex-shrink: 0;
+  height: 280px;
+  width: auto;
+  max-width: none;
+  object-fit: cover;
+  vertical-align: middle;
+}
+.detail-media-img--poster {
+  height: 320px;
+}
+.detail-media-img--first {
+  border-radius: 8px 0 0 8px;
+}
+.detail-media-empty {
+  margin: 0.75rem 0 0;
+}
+.detail-media-footer-line {
+  height: 0;
+  margin-top: 1.25rem;
+  border: 0;
+  border-top: 1px solid #e5e7eb;
+}
+.detail-media-strip--videos {
+  gap: 0.75rem;
+  padding-bottom: 0.25rem;
+}
+.detail-media-video {
+  flex: 0 0 auto;
+  width: min(280px, 72vw);
+  text-decoration: none;
+  color: inherit;
+  position: relative;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 10px rgba(15, 23, 42, 0.1);
+}
+.detail-media-video__thumb {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  background: #1e293b;
+}
+.detail-media-video__play {
+  position: absolute;
+  left: 50%;
+  top: 42%;
+  transform: translate(-50%, -50%);
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.62);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.35);
+  pointer-events: none;
+}
+.detail-media-video__play::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-40%, -50%);
+  border-style: solid;
+  border-width: 8px 0 8px 14px;
+  border-color: transparent transparent transparent #fff;
+}
+.detail-media-video__cap {
+  display: block;
+  font-size: 0.8125rem;
+  color: #475569;
+  padding: 0.35rem 0.5rem 0.5rem;
+  line-height: 1.35;
+  background: #fff;
+}
+
+/* 详情页 · 评论卡片（TMDB 风：头像 + 标题下划线 + 深蓝评分条 + 中文日期） */
+.detail-section--comments {
+  margin-top: var(--space-2xl);
+}
+.social-form--tmdb .btn-tmdb-publish {
+  width: 100%;
+  max-width: 100%;
+  padding: 0.65rem 1rem;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: #ffffff;
+  background: #01b4e4;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.15s, filter 0.15s;
+}
+.social-form--tmdb .btn-tmdb-publish:hover:not(:disabled) {
+  background: #0099c7;
+  filter: none;
+}
+.social-form--tmdb .btn-tmdb-publish:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+.detail-page--tmdb-light .social-discuss-list {
+  gap: 1rem;
+}
+.tmdb-review-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.875rem;
+  padding: 1rem 1.1rem;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+}
+.tmdb-review-card .user-avatar--img,
+.tmdb-review-card .user-avatar--fallback {
+  flex-shrink: 0;
+  border-radius: 50%;
+  object-fit: cover;
+  display: block;
+}
+.tmdb-review-card__body {
+  flex: 1;
+  min-width: 0;
+  position: relative;
+  padding-right: 4.5rem;
+}
+.tmdb-review-card__head {
+  margin-bottom: 0.25rem;
+}
+.tmdb-review-card__title-line {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #0f172a;
+  line-height: 1.35;
+  padding-bottom: 0.35rem;
+  margin-bottom: 0.45rem;
+  border-bottom: 1px solid #e5e7eb;
+}
+.tmdb-review-card__subline {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+}
+.tmdb-review-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.15rem;
+  padding: 0.2rem 0.5rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  line-height: 1.2;
+  color: #ffffff;
+  background: #032541;
+  border-radius: 5px;
+}
+.tmdb-review-meta {
+  font-size: 0.875rem;
+  font-weight: 400;
+  color: #666666;
+  line-height: 1.4;
+}
+.tmdb-review-card__text {
+  margin: 0.75rem 0 0;
+  font-size: 0.9375rem;
+  line-height: 1.65;
+  color: #1e293b;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.tmdb-review-card__delete {
+  position: absolute;
+  top: 0.5rem;
+  right: 0;
+  padding: 0.2rem 0.5rem;
+  font-size: 0.75rem;
+}
+
+@media (max-width: 768px) {
+  .tmdb-review-card__body {
+    padding-right: 0;
+  }
+  .tmdb-review-card__delete {
+    position: static;
+    margin-top: 0.75rem;
   }
 }
 

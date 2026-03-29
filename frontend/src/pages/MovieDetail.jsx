@@ -6,8 +6,27 @@ import { api, getCoverUrl } from '../api/request';
 import { normalizeMovieListResponse } from '../utils/recommendApi';
 import UserAvatar from '../components/UserAvatar';
 import DetailPageLoading from '../components/DetailPageLoading';
+import MovieDetailMedia from '../components/detail/MovieDetailMedia';
 
 const SCENE_SIMILAR = 'similar';
+
+/** 评论日期：TMDB 式中文 */
+function formatReviewDate(iso) {
+  if (!iso) return '';
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return String(iso);
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y} 年 ${m} 月 ${day} 日`;
+}
+
+/** 站内 0.5–5 分 → 百分制角标 */
+function scoreToPercent(score) {
+  const n = Number(score);
+  if (!Number.isFinite(n) || n <= 0) return null;
+  return Math.min(100, Math.round(n * 20));
+}
 
 /** 片长格式：108 → "1h 48m" */
 function formatRuntime(mins) {
@@ -27,6 +46,7 @@ export default function MovieDetail() {
   const [backdropPath, setBackdropPath] = useState(null);
   const [tagline, setTagline] = useState(null);
   const [tmdbDetails, setTmdbDetails] = useState(null);
+  const [detailMedia, setDetailMedia] = useState(null);
   const [comments, setComments] = useState([]);
   const [commentTotal, setCommentTotal] = useState(0);
   const [commentPage, setCommentPage] = useState(1);
@@ -76,6 +96,7 @@ export default function MovieDetail() {
   useEffect(() => {
     if (!id) return;
     let cancelled = false;
+    setDetailMedia(null);
     setCommentPage(1);
     loadCommentsPage(1, false);
     Promise.all([
@@ -89,6 +110,7 @@ export default function MovieDetail() {
       setBackdropPath(cd.backdrop_path || null);
       setTagline(cd.tagline || null);
       setTmdbDetails(cd.tmdb_details || null);
+      setDetailMedia(cd.media || null);
       const list = normalizeMovieListResponse(recRes);
       setSimilar(list);
       if (list.length > 0 && user) {
@@ -343,53 +365,61 @@ export default function MovieDetail() {
             </section>
           )}
 
-          {/* 用户评论（原「评价/讨论」为同一列表，合并为一栏） */}
-          <section className="detail-section">
+          <MovieDetailMedia media={detailMedia} />
+
+          {/* 用户评论（TMDB 风格卡片头 + 正文） */}
+          <section className="detail-section detail-section--comments">
             <h2 className="section-title">
               评论 {commentTotal > 0 ? `(${commentTotal})` : comments.length > 0 ? `(${comments.length})` : ''}
             </h2>
             {user && (
-              <form onSubmit={handleComment} className="social-form">
+              <form onSubmit={handleComment} className="social-form social-form--tmdb">
                 <textarea className="form-textarea form-input" value={commentContent} onChange={(e) => setCommentContent(e.target.value)} placeholder="写下你的影评…" rows={3} maxLength={2000} />
-                <button type="submit" className="btn">发表</button>
+                <button type="submit" className="btn btn-tmdb-publish">发表</button>
               </form>
             )}
             {!user && <p className="empty-hint" style={{ marginBottom: 'var(--space-md)' }}><Link to="/login">登录</Link>后可以评论</p>}
             <div className="social-discuss-list">
-              {comments.map((c) => (
-                <div key={c.id} className="social-discuss-item">
-                  <div className="social-discuss-avatar">
+              {comments.map((c) => {
+                const pct = scoreToPercent(c.rating_score);
+                return (
+                  <div key={c.id} className="tmdb-review-card">
                     <UserAvatar
                       userId={c.user_id}
                       username={c.username}
                       avatar={c.avatar}
                       avatarStyle={c.avatar_style}
-                      size={40}
+                      size={48}
+                      className="tmdb-review-card__avatar-wrap"
                     />
-                  </div>
-                  <div className="social-discuss-content">
-                    <div className="social-discuss-title-row">
-                      <div className="social-discuss-title">{c.content.length > 80 ? c.content.slice(0, 80) + '…' : c.content}</div>
+                    <div className="tmdb-review-card__body">
+                      <div className="tmdb-review-card__head">
+                        <div className="tmdb-review-card__title-line">
+                          {c.username} 的评价
+                        </div>
+                        <div className="tmdb-review-card__subline">
+                          {pct != null && (
+                            <span className="tmdb-review-badge">★ {pct}%</span>
+                          )}
+                          <span className="tmdb-review-meta">
+                            {c.username} 写于 {formatReviewDate(c.created_at)}
+                          </span>
+                        </div>
+                      </div>
+                      <p className="tmdb-review-card__text">{c.content}</p>
                       {user && Number(c.user_id) === Number(user.id) && (
                         <button
                           type="button"
-                          className="btn btn-outline comment-delete-btn"
+                          className="btn btn-outline comment-delete-btn tmdb-review-card__delete"
                           onClick={() => handleDeleteComment(c.id)}
                         >
                           删除
                         </button>
                       )}
                     </div>
-                    <div className="social-discuss-meta">
-                      <span>开放</span>
-                      <span>·</span>
-                      <span>{c.username}</span>
-                      <span>·</span>
-                      <span>{c.created_at}</span>
-                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
             {comments.length === 0 && !commentsBusy && <p className="empty-hint">暂无评论</p>}
             {commentTotal > comments.length && (

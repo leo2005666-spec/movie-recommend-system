@@ -36,9 +36,11 @@ router.get('/movie/:movieId', optionalAuth, asyncHandler(async (req, res) => {
 
   const list = await db.prepare(`
     SELECT c.id, c.user_id, u.username, u.avatar, u.avatar_style,
-           c.content, c.created_at
+           c.content, c.created_at,
+           r.score AS rating_score
     FROM comments c
     INNER JOIN users u ON c.user_id = u.id
+    LEFT JOIN ratings r ON r.user_id = c.user_id AND r.movie_id = c.movie_id
     WHERE c.movie_id = ?
     ORDER BY c.id DESC LIMIT ? OFFSET ?
   `).all(movieId, limit, offset);

@@ -1028,9 +1028,9 @@ button { cursor: pointer; }
 }
 
 .home-tmdb-section--cinematic .home-tmdb-trailer-bg-img {
-  filter: blur(26px) saturate(1.08);
-  transform: scale(1.08);
-  opacity: 0.4;
+  filter: blur(14px) saturate(1.06);
+  transform: scale(1.05);
+  opacity: 0.52;
   animation: none;
 }
 

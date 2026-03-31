@@ -2612,7 +2612,6 @@ a.brand-text-gradient:hover {
   object-fit: cover;
   display: block;
   filter: saturate(1.06);
-  content-visibility: auto;
 }
 
 .auth-split__filmflow-ph {
@@ -4106,6 +4105,11 @@ a.brand-text-gradient:hover {
 .movie-card__cover-wrap {
   position: relative;
   display: block;
+  width: 100%;
+  aspect-ratio: 2 / 3;
+  overflow: hidden;
+  border-radius: var(--poster-card-radius) var(--poster-card-radius) 0 0;
+  flex-shrink: 0;
 }
 
 /* TMDB 风格 · 封面左下角评分圆环（半重叠到信息区） */
@@ -4301,11 +4305,17 @@ a.brand-text-gradient:hover {
 }
 
 .movie-card .cover {
-  aspect-ratio: 2 / 3;
-  background: var(--bg-muted);
-  object-fit: cover;
   width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  background: var(--bg-muted);
   display: block;
+}
+
+.movie-card__cover-wrap > .cover {
+  position: absolute;
+  inset: 0;
 }
 
 .movie-card .meta {

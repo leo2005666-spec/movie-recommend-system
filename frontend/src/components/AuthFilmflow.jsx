@@ -4,7 +4,10 @@ import { AUTH_PAGE_POSTER_URLS, splitPostersIntoColumns } from '../constants/aut
 
 /** 3 列：更少 DOM、滚动更省资源 */
 const COLS = 3;
-const MAX_POSTERS = 36;
+/** 控制总图数量，避免一次并发过多；条带内需 eager，不宜过大 */
+const MAX_POSTERS = 24;
+/** 封面宽度：登录侧卡片不大，略小像素加快首包 */
+const COVER_W = 220;
 /** 各列滚动周期（秒），略拉长减轻卡顿感 */
 const DURATIONS_SEC = [56, 72, 64];
 const DELAY_SEC = [0, -22, -11];
@@ -18,23 +21,60 @@ function shuffle(arr) {
   return a;
 }
 
+function normTitle(t) {
+  return String(t || '')
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, '');
+}
+
+/** TMDB 路径最后一段，避免同一图不同尺寸被当成多部 */
+function posterPathToken(url) {
+  if (!url || typeof url !== 'string') return '';
+  const s = url.split('?')[0];
+  const seg = s.split('/').filter(Boolean).pop();
+  return seg || s;
+}
+
 /**
- * 同一影片只保留一条：按本地 id；封面 URL 也去重（避免库内脏数据两张片同封面）
+ * 同一影片只保留一条：本地 id、tmdb_id、规范化标题、封面 URL、海报文件 token 任一重复则丢弃
  */
 function uniqueCoverUrlsFromMovies(movies) {
-  const byId = new Map();
+  const out = [];
+  const seenId = new Set();
+  const seenTmdb = new Set();
+  const seenTitle = new Set();
   const seenCover = new Set();
+  const seenToken = new Set();
+
   for (const m of movies) {
     if (!m || m.id == null) continue;
     const id = Number(m.id);
     if (!Number.isFinite(id) || id <= 0) continue;
-    if (byId.has(id)) continue;
-    const u = getCoverUrl(m, { w: 300 });
+    if (seenId.has(id)) continue;
+
+    const tid = m.tmdb_id != null ? Number(m.tmdb_id) : null;
+    if (tid != null && Number.isFinite(tid) && tid > 0) {
+      if (seenTmdb.has(tid)) continue;
+    }
+
+    const tkey = normTitle(m.title);
+    if (tkey && seenTitle.has(tkey)) continue;
+
+    const u = getCoverUrl(m, { w: COVER_W });
     if (!u || seenCover.has(u)) continue;
+
+    const ftoken = posterPathToken(u);
+    if (ftoken && seenToken.has(ftoken)) continue;
+
+    seenId.add(id);
+    if (tid != null && Number.isFinite(tid) && tid > 0) seenTmdb.add(tid);
+    if (tkey) seenTitle.add(tkey);
     seenCover.add(u);
-    byId.set(id, u);
+    if (ftoken) seenToken.add(ftoken);
+    out.push(u);
   }
-  return [...byId.values()];
+  return out;
 }
 
 function resolvePosterSrc(raw) {
@@ -43,7 +83,8 @@ function resolvePosterSrc(raw) {
   return raw;
 }
 
-function FlowPoster({ posterUrl, fallbackPool }) {
+/** 条带在 overflow 内滚动，lazy 常导致解码很晚；首若干张优先加载 */
+function FlowPoster({ posterUrl, fallbackPool, priority }) {
   const [attempt, setAttempt] = useState(0);
   const chain = useMemo(() => {
     const first = posterUrl;
@@ -67,9 +108,10 @@ function FlowPoster({ posterUrl, fallbackPool }) {
       src={src}
       alt=""
       className="auth-split__filmflow-img"
-      loading="lazy"
+      loading="eager"
       decoding="async"
       draggable={false}
+      {...(priority ? { fetchPriority: 'high' } : {})}
       onError={() => setAttempt((a) => a + 1)}
     />
   );
@@ -84,7 +126,7 @@ export default function AuthFilmflow() {
       try {
         const [r1, r2] = await Promise.all([
           api.get('/movies', { page: 1, limit: 80, orderBy: 'rating_desc' }),
-          api.get('/movies', { page: 2, limit: 80, orderBy: 'rating_desc' }),
+          api.get('/movies', { page: 2, limit: 80, orderBy: 'release_desc' }),
         ]);
         const list = [
           ...(Array.isArray(r1?.data?.list) ? r1.data.list : []),
@@ -106,7 +148,18 @@ export default function AuthFilmflow() {
 
   const columns = useMemo(() => splitPostersIntoColumns(posterPool, COLS), [posterPool]);
 
-  const fallbackPool = useMemo(() => [...new Set(posterPool.length ? posterPool : AUTH_PAGE_POSTER_URLS)], [posterPool]);
+  const fallbackPool = useMemo(() => {
+    const raw = posterPool.length ? posterPool : AUTH_PAGE_POSTER_URLS;
+    const uniq = [];
+    const seen = new Set();
+    for (const u of raw) {
+      const t = posterPathToken(u);
+      if (!u || seen.has(t)) continue;
+      seen.add(t);
+      uniq.push(u);
+    }
+    return uniq;
+  }, [posterPool]);
 
   return (
     <div className="auth-split__filmflow" aria-hidden>
@@ -125,7 +178,11 @@ export default function AuthFilmflow() {
             >
               {loop.map((url, i) => (
                 <div key={`${colIdx}-${i}-${url}`} className="auth-split__filmflow-cell">
-                  <FlowPoster posterUrl={url} fallbackPool={fallbackPool} />
+                  <FlowPoster
+                    posterUrl={url}
+                    fallbackPool={fallbackPool}
+                    priority={i < 8}
+                  />
                 </div>
               ))}
             </div>

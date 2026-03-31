@@ -9,6 +9,8 @@ const router = express.Router();
 
 const ALLOWED_HOSTS = new Set([
   'image.tmdb.org',
+  /** TMDB 官网奖项页等使用的图片 CDN（与 image.tmdb.org 并存） */
+  'media.themoviedb.org',
   'logo.clearbit.com',
   'www.google.com',
 ]);

@@ -6910,6 +6910,10 @@ a.admin-dashboard-card--link:hover {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
   flex-shrink: 0;
 }
+.movie-awards-header__poster--ph {
+  height: 108px;
+  background: linear-gradient(145deg, #e2e8f0 0%, #cbd5e1 100%);
+}
 .movie-awards-header__title {
   margin: 0 0 0.35rem;
   font-size: 1.35rem;

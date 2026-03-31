@@ -20,6 +20,7 @@ const Profile = lazy(() => import('./pages/Profile'));
 const MyRatings = lazy(() => import('./pages/MyRatings'));
 const MyComments = lazy(() => import('./pages/MyComments'));
 const ActorDetail = lazy(() => import('./pages/ActorDetail'));
+const ActorAwardsPage = lazy(() => import('./pages/ActorAwardsPage'));
 const MyFavorites = lazy(() => import('./pages/MyFavorites'));
 const MyLogs = lazy(() => import('./pages/MyLogs'));
 const Feedback = lazy(() => import('./pages/Feedback'));
@@ -65,6 +66,7 @@ export default function App() {
             <Route path="movies/collection/:tmdbCollectionId" element={<MovieCollection />} />
             <Route path="movies/:id/awards" element={<MovieAwards />} />
             <Route path="movies/:id" element={<MovieDetail />} />
+            <Route path="actors/:tmdbId/awards" element={<ActorAwardsPage />} />
             <Route path="actors/:tmdbId" element={<ActorDetail />} />
             <Route path="recommend" element={<Recommend />} />
             <Route path="charts" element={<Charts />} />

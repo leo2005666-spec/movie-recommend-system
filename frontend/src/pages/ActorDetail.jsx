@@ -10,6 +10,12 @@ import {
 import { api } from '../api/request';
 import DetailPageLoading from '../components/DetailPageLoading';
 
+/** TMDB w92 海报条用更清晰尺寸 */
+function railPosterUrl(thumb) {
+  if (!thumb || typeof thumb !== 'string') return '';
+  return thumb.includes('/w92/') ? thumb.replace('/w92/', '/w185/') : thumb;
+}
+
 export default function ActorDetail() {
   const { tmdbId } = useParams();
   const [payload, setPayload] = useState(null);
@@ -45,6 +51,9 @@ export default function ActorDetail() {
     });
     return rows;
   }, [filmography, filterMode, sortMode]);
+
+  /** 横向「知名作品」：与当前筛选/排序一致，取前若干条 */
+  const knownRailRows = useMemo(() => displayRows.slice(0, 16), [displayRows]);
 
   if (loading) {
     return <DetailPageLoading />;
@@ -198,11 +207,53 @@ export default function ActorDetail() {
             </section>
           ) : null}
 
+          {knownRailRows.length > 0 && (
+            <section className="actor-page__section actor-page__card card" aria-labelledby="actor-known-heading">
+              <h2 id="actor-known-heading" className="actor-page__h2">
+                知名作品
+              </h2>
+              <div className="actor-page__known-scroll" role="list">
+                {knownRailRows.map((row) => (
+                  <div key={row.tmdb_id} className="actor-page__known-cell" role="listitem">
+                    {row.in_library && row.local_id ? (
+                      <Link to={`/movies/${row.local_id}`} className="actor-page__known-link">
+                        <div className="actor-page__known-poster-wrap">
+                          {row.poster_thumb ? (
+                            <img src={railPosterUrl(row.poster_thumb)} alt="" className="actor-page__known-poster" loading="lazy" decoding="async" />
+                          ) : (
+                            <div className="actor-page__known-poster actor-page__known-poster--placeholder" aria-hidden />
+                          )}
+                        </div>
+                        <span className="actor-page__known-title">{row.title}</span>
+                      </Link>
+                    ) : (
+                      <a
+                        href={`https://www.themoviedb.org/movie/${row.tmdb_id}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="actor-page__known-link actor-page__known-link--external"
+                      >
+                        <div className="actor-page__known-poster-wrap">
+                          {row.poster_thumb ? (
+                            <img src={railPosterUrl(row.poster_thumb)} alt="" className="actor-page__known-poster" loading="lazy" decoding="async" />
+                          ) : (
+                            <div className="actor-page__known-poster actor-page__known-poster--placeholder" aria-hidden />
+                          )}
+                        </div>
+                        <span className="actor-page__known-title">{row.title}</span>
+                      </a>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
+
           <section className="actor-page__section actor-page__card card">
             <div className="actor-page__film-head">
               <h2 className="actor-page__h2">
                 <ListBulletsIcon size={22} weight="duotone" className="actor-page__h2-icon" />
-                表演作品
+                全部作品
               </h2>
               <div className="actor-page__film-filters">
                 <label className="actor-page__filter">

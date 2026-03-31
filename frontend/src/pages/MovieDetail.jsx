@@ -58,6 +58,11 @@ export default function MovieDetail() {
   const [submitting, setSubmitting] = useState(false);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState('');
+
+  const scrollToRating = useCallback(() => {
+    document.querySelector('.score-btns')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }, []);
+
   const load = () => {
     api.get(`/movies/${id}`)
       .then((r) => {
@@ -258,8 +263,15 @@ export default function MovieDetail() {
                   <span>用户评分</span>
                   {user && (
                     <div className="detail-feel-row">
-                      <span className="detail-emojis detail-emojis--static" aria-hidden="true">😊 🥱</span>
-                      <button type="button" className="detail-feel-btn" onClick={() => document.querySelector('.score-btns')?.scrollIntoView({ behavior: 'smooth' })}>
+                      <div className="detail-emoji-btns" role="group" aria-label="快速表达观感">
+                        <button type="button" className="detail-emoji-btn" title="去评分" aria-label="思考中，前往评分" onClick={scrollToRating}>
+                          🧐
+                        </button>
+                        <button type="button" className="detail-emoji-btn" title="去评分" aria-label="喜欢，前往评分" onClick={scrollToRating}>
+                          😍
+                        </button>
+                      </div>
+                      <button type="button" className="detail-feel-btn" onClick={scrollToRating}>
                         你的感觉如何? <span aria-label="信息">ℹ️</span>
                       </button>
                     </div>

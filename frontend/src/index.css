@@ -5798,12 +5798,46 @@ a.admin-dashboard-card--link:hover {
   padding-top: var(--space-sm);
 }
 
-/* 评分旁表情：纯装饰，不可点击 */
+/* 评分旁表情：纯装饰（若仍使用） */
 .detail-emojis--static {
   pointer-events: none;
   user-select: none;
   cursor: default;
   -webkit-user-select: none;
+}
+
+/* Hero：🧐 😍 可点击，略大于正文，跳转评分区 */
+.detail-hero .detail-feel-row {
+  align-items: center;
+  gap: 0.35rem;
+}
+.detail-hero .detail-emoji-btns {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.05rem;
+}
+.detail-hero .detail-emoji-btn {
+  font-size: 1.55rem;
+  line-height: 1;
+  padding: 0.12rem 0.28rem;
+  margin: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  border-radius: 8px;
+  transition: background 0.15s ease, transform 0.12s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+.detail-hero .detail-emoji-btn:hover {
+  background: rgba(255, 255, 255, 0.14);
+  transform: scale(1.08);
+}
+.detail-hero .detail-emoji-btn:focus-visible {
+  outline: 2px solid rgba(255, 255, 255, 0.7);
+  outline-offset: 2px;
+}
+.detail-hero .detail-emoji-btn:active {
+  transform: scale(0.96);
 }
 
 .detail-layout {
@@ -7282,7 +7316,7 @@ a.admin-dashboard-card--link:hover {
   text-align: center;
 }
 .actor-page__link-sub:hover {
-  color: #0ea5e9;
+  color: var(--accent);
 }
 
 .actor-page__sidebar-foot {
@@ -7362,7 +7396,7 @@ a.admin-dashboard-card--link:hover {
   color: #0f172a;
 }
 .actor-page__h2-icon {
-  color: #0ea5e9;
+  color: var(--accent);
   flex-shrink: 0;
 }
 
@@ -7376,7 +7410,7 @@ a.admin-dashboard-card--link:hover {
 .actor-page__bio-toggle {
   background: none;
   border: none;
-  color: #0ea5e9;
+  color: var(--accent);
   cursor: pointer;
   font-size: 0.9rem;
   font-weight: 500;
@@ -7384,6 +7418,72 @@ a.admin-dashboard-card--link:hover {
   display: inline-flex;
   align-items: center;
   gap: 0.25rem;
+}
+
+.actor-page__known-scroll {
+  display: flex;
+  gap: 0.85rem;
+  overflow-x: auto;
+  padding: 0.15rem 0.15rem 0.65rem;
+  scroll-snap-type: x proximity;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+}
+.actor-page__known-scroll::-webkit-scrollbar {
+  height: 6px;
+}
+.actor-page__known-scroll::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 3px;
+}
+.actor-page__known-cell {
+  flex: 0 0 118px;
+  width: 118px;
+  min-width: 118px;
+  scroll-snap-align: start;
+}
+.actor-page__known-link {
+  display: block;
+  text-decoration: none;
+  color: inherit;
+  transition: transform 0.15s ease;
+}
+.actor-page__known-link:hover {
+  transform: translateY(-2px);
+}
+.actor-page__known-link:hover .actor-page__known-title {
+  color: var(--accent);
+}
+.actor-page__known-poster-wrap {
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.12);
+  margin-bottom: 0.45rem;
+  background: #e2e8f0;
+  aspect-ratio: 2 / 3;
+}
+.actor-page__known-poster {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.actor-page__known-poster--placeholder {
+  min-height: 100%;
+  background: linear-gradient(145deg, #e2e8f0, #cbd5e1);
+}
+.actor-page__known-title {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #0f172a;
+  line-height: 1.3;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.actor-page__known-link--external .actor-page__known-title {
+  color: #334155;
 }
 
 .actor-page__film-head {

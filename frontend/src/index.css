@@ -1032,6 +1032,23 @@ a.brand-text-gradient:hover {
 .home-tmdb-carousel__cell .movie-card {
   width: 100%;
   max-width: 175px;
+  display: flex;
+  flex-direction: column;
+}
+
+/* 首页横滑卡片：信息区固定高度，避免标题行数差异导致视觉上“封面高低不一” */
+.home-tmdb-carousel__cell .movie-card .info {
+  min-height: 106px;
+}
+.home-tmdb-carousel__cell .movie-card .title {
+  line-height: 1.35;
+  max-height: calc(1.35em * 2);
+  min-height: calc(1.35em * 2);
+  overflow: hidden;
+}
+.home-tmdb-carousel__cell .movie-card .movie-card__date-line {
+  display: block;
+  min-height: 1.2em;
 }
 
 @media (max-width: 640px) {
@@ -1042,6 +1059,9 @@ a.brand-text-gradient:hover {
   }
   .home-tmdb-carousel__cell .movie-card {
     max-width: 150px;
+  }
+  .home-tmdb-carousel__cell .movie-card .info {
+    min-height: 98px;
   }
 }
 

@@ -1,5 +1,5 @@
-import { useMemo, useState } from 'react';
-import { getProxiedImageUrl } from '../api/request';
+import { useEffect, useMemo, useState } from 'react';
+import { api, getCoverUrl, getProxiedImageUrl } from '../api/request';
 import { AUTH_PAGE_POSTER_URLS, splitPostersIntoColumns } from '../constants/authPagePosters';
 
 const COLS = 4;
@@ -9,11 +9,12 @@ const DELAY_SEC = [0, -18, -9, -24];
 
 function FlowPoster({ url, pool }) {
   const ib = pool.indexOf(url);
-  const base = ib >= 0 ? ib : 0;
+  const baseIndex = ib >= 0 ? ib : 0;
   const [skip, setSkip] = useState(0);
   const [dead, setDead] = useState(false);
-  const idx = (base + skip) % pool.length;
-  const src = getProxiedImageUrl(pool[idx]);
+  const idx = (baseIndex + skip) % pool.length;
+  const raw = pool[idx];
+  const src = /^https?:\/\//i.test(raw) ? getProxiedImageUrl(raw) : raw;
 
   if (dead) {
     return <div className="auth-split__filmflow-ph" aria-hidden />;
@@ -41,7 +42,36 @@ function FlowPoster({ url, pool }) {
 }
 
 export default function AuthFilmflow() {
-  const columns = useMemo(() => splitPostersIntoColumns(AUTH_PAGE_POSTER_URLS, COLS), []);
+  const [posterPool, setPosterPool] = useState(AUTH_PAGE_POSTER_URLS);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const r = await api.get('/movies', { page: 1, limit: 120, orderBy: 'rating_desc' });
+        const list = Array.isArray(r?.data?.list) ? r.data.list : [];
+        const covers = [];
+        const seen = new Set();
+        for (const m of list) {
+          if (!m?.id) continue;
+          const key = `${m.tmdb_id || ''}-${m.id}-${m.title || ''}`;
+          if (seen.has(key)) continue;
+          seen.add(key);
+          covers.push(getCoverUrl(m, { w: 342 }));
+        }
+        if (!cancelled && covers.length >= 16) {
+          setPosterPool(covers);
+        }
+      } catch {
+        /* 保持 TMDB 备用池 */
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const columns = useMemo(() => splitPostersIntoColumns(posterPool, COLS), [posterPool]);
 
   return (
     <div className="auth-split__filmflow" aria-hidden>
@@ -60,7 +90,7 @@ export default function AuthFilmflow() {
             >
               {loop.map((url, i) => (
                 <div key={`${colIdx}-${i}`} className="auth-split__filmflow-cell">
-                  <FlowPoster url={url} pool={AUTH_PAGE_POSTER_URLS} />
+                  <FlowPoster url={url} pool={posterPool} />
                 </div>
               ))}
             </div>

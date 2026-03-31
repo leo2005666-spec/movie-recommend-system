@@ -2,13 +2,14 @@ import { useMemo, useState } from 'react';
 import { getProxiedImageUrl } from '../api/request';
 import { AUTH_PAGE_POSTER_URLS, splitPostersIntoColumns } from '../constants/authPagePosters';
 
-const COLS = 3;
+const COLS = 4;
 /** 各列滚动周期（秒），错开避免齐步 */
-const DURATIONS_SEC = [48, 62, 54];
-const DELAY_SEC = [0, -20, -10];
+const DURATIONS_SEC = [46, 60, 52, 68];
+const DELAY_SEC = [0, -18, -9, -24];
 
 function FlowPoster({ url, pool }) {
-  const base = Math.max(0, pool.indexOf(url));
+  const ib = pool.indexOf(url);
+  const base = ib >= 0 ? ib : 0;
   const [skip, setSkip] = useState(0);
   const [dead, setDead] = useState(false);
   const idx = (base + skip) % pool.length;

@@ -60,6 +60,7 @@ export default function UserAvatar({
   if (src) {
     return (
       <img
+        key={src}
         src={src}
         alt=""
         width={size}
@@ -71,19 +72,29 @@ export default function UserAvatar({
     );
   }
 
+  const fs = `max(12px, ${Number(size) * 0.42}px)`;
+
   return (
     <span
       className={`user-avatar user-avatar--fallback ${className}`.trim()}
       style={{
         width: dim,
         height: dim,
+        minWidth: dim,
+        minHeight: dim,
         background: p.bg,
         color: p.fg,
-        fontSize: `max(12px, ${Number(size) * 0.38}px)`,
+        display: 'inline-flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        overflow: 'hidden',
+        fontFamily: "'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', system-ui, sans-serif",
       }}
       aria-hidden
     >
-      {letter}
+      <span className="user-avatar__glyph" style={{ fontSize: fs, fontWeight: 600, color: 'inherit' }}>
+        {letter}
+      </span>
     </span>
   );
 }

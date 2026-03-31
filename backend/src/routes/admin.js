@@ -6,6 +6,7 @@ const express = require('express');
 const db = require('../db/db');
 const { authMiddleware, requireAdmin } = require('../middleware/auth');
 const { asyncHandler } = require('../utils/asyncHandler');
+const { mapCommentUserAvatar } = require('../utils/userPublic');
 
 const router = express.Router();
 router.use(authMiddleware, requireAdmin);
@@ -59,9 +60,9 @@ router.get('/explore/comments', asyncHandler(async (req, res) => {
   const limit = Math.min(100, Math.max(1, parseInt(req.query.limit, 10) || 20));
   const offset = (page - 1) * limit;
   const total = (await db.prepare('SELECT COUNT(*) as n FROM comments').get())?.n ?? 0;
-  const list = await db.prepare(`
+  const rows = await db.prepare(`
     SELECT c.id, c.user_id, c.movie_id, c.content, c.created_at,
-           u.username, u.avatar, u.avatar_style,
+           u.username, u.avatar, u.avatar_data, u.avatar_style,
            m.title as movie_title
     FROM comments c
     LEFT JOIN users u ON c.user_id = u.id
@@ -69,6 +70,7 @@ router.get('/explore/comments', asyncHandler(async (req, res) => {
     ORDER BY c.created_at DESC
     LIMIT ? OFFSET ?
   `).all(limit, offset);
+  const list = rows.map(mapCommentUserAvatar);
   res.json({ code: 0, data: { list, total, page, limit } });
 }));
 
@@ -81,9 +83,9 @@ router.get('/explore/favorites', asyncHandler(async (req, res) => {
   const limit = Math.min(100, Math.max(1, parseInt(req.query.limit, 10) || 20));
   const offset = (page - 1) * limit;
   const total = (await db.prepare('SELECT COUNT(*) as n FROM favorites').get())?.n ?? 0;
-  const list = await db.prepare(`
+  const rows = await db.prepare(`
     SELECT f.id, f.user_id, f.movie_id, f.created_at,
-           u.username, u.avatar, u.avatar_style,
+           u.username, u.avatar, u.avatar_data, u.avatar_style,
            m.title as movie_title
     FROM favorites f
     LEFT JOIN users u ON f.user_id = u.id
@@ -91,6 +93,7 @@ router.get('/explore/favorites', asyncHandler(async (req, res) => {
     ORDER BY f.created_at DESC
     LIMIT ? OFFSET ?
   `).all(limit, offset);
+  const list = rows.map(mapCommentUserAvatar);
   res.json({ code: 0, data: { list, total, page, limit } });
 }));
 

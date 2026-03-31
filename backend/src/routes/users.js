@@ -12,28 +12,20 @@ const db = require('../db/db');
 const { authMiddleware, requireAdmin } = require('../middleware/auth');
 const { logActivity } = require('../middleware/log');
 const { asyncHandler } = require('../utils/asyncHandler');
+const { stripUserForClient } = require('../utils/userPublic');
 
-/** 头像上传单文件上限（字节），与前端提示一致 */
-const AVATAR_MAX_BYTES = 10 * 1024 * 1024;
+/** 头像写入数据库（base64 data URL），避免 Render 等 ephemeral 磁盘导致「上传后丢失」 */
+const AVATAR_MAX_BYTES = 600 * 1024;
 
 const avatarsDir = path.join(__dirname, '../../uploads/avatars');
 fs.mkdirSync(avatarsDir, { recursive: true });
 
-const avatarStorage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, avatarsDir),
-  filename: (req, file, cb) => {
-    const ext = (path.extname(file.originalname) || '.jpg').toLowerCase();
-    const safe = ['.jpg', '.jpeg', '.png', '.gif', '.webp'].includes(ext) ? ext : '.jpg';
-    cb(null, `u${req.user.id}-${Date.now()}${safe}`);
-  },
-});
-
 const uploadAvatar = multer({
-  storage: avatarStorage,
+  storage: multer.memoryStorage(),
   limits: { fileSize: AVATAR_MAX_BYTES },
   fileFilter: (req, file, cb) => {
     if (/^image\/(jpeg|png|gif|webp)$/.test(file.mimetype)) return cb(null, true);
-    cb(new Error('仅支持 jpg、png、gif、webp 图片，单张不超过 10MB'));
+    cb(new Error('仅支持 jpg、png、gif、webp 图片，单张不超过 600KB'));
   },
 });
 
@@ -46,17 +38,20 @@ router.post(
   (req, res, next) => {
     uploadAvatar.single('avatar')(req, res, (err) => {
       if (err) {
-        const msg = err.code === 'LIMIT_FILE_SIZE' ? '图片不能超过 10MB' : (err.message || '上传失败');
+        const msg = err.code === 'LIMIT_FILE_SIZE' ? '图片不能超过 600KB，请压缩后重试' : (err.message || '上传失败');
         return res.status(400).json({ code: 400, message: msg });
       }
       next();
     });
   },
   asyncHandler(async (req, res) => {
-    if (!req.file) {
+    if (!req.file || !req.file.buffer) {
       return res.status(400).json({ code: 400, message: '请选择图片文件' });
     }
-    const publicPath = `/uploads/avatars/${req.file.filename}`;
+    const buf = req.file.buffer;
+    const mime = req.file.mimetype || 'image/jpeg';
+    const dataUrl = `data:${mime};base64,${buf.toString('base64')}`;
+
     const row = await db.prepare('SELECT avatar FROM users WHERE id = ?').get(req.user.id);
     const prev = row?.avatar;
     if (prev && String(prev).startsWith('/uploads/avatars/')) {
@@ -67,22 +62,29 @@ router.post(
         /* 忽略旧文件删除失败 */
       }
     }
-    await db.prepare('UPDATE users SET avatar = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?').run(publicPath, req.user.id);
+    await db.prepare(
+      'UPDATE users SET avatar = NULL, avatar_data = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?'
+    ).run(dataUrl, req.user.id);
+    try {
+      db.save();
+    } catch (_) {
+      /* sql.js 定期也会 save，此处尽力立即落盘 */
+    }
     await logActivity(req, 'UPDATE_USER', 'user', req.user.id, '上传头像');
-    const user = await db.prepare(
-      'SELECT id, username, email, avatar, avatar_style, role FROM users WHERE id = ?'
+    const raw = await db.prepare(
+      'SELECT id, username, email, avatar, avatar_data, avatar_style, role, updated_at FROM users WHERE id = ?'
     ).get(req.user.id);
-    res.json({ code: 0, data: user });
+    res.json({ code: 0, data: stripUserForClient(raw) });
   })
 );
 
 // 获取当前用户信息（展示名即用户名）
 router.get('/me', asyncHandler(async (req, res) => {
   const user = await db.prepare(
-    'SELECT id, username, email, avatar, avatar_style, role, created_at FROM users WHERE id = ?'
+    'SELECT id, username, email, avatar, avatar_data, avatar_style, role, created_at, updated_at FROM users WHERE id = ?'
   ).get(req.user.id);
   if (!user) return res.status(404).json({ code: 404, message: '用户不存在' });
-  res.json({ code: 0, data: user });
+  res.json({ code: 0, data: stripUserForClient(user) });
 }));
 
 // 获取当前用户统计（收藏、评分、评论数）
@@ -112,8 +114,8 @@ router.get('/me/comments', asyncHandler(async (req, res) => {
   const limit = Math.min(50, Math.max(5, parseInt(req.query.limit, 10) || 20));
   const offset = (page - 1) * limit;
 
-  const list = await db.prepare(`
-    SELECT c.id, c.movie_id, c.content, c.created_at,
+  const rows = await db.prepare(`
+    SELECT c.id, c.movie_id, c.content, c.created_at, c.images,
            m.title, m.cover, m.release_year
     FROM comments c
     INNER JOIN movies m ON c.movie_id = m.id
@@ -121,6 +123,22 @@ router.get('/me/comments', asyncHandler(async (req, res) => {
     ORDER BY c.created_at DESC
     LIMIT ? OFFSET ?
   `).all(req.user.id, limit, offset);
+
+  const list = rows.map((row) => {
+    let images = [];
+    if (row.images) {
+      try {
+        const p = JSON.parse(row.images);
+        if (Array.isArray(p)) {
+          images = p.filter((x) => typeof x === 'string' && /^data:image\//i.test(x));
+        }
+      } catch (_) {
+        /* ignore */
+      }
+    }
+    const { images: _raw, ...rest } = row;
+    return { ...rest, images };
+  });
 
   const total = (await db.prepare('SELECT COUNT(*) as n FROM comments WHERE user_id = ?').get(req.user.id)).n;
   res.json({ code: 0, data: { list, total, page, limit } });
@@ -175,10 +193,10 @@ router.put(
     values.push(req.user.id);
     await db.prepare(`UPDATE users SET ${updates.join(', ')} WHERE id = ?`).run(...values);
     await logActivity(req, 'UPDATE_USER', 'user', req.user.id, '修改个人信息');
-    const user = await db.prepare(
-      'SELECT id, username, email, avatar, avatar_style, role FROM users WHERE id = ?'
+    const raw = await db.prepare(
+      'SELECT id, username, email, avatar, avatar_data, avatar_style, role, updated_at FROM users WHERE id = ?'
     ).get(req.user.id);
-    res.json({ code: 0, data: user });
+    res.json({ code: 0, data: stripUserForClient(raw) });
   })
 );
 

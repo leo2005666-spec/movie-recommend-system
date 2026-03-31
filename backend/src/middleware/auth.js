@@ -4,6 +4,7 @@
 const jwt = require('jsonwebtoken');
 const db = require('../db/db');
 const { asyncHandler } = require('../utils/asyncHandler');
+const { stripUserForClient } = require('../utils/userPublic');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'movie-recommend-secret-key-2024';
 
@@ -19,12 +20,12 @@ const authMiddleware = asyncHandler(async (req, res, next) => {
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
     const user = await db.prepare(
-      'SELECT id, username, email, avatar, avatar_style, role FROM users WHERE id = ?'
+      'SELECT id, username, email, avatar, avatar_data, avatar_style, role, updated_at FROM users WHERE id = ?'
     ).get(decoded.userId);
     if (!user) {
       return res.status(401).json({ code: 401, message: '用户不存在' });
     }
-    req.user = user;
+    req.user = stripUserForClient(user);
     next();
   } catch (err) {
     return res.status(401).json({ code: 401, message: '登录已过期，请重新登录' });
@@ -43,9 +44,9 @@ const optionalAuth = asyncHandler(async (req, res, next) => {
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
     const user = await db.prepare(
-      'SELECT id, username, email, avatar, avatar_style, role FROM users WHERE id = ?'
+      'SELECT id, username, email, avatar, avatar_data, avatar_style, role, updated_at FROM users WHERE id = ?'
     ).get(decoded.userId);
-    if (user) req.user = user;
+    if (user) req.user = stripUserForClient(user);
   } catch (_) {}
   next();
 });

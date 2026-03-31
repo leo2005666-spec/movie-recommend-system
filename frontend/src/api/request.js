@@ -82,14 +82,19 @@ export function upgradeTmdbImageUrl(url, size = 'w500') {
 }
 
 /**
- * 用户头像地址：支持外链 http(s) 与本站上传路径 /uploads/...
- * 生产环境若 VITE_API_BASE 为完整域名（如 https://xxx/api），会自动拼成后端域名下的静态地址。
+ * 用户头像地址：支持外链 http(s)、/uploads/…、以及内联头像接口 /api/users/:id/avatar
+ * 前后端分离时须配置 VITE_API_BASE=https://后端域名/api；此处用 BASE 与路径拼接，避免 img 请求到静态站导致 404。
  */
 export function getAvatarUrl(avatar) {
   if (!avatar || typeof avatar !== 'string') return '';
   const s = avatar.trim();
   if (!s) return '';
   if (/^https?:\/\//i.test(s)) return s;
+  if (s.startsWith('/api/')) {
+    const base = (import.meta.env.VITE_API_BASE || '/api').replace(/\/$/, '');
+    const rest = s.replace(/^\/api/, '');
+    return `${base}${rest}`;
+  }
   if (s.startsWith('/uploads/')) {
     const origin = getBackendOrigin();
     return origin ? `${origin}${s}` : s;

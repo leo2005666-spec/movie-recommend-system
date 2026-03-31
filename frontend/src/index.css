@@ -418,7 +418,7 @@ a.brand-text-gradient:hover {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  line-height: 0;
+  line-height: 1;
 }
 .header-user-avatar__ua.user-avatar--fallback {
   border-radius: 50%;
@@ -449,6 +449,18 @@ a.brand-text-gradient:hover {
 }
 .user-avatar--fallback {
   border-radius: 50%;
+  user-select: none;
+}
+/* 首字在圆内几何居中（中英混排时修正视觉偏移） */
+.user-avatar__glyph {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  line-height: 1;
+  transform: translateY(0.06em);
+  font-style: normal;
 }
 .header-user-link__text {
   display: inline-flex;
@@ -2605,6 +2617,21 @@ a.brand-text-gradient:hover {
   height: 100%;
   min-height: 80px;
   background: linear-gradient(145deg, rgba(255, 255, 255, 0.14) 0%, rgba(255, 255, 255, 0.04) 100%);
+}
+
+@media (max-width: 720px) {
+  .auth-split__filmflow-col:nth-child(4) {
+    display: none;
+  }
+}
+@media (max-width: 480px) {
+  .auth-split__filmflow-col:nth-child(3) {
+    display: none;
+  }
+  .auth-split__filmflow {
+    gap: 6px;
+    padding: 0 6px;
+  }
 }
 
 .auth-split__brand-scrim {
@@ -7355,6 +7382,65 @@ a.admin-dashboard-card--link:hover {
   opacity: 0.65;
   cursor: not-allowed;
 }
+.comment-compose-tools {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0.5rem 0 0.35rem;
+}
+.comment-compose-tools__input {
+  position: absolute;
+  width: 0;
+  height: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+.comment-compose-tools__pick {
+  font-size: 0.8125rem;
+  padding: 0.35rem 0.75rem;
+}
+.comment-compose-previews {
+  list-style: none;
+  margin: 0 0 0.75rem;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+.comment-compose-previews__item {
+  position: relative;
+  width: 76px;
+  height: 76px;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid #e2e8f0;
+  flex-shrink: 0;
+}
+.comment-compose-previews__item img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.comment-compose-previews__remove {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  width: 22px;
+  height: 22px;
+  border: none;
+  border-radius: 50%;
+  background: rgba(15, 23, 42, 0.55);
+  color: #fff;
+  font-size: 15px;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
 .detail-page--tmdb-light .social-discuss-list {
   gap: 1rem;
 }
@@ -7368,12 +7454,25 @@ a.admin-dashboard-card--link:hover {
   border-radius: 8px;
   box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
 }
-.tmdb-review-card .user-avatar--img,
-.tmdb-review-card .user-avatar--fallback {
+.tmdb-review-card .user-avatar--img {
   flex-shrink: 0;
   border-radius: 50%;
   object-fit: cover;
   display: block;
+}
+/* 勿用 display:block 覆盖 fallback，否则首字无法在圆内居中 */
+.tmdb-review-card .user-avatar--fallback {
+  flex-shrink: 0;
+  border-radius: 50%;
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  text-align: center;
+  box-sizing: border-box;
+}
+.tmdb-review-card .user-avatar__glyph {
+  transform: translateY(0.05em);
 }
 .tmdb-review-card__body {
   flex: 1;
@@ -7424,6 +7523,29 @@ a.admin-dashboard-card--link:hover {
   color: #1e293b;
   white-space: pre-wrap;
   word-break: break-word;
+}
+.tmdb-review-card__images {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.65rem;
+}
+.tmdb-review-card__images a {
+  display: block;
+  border-radius: 8px;
+  overflow: hidden;
+  max-width: 140px;
+  flex: 0 0 auto;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.12);
+  border: 1px solid #e2e8f0;
+}
+.tmdb-review-card__images img {
+  width: 100%;
+  height: auto;
+  vertical-align: middle;
+  display: block;
+  object-fit: cover;
+  aspect-ratio: 4 / 3;
 }
 .tmdb-review-card__delete {
   position: absolute;

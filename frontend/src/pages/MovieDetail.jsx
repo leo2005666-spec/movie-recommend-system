@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import MovieCard, { getScoreColor } from '../components/MovieCard';
 import { useAuth } from '../context/AuthContext';
@@ -11,6 +11,17 @@ import TmdbAwardsListing from '../components/TmdbAwardsListing';
 import { castNameInitial, castPlaceholderGradient } from '../utils/castCard';
 
 const SCENE_SIMILAR = 'similar';
+const MAX_COMMENT_IMAGES = 4;
+const MAX_COMMENT_IMG_BYTES = 450 * 1024;
+
+function readFileAsDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    const fr = new FileReader();
+    fr.onload = () => resolve(fr.result);
+    fr.onerror = reject;
+    fr.readAsDataURL(file);
+  });
+}
 
 /** 评论日期：TMDB 式中文 */
 function formatReviewDate(iso) {
@@ -59,6 +70,9 @@ export default function MovieDetail() {
   const [commentPage, setCommentPage] = useState(1);
   const [commentsBusy, setCommentsBusy] = useState(false);
   const [commentContent, setCommentContent] = useState('');
+  /** 待发评论配图：data URL，与后端存库一致，避免仅前端临时图 */
+  const [commentImages, setCommentImages] = useState([]);
+  const commentFileInputRef = useRef(null);
   const [score, setScore] = useState(0);
   const [submitting, setSubmitting] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -201,12 +215,43 @@ export default function MovieDetail() {
     }
   };
 
+  const onCommentImagesChange = async (e) => {
+    const files = Array.from(e.target.files || []);
+    e.target.value = '';
+    if (!files.length) return;
+    setErr('');
+    const next = [...commentImages];
+    for (const f of files) {
+      if (next.length >= MAX_COMMENT_IMAGES) break;
+      if (!/^image\/(jpeg|png|gif|webp)$/i.test(f.type)) {
+        setErr('配图仅支持 jpg、png、gif、webp');
+        return;
+      }
+      if (f.size > MAX_COMMENT_IMG_BYTES) {
+        setErr('单张配图须小于 450KB，请压缩后重试');
+        return;
+      }
+      try {
+        next.push(await readFileAsDataUrl(f));
+      } catch {
+        setErr('读取图片失败');
+        return;
+      }
+    }
+    setCommentImages(next);
+  };
+
   const handleComment = async (e) => {
     e.preventDefault();
     if (!user || !commentContent.trim()) return;
     try {
-      await api.post('/comments', { movieId: parseInt(id), content: commentContent.trim() });
+      await api.post('/comments', {
+        movieId: parseInt(id, 10),
+        content: commentContent.trim(),
+        images: commentImages.length > 0 ? commentImages : undefined,
+      });
       setCommentContent('');
+      setCommentImages([]);
       setCommentPage(1);
       loadCommentsPage(1, false);
     } catch (e) {
@@ -509,6 +554,42 @@ export default function MovieDetail() {
             {user && (
               <form onSubmit={handleComment} className="social-form social-form--tmdb">
                 <textarea className="form-textarea form-input" value={commentContent} onChange={(e) => setCommentContent(e.target.value)} placeholder="写下你的影评…" rows={3} maxLength={2000} />
+                <div className="comment-compose-tools">
+                  <input
+                    ref={commentFileInputRef}
+                    type="file"
+                    className="comment-compose-tools__input"
+                    accept="image/jpeg,image/png,image/gif,image/webp"
+                    multiple
+                    disabled={commentImages.length >= MAX_COMMENT_IMAGES}
+                    onChange={onCommentImagesChange}
+                  />
+                  <button
+                    type="button"
+                    className="btn btn-outline comment-compose-tools__pick"
+                    disabled={commentImages.length >= MAX_COMMENT_IMAGES}
+                    onClick={() => commentFileInputRef.current?.click()}
+                  >
+                    添加配图（{commentImages.length}/{MAX_COMMENT_IMAGES}，每张 &lt;450KB）
+                  </button>
+                </div>
+                {commentImages.length > 0 && (
+                  <ul className="comment-compose-previews">
+                    {commentImages.map((src, i) => (
+                      <li key={i} className="comment-compose-previews__item">
+                        <img src={src} alt="" />
+                        <button
+                          type="button"
+                          className="comment-compose-previews__remove"
+                          aria-label="移除配图"
+                          onClick={() => setCommentImages((prev) => prev.filter((_, j) => j !== i))}
+                        >
+                          ×
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
                 <button type="submit" className="btn btn-tmdb-publish">发表</button>
               </form>
             )}
@@ -541,6 +622,15 @@ export default function MovieDetail() {
                         </div>
                       </div>
                       <p className="tmdb-review-card__text">{c.content}</p>
+                      {Array.isArray(c.images) && c.images.length > 0 && (
+                        <div className="tmdb-review-card__images">
+                          {c.images.map((src, ii) => (
+                            <a key={ii} href={src} target="_blank" rel="noopener noreferrer" title="查看大图">
+                              <img src={src} alt="" loading="lazy" decoding="async" />
+                            </a>
+                          ))}
+                        </div>
+                      )}
                       {user && Number(c.user_id) === Number(user.id) && (
                         <button
                           type="button"

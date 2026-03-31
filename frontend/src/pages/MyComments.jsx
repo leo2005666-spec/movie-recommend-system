@@ -64,6 +64,15 @@ export default function MyComments() {
                   <span className="my-comments-card__date">{row.created_at}</span>
                 </div>
                 <p className="my-comments-card__content">{row.content}</p>
+                {Array.isArray(row.images) && row.images.length > 0 && (
+                  <div className="my-comments-card__images">
+                    {row.images.map((src, j) => (
+                      <a key={j} href={src} target="_blank" rel="noopener noreferrer" className="my-comments-card__imgwrap">
+                        <img src={src} alt="" loading="lazy" decoding="async" />
+                      </a>
+                    ))}
+                  </div>
+                )}
                 <Link to={`/movies/${row.movie_id}`} className="my-comments-card__goto">
                   查看影片页 →
                 </Link>

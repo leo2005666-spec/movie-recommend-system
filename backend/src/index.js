@@ -21,7 +21,7 @@ async function start() {
 
   const app = express();
   app.use(cors({ origin: true }));
-  app.use(express.json());
+  app.use(express.json({ limit: '8mb' }));
 
   const uploadsRoot = path.join(__dirname, '../uploads');
   if (!fs.existsSync(uploadsRoot)) {
@@ -47,6 +47,9 @@ async function start() {
   const actorsRouter = require('./routes/actors');
   const proxyImgRouter = require('./routes/proxyImg');
   const tmdbListsRouter = require('./routes/tmdbLists');
+
+  const userAvatarPublic = require('./routes/userAvatarPublic');
+  app.get('/api/users/:id/avatar', userAvatarPublic);
 
   app.use('/api/auth', authRouter);
   app.use('/api/users', usersRouter);

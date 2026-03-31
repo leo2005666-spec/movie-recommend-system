@@ -10,6 +10,7 @@ const db = require('../db/db');
 const { JWT_SECRET } = require('../middleware/auth');
 const log = require('../middleware/log');
 const { asyncHandler } = require('../utils/asyncHandler');
+const { stripUserForClient } = require('../utils/userPublic');
 const router = express.Router();
 
 // 注册（用户名+密码即可，无邮箱）
@@ -38,11 +39,11 @@ router.post(
       const { id: newId } = await db.prepare('SELECT last_insert_rowid() as id').get();
       const style = Math.abs(Number(newId) * 17 + username.length) % 12;
       await db.prepare('UPDATE users SET avatar_style = ? WHERE id = ?').run(style, newId);
-      const user = await db.prepare(
-        'SELECT id, username, email, avatar, avatar_style, role FROM users WHERE username = ?'
+      const userRow = await db.prepare(
+        'SELECT id, username, email, avatar, avatar_data, avatar_style, role, updated_at FROM users WHERE username = ?'
       ).get(username);
-      const token = jwt.sign({ userId: user.id }, JWT_SECRET, { expiresIn: '7d' });
-      res.json({ code: 0, data: { user, token } });
+      const token = jwt.sign({ userId: userRow.id }, JWT_SECRET, { expiresIn: '7d' });
+      res.json({ code: 0, data: { user: stripUserForClient(userRow), token } });
     } catch (e) {
       const isUnique = e.code === 'SQLITE_CONSTRAINT_UNIQUE' || (e.message && /unique|UNIQUE/i.test(e.message));
       if (isUnique) {
@@ -73,7 +74,7 @@ router.post(
       return res.status(401).json({ code: 401, message: '用户名或密码错误' });
     }
     const token = jwt.sign({ userId: user.id }, JWT_SECRET, { expiresIn: '7d' });
-    const { password: _, nickname: __, ...safeUser } = user;
+    const safeUser = stripUserForClient(user);
     if (safeUser.avatar === undefined) safeUser.avatar = null;
     await log.logActivity(req, 'LOGIN', 'user', user.id, '用户登录');
     res.json({ code: 0, data: { user: safeUser, token } });

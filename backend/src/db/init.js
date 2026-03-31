@@ -175,6 +175,16 @@ async function run() {
   } catch (_) {
     /* 列已存在 */
   }
+  try {
+    await db.exec('ALTER TABLE users ADD COLUMN avatar_data TEXT');
+  } catch (_) {
+    /* 列已存在 */
+  }
+  try {
+    await db.exec('ALTER TABLE comments ADD COLUMN images TEXT');
+  } catch (_) {
+    /* 列已存在 */
+  }
   await db.exec(`
     UPDATE users SET avatar_style = (ABS(id * 17 + LENGTH(COALESCE(username,''))) % 12)
     WHERE avatar_style IS NULL

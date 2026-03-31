@@ -9,6 +9,7 @@ import {
 } from '@phosphor-icons/react';
 import { api } from '../api/request';
 import DetailPageLoading from '../components/DetailPageLoading';
+import ActorAwardsSection from '../components/ActorAwardsSection';
 
 /** TMDB w92 海报条用更清晰尺寸 */
 function railPosterUrl(thumb) {
@@ -167,22 +168,6 @@ export default function ActorDetail() {
         </aside>
 
         <div className="actor-page__main">
-          {tmdb_person_url && (
-            <a
-              href={tmdb_person_url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="actor-page__awards-banner"
-            >
-              <span className="actor-page__awards-stars">★</span>
-              <span className="actor-page__awards-title">AWARDS &amp; INFO</span>
-              <span className="actor-page__awards-desc">在 TMDB 查看完整获奖、提名与更多作品</span>
-              <span className="actor-page__awards-arrow" aria-hidden>
-                →
-              </span>
-            </a>
-          )}
-
           <h1 className="actor-page__name">{person.name}</h1>
 
           {bio ? (
@@ -248,6 +233,8 @@ export default function ActorDetail() {
               </div>
             </section>
           )}
+
+          <ActorAwardsSection tmdbId={tmdbId} />
 
           <section className="actor-page__section actor-page__card card">
             <div className="actor-page__film-head">

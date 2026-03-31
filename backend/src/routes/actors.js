@@ -5,10 +5,68 @@
 const express = require('express');
 const db = require('../db/db');
 const { asyncHandler } = require('../utils/asyncHandler');
+const { fetchPersonAwardsFromTmdbWeb, absolutizeTmdbPath } = require('../utils/tmdbPersonAwards');
 
 const router = express.Router();
 const TMDB_API_KEY = process.env.TMDB_API_KEY;
 const TMDB_IMG = 'https://image.tmdb.org/t/p';
+
+/** 人物奖项与提名（解析 TMDB 官网奖项页 HTML，与 TMDB 展示一致） */
+router.get('/:tmdbPersonId/awards', asyncHandler(async (req, res) => {
+  const pid = parseInt(req.params.tmdbPersonId, 10);
+  if (Number.isNaN(pid) || pid < 1) {
+    return res.status(400).json({ code: 400, message: '无效的演员 ID' });
+  }
+
+  let raw;
+  try {
+    raw = await fetchPersonAwardsFromTmdbWeb(pid);
+  } catch (e) {
+    console.error('[actors/awards]', pid, e.message);
+    return res.status(502).json({ code: 502, message: e.message || '拉取 TMDB 奖项页失败' });
+  }
+
+  const tmdbIds = new Set();
+  raw.groups.forEach((g) => {
+    g.entries.forEach((e) => {
+      if (e.movie_tmdb_id) tmdbIds.add(e.movie_tmdb_id);
+    });
+  });
+
+  const localByTmdb = {};
+  if (tmdbIds.size) {
+    const ids = [...tmdbIds];
+    const placeholders = ids.map(() => '?').join(',');
+    const rows = await db.prepare(`SELECT id, tmdb_id FROM movies WHERE tmdb_id IN (${placeholders})`).all(...ids);
+    rows.forEach((r) => {
+      localByTmdb[r.tmdb_id] = r.id;
+    });
+  }
+
+  const groups = raw.groups.map((g) => ({
+    organization_name: g.organization_name,
+    organization_path: g.organization_path,
+    organization_url: absolutizeTmdbPath(g.organization_path),
+    organization_logo_url: g.organization_logo_url,
+    entries: g.entries.map((e) => ({
+      ...e,
+      movie_local_id: e.movie_tmdb_id != null ? localByTmdb[e.movie_tmdb_id] ?? null : null,
+      ceremony_url: absolutizeTmdbPath(e.ceremony_path),
+      category_url: absolutizeTmdbPath(e.category_path),
+    })),
+  }));
+
+  res.json({
+    code: 0,
+    data: {
+      nomination_count: raw.nomination_count,
+      win_count: raw.win_count,
+      summary_text: raw.summary_text,
+      groups,
+      source: raw.source,
+    },
+  });
+}));
 
 router.get('/:tmdbPersonId', asyncHandler(async (req, res) => {
   const pid = parseInt(req.params.tmdbPersonId, 10);

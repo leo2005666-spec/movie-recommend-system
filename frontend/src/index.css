@@ -7649,45 +7649,332 @@ a.admin-dashboard-card--link:hover {
   width: 100%;
 }
 
-.actor-page__awards-banner {
+/* 演员页 · 奖项条 + TMDB 式分组列表（数据来自后端解析 TMDB 官网） */
+.actor-awards-wrap {
+  margin-bottom: 1.5rem;
+}
+.actor-awards-wrap__loading {
+  margin: 0;
+  padding: 0.35rem 0;
+}
+
+.actor-awards-strip {
   display: flex;
   align-items: center;
-  flex-wrap: wrap;
-  gap: 0.65rem 1rem;
-  padding: 0.85rem 1.15rem;
-  margin-bottom: 1.5rem;
+  justify-content: space-between;
+  position: relative;
+  overflow: hidden;
+  min-height: 52px;
+  padding: 0.75rem 1.15rem;
+  padding-right: 5rem;
+  margin-bottom: 0.75rem;
+  border-radius: 8px;
   text-decoration: none;
-  border-radius: 10px;
-  background: linear-gradient(105deg, #0f766e 0%, #134e4a 50%, #0f172a 100%);
-  color: #ecfdf5;
-  box-shadow: 0 8px 28px rgba(15, 23, 42, 0.18);
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
-}
-.actor-page__awards-banner:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.22);
   color: #fff;
+  background: linear-gradient(105deg, #00485a 0%, #065a6e 55%, #0a3d4a 100%);
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.12);
 }
-.actor-page__awards-stars {
-  font-size: 1.1rem;
-  opacity: 0.95;
+.actor-awards-strip:hover {
+  color: #fff;
+  filter: brightness(1.06);
 }
-.actor-page__awards-title {
+.actor-awards-strip__text {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.5rem 1rem;
+}
+.actor-awards-strip__title {
   font-family: Georgia, 'Times New Roman', serif;
   font-weight: 700;
-  font-size: 1rem;
-  letter-spacing: 0.06em;
+  font-size: 1.05rem;
+  letter-spacing: 0.05em;
 }
-.actor-page__awards-desc {
-  flex: 1;
-  font-size: 0.88rem;
+.actor-awards-strip__star {
+  font-size: 0.7em;
   opacity: 0.92;
-  min-width: 200px;
+  vertical-align: 0.15em;
+  margin-right: 0.05rem;
 }
-.actor-page__awards-arrow {
-  font-size: 1.25rem;
-  font-weight: 300;
+.actor-awards-strip__sub {
+  font-size: 0.875rem;
+  font-weight: 500;
+  opacity: 0.95;
+}
+.actor-awards-strip__arrow {
+  margin-left: 0.35rem;
+  font-weight: 400;
+}
+.actor-awards-strip__sparkles {
+  position: absolute;
+  right: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  pointer-events: none;
+}
+.actor-awards-strip__spark {
+  width: 8px;
+  height: 8px;
+  background: #fff;
+  clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
   opacity: 0.85;
+  flex-shrink: 0;
+}
+.actor-awards-strip__spark--lg {
+  width: 14px;
+  height: 14px;
+  opacity: 1;
+}
+.actor-awards-strip__spark--sm {
+  width: 5px;
+  height: 5px;
+}
+
+.actor-awards-tmdb {
+  padding: 1rem 1.1rem 1.5rem;
+}
+.actor-awards-tmdb__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+.actor-awards-tmdb__h-serif {
+  margin: 0;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: clamp(1.75rem, 4vw, 2.25rem);
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  color: #020617;
+}
+.actor-awards-tmdb__summary {
+  margin: 0;
+  font-size: 0.9375rem;
+  color: #64748b;
+}
+.actor-awards-tmdb__rule {
+  border: none;
+  border-top: 1px solid #e2e8f0;
+  margin: 0.75rem 0 1.75rem;
+}
+
+.actor-awards-group {
+  margin-bottom: 3rem;
+}
+.actor-awards-group:last-child {
+  margin-bottom: 0;
+}
+.actor-awards-group__title-row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  margin-bottom: 0.5rem;
+  gap: 0.75rem;
+}
+.actor-awards-group__mob-logo {
+  display: block;
+}
+@media (min-width: 768px) {
+  .actor-awards-group__mob-logo {
+    display: none;
+  }
+}
+.actor-awards-group__logo-sm {
+  width: 64px;
+  height: 64px;
+  object-fit: contain;
+  border-radius: 8px;
+}
+.actor-awards-group__org-link {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: #01b4e4;
+  text-decoration: none;
+}
+.actor-awards-group__org-link:hover {
+  text-decoration: underline;
+}
+
+.actor-awards-group__body {
+  display: flex;
+  flex-direction: row;
+  gap: 1.5rem;
+  align-items: flex-start;
+}
+.actor-awards-group__logo-col {
+  display: none;
+  flex-shrink: 0;
+}
+@media (min-width: 768px) {
+  .actor-awards-group__logo-col {
+    display: block;
+  }
+}
+.actor-awards-group__logo-box {
+  display: block;
+  width: 220px;
+  height: 220px;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 10px 25px rgba(15, 23, 42, 0.12);
+}
+.actor-awards-group__logo-box img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  background: #0f172a;
+}
+.actor-awards-group__logo-ph {
+  width: 220px;
+  height: 220px;
+  border-radius: 12px;
+  background: #e2e8f0;
+}
+
+.actor-awards-group__cards {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  border-radius: 12px;
+  border: 1px solid #d1d5db;
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.08);
+  overflow: hidden;
+  background: #fff;
+}
+
+.actor-awards-card {
+  display: flex;
+  flex-direction: row;
+  gap: 1rem;
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid #d1d5db;
+  align-items: flex-start;
+}
+.actor-awards-card:last-child {
+  border-bottom: none;
+}
+.actor-awards-card__poster {
+  flex-shrink: 0;
+  width: 86px;
+}
+.actor-awards-card__poster img {
+  width: 86px;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  display: block;
+}
+.actor-awards-card__poster-ph {
+  width: 86px;
+  aspect-ratio: 2/3;
+  border-radius: 8px;
+  background: #e2e8f0;
+}
+.actor-awards-card__main {
+  flex: 1;
+  min-width: 0;
+}
+.actor-awards-card__ceremony {
+  margin: 0 0 0.35rem;
+  font-size: 0.9375rem;
+}
+.actor-awards-card__ceremony a {
+  color: #0f172a;
+  text-decoration: none;
+  font-weight: 400;
+}
+.actor-awards-card__ceremony a:hover {
+  text-decoration: underline;
+}
+.actor-awards-card__category-line {
+  margin: 0 0 0.5rem;
+  line-height: 1.45;
+}
+.actor-awards-badge {
+  display: inline-block;
+  padding: 0.15rem 0.5rem;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #fff;
+  vertical-align: middle;
+}
+.actor-awards-badge--win {
+  background: #21d07a;
+}
+.actor-awards-badge--nom {
+  background: #e5e7eb;
+  color: #111827;
+}
+.actor-awards-card__cat-name {
+  font-weight: 700;
+  color: #020617;
+  text-decoration: none;
+}
+.actor-awards-card__cat-name:hover {
+  text-decoration: underline;
+}
+.actor-awards-card__shared-label {
+  margin: 0.75rem 0 0.35rem;
+  font-size: 0.875rem;
+  font-weight: 300;
+  color: #334155;
+}
+.actor-awards-card__shared-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.actor-awards-card__shared-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.35rem;
+}
+.actor-awards-card__shared-av {
+  width: 43px;
+  height: 43px;
+  flex-shrink: 0;
+  border-radius: 8px;
+  overflow: hidden;
+  display: block;
+}
+.actor-awards-card__shared-av img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.actor-awards-card__shared-av--ph {
+  background: #e2e8f0;
+}
+.actor-awards-card__shared-name {
+  font-size: 0.9375rem;
+  font-weight: 300;
+  color: #0f172a;
+  text-decoration: none;
+}
+.actor-awards-card__shared-name:hover {
+  text-decoration: underline;
+}
+.actor-awards-card__year {
+  flex-shrink: 0;
+  min-width: 3.5rem;
+  text-align: right;
+  font-weight: 700;
+  color: #020617;
+  font-size: 0.9375rem;
+  padding-top: 0.15rem;
+}
+@media (max-width: 767px) {
+  .actor-awards-card__year {
+    display: none;
+  }
 }
 
 .actor-page__name {

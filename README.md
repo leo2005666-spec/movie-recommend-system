@@ -218,6 +218,7 @@ npm run fill-covers
 - `/api/users/me/ratings` - **GET** 当前用户已评分影片列表（需登录）
 - `/api/users/me/comments` - **GET** 当前用户影评列表分页（`page`、`limit`，需登录）
 - `/api/actors/:tmdbPersonId` - **GET** TMDB 演员详情（`person`：含 `gender`、`birthday`、`place_of_birth`、`also_known_as`、`homepage`、`imdb_id`、`popularity` 等）+ **`movies`**：本站已入库参演作品 + **`filmography`**：TMDB 参演片单（去重，含 `tmdb_id`、`title`、`release_date`、`release_year_label`、`character`、`poster_thumb`、`in_library`、`local_id`）+ **`tmdb_person_url`**（链到 TMDB 人物页）；需配置 `TMDB_API_KEY`
+- `/api/actors/:tmdbPersonId/awards` - **GET** 演员奖项与提名（解析 TMDB 官网 `/person/{id}/awards?language=zh-CN`，返回 `nomination_count`、`win_count`、`groups[]` 等；影片条目带 `movie_local_id` 若本站已入库）
 - `/api/logs` - 活动日志
 - `/api/tmdb/lists?kind=upcoming|now_playing|popular&region=CN` - **TMDB 电影列表**（`upcoming`/`now_playing` 带 **`region`**，与 tmdb.org 地区一致；服务端约 **5 分钟**缓存）
 - `/api/tmdb/trailer-row?tab=hot|streaming|tv|rent|theaters&region=CN` - **首页「最新预告片」各 Tab**：**全部为未上映/即将上映**（与 TMDB 一致）。电影：`movie/upcoming` 第 1～4 页（`hot`/`streaming`/`rent`/`theaters`）；电视：`discover/tv` + `first_air_date.gte=今天`（尚未首播或即将开播）。缓存键 **v2**，约 **5 分钟** TTL
@@ -319,7 +320,7 @@ npm run fill-covers
 ## 近期调整说明（维护备忘）
 
 - **影视库分页**：列表接口与前端默认 **每页 15 条**，便于 5 列网格 **3 行铺满**。
-- **演员页**：影视详情「演员阵容」中点击演员进入 **`/actors/:tmdbPersonId`**。布局为 **TMDB 式左栏资料 + 右栏片单**，主内容区 **`actor-page--fullbleed`** 与影视库同档 **加宽（约 1680px）**、**横向铺满**（避免窄容器居中）；**系统无衬线字体栈**（含 Noto Sans SC / 苹方 / 微软雅黑）。侧栏：头像、知名领域、参与作品数、性别/生日/出生地/又名、资料完整度、TMDB/IMDb/官网链接。主区：**AWARDS 横幅**（链 TMDB）、生平简介、**表演作品**表格式列表（年份｜圆点｜标题 + 饰演），支持 **全部 / 仅本站已收录** 与 **排序**；已入库链本站详情，未入库链 TMDB。需后端配置 **TMDB_API_KEY**。
+- **演员页**：影视详情「演员阵容」中点击演员进入 **`/actors/:tmdbPersonId`**。布局为 **TMDB 式左栏资料 + 右栏片单**，主内容区 **`actor-page--fullbleed`** 与影视库同档 **加宽（约 1680px）**、**横向铺满**（避免窄容器居中）；**系统无衬线字体栈**（含 Noto Sans SC / 苹方 / 微软雅黑）。侧栏：头像、知名领域、参与作品数、性别/生日/出生地/又名、资料完整度、TMDB/IMDb/官网链接。主区：生平简介、**知名作品**横滑海报轨、其下为 **奖项与提名**：**深色 AWARDS 条**（锚点跳到下方详情）+ **白底 TMDB 式分组列表**（颁奖机构青蓝标题 `#01b4e4`、左侧机构 Logo、右侧卡片含典礼名、绿/灰 **获奖·提名** 角标、类别、影片海报、Shared with 头像行、年份）；数据来自 **`GET /api/actors/:tmdbPersonId/awards`**（后端用 **cheerio** 解析 TMDB 官网人物奖项页 HTML，与官网一致；若 TMDB 改版可能需跟进选择器）。再下为 **全部作品**表格式列表（年份｜圆点｜标题 + 饰演），支持 **全部 / 仅本站已收录** 与 **排序**；已入库链本站详情，未入库链 TMDB。需后端配置 **TMDB_API_KEY**。
 - **个性推荐页**：顶部增加 **沉浸式焦点区**（大背景剧照 + 左文右渐层 + 底部横向海报条），海报条内 **真实推荐与「站内推广位」同卡片样式**（白边高亮当前项），推广文案与图片可在 `frontend/src/constants/recommendSpotlightAds.js` 中配置。
 - **首页横幅**：`MovieBanner` 组件仍保留在工程内，但**首页默认不再使用**；首页改为 **TMDB 式全宽布局**（`main--home-tmdb`）：**最上方 `HomeWelcomeHero`**（`frontend/src/components/home/HomeWelcomeHero.jsx`：白底细搜索条 + 全宽欢迎 Hero + 高清横版背景轮换与影视库 `?keyword=` 联动，详见上文「界面风格」）；**「趋势」**（今日=热门榜 / 本周=一周口碑，胶囊切换 + 底部波形装饰 + **固定 175px 宽**横向轮播）、**「最新预告片」**（数据 **`GET /api/tmdb/lists`**（热门/影院）与 TMDB 同步；悬停横条切换宽幅背景；**16:9** 横条，未入库影片链 TMDB；其余 Tab 为本地人群口味）、**「猜你喜欢」**轻量条带；底部 **「影迷热议」** 合并 **真实热门影评** 与 **`constants/mockHomeReviews.js` 虚拟用户**，营造社区氛围（仅展示，不落库）。
 - **旧版首页大横幅**：若需恢复轮播，可在 `Home.jsx` 中重新引入 `MovieBanner`。

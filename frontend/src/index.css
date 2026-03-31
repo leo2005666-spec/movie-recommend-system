@@ -4102,11 +4102,13 @@ a.brand-text-gradient:hover {
   background: var(--accent);
 }
 
+/* 海报区固定 2:3：用 padding 占位（比单独 aspect-ratio 更稳，避免个别浏览器下绝对定位子项撑破高度） */
 .movie-card__cover-wrap {
   position: relative;
   display: block;
   width: 100%;
-  aspect-ratio: 2 / 3;
+  height: 0;
+  padding-bottom: 150%;
   overflow: hidden;
   border-radius: var(--poster-card-radius) var(--poster-card-radius) 0 0;
   flex-shrink: 0;
@@ -4315,7 +4317,12 @@ a.brand-text-gradient:hover {
 
 .movie-card__cover-wrap > .cover {
   position: absolute;
-  inset: 0;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
 }
 
 .movie-card .meta {

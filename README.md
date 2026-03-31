@@ -22,6 +22,7 @@
 | 影视作品维护 | 新增、修改、删除影视作品 | ✓ |
 | 分类与标签管理 | 按类型、题材分类，便于管理和浏览 | ✓ |
 | 作品详情展示 | 展示影视作品详细介绍 | ✓ |
+| 详情页 · 奖项与合集 | 已绑定 TMDB 的影片：`GET /api/movies/:id/credits` 附带 `awards_meta`（TMDB 奖项页外链、可选 OMDb 提名摘要）与 `collection`（`belongs_to_collection` 拉取系列片单）；前端在媒体区下方展示 **AWARDS** 圆角条（进 `/movies/:id/awards`）与 **合集** 宽幅卡（背景剧照 +「查看合集」，进 `/movies/collection/:tmdbCollectionId`）。OMDb 需在 `backend/.env` 配置 `OMDB_API_KEY` 才有「共 N 项提名」等摘要 | ✓ |
 
 ### （3）推荐与结果展示功能
 | 功能 | 说明 | 实现状态 |

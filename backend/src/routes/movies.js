@@ -30,7 +30,71 @@ function parseTypeKeys(raw) {
 }
 
 const TMDB_API_KEY = process.env.TMDB_API_KEY;
+const OMDB_API_KEY = process.env.OMDB_API_KEY;
 const TMDB_IMG = 'https://image.tmdb.org/t/p';
+
+/** OMDb Awards 字段中尽量解析「提名数」（无则返回 null） */
+function parseNominationCountFromAwardsText(text) {
+  if (!text || typeof text !== 'string') return null;
+  const t = text.trim();
+  const mZh = t.match(/(\d+)\s*项\s*提名/);
+  if (mZh) return parseInt(mZh[1], 10);
+  const mN = t.match(/(\d+)\s+nominations?/i);
+  if (mN) return parseInt(mN[1], 10);
+  const winsNom = t.match(/(\d+)\s+wins?\s*&\s*(\d+)\s+nominations?/i);
+  if (winsNom) return parseInt(winsNom[2], 10);
+  const nomFor = t.match(/[Nn]ominated\s+for\s+(\d+)/);
+  if (nomFor) return parseInt(nomFor[1], 10);
+  return null;
+}
+
+async function fetchOmdbMovieByImdb(imdbId) {
+  if (!OMDB_API_KEY || !imdbId) return null;
+  const id = String(imdbId).startsWith('tt') ? String(imdbId) : `tt${imdbId}`;
+  const url = `https://www.omdbapi.com/?apikey=${encodeURIComponent(OMDB_API_KEY)}&i=${encodeURIComponent(id)}`;
+  const r = await fetch(url, {
+    headers: { 'User-Agent': 'Mozilla/5.0 (compatible; MovieRecommend/1.0)' },
+    signal: AbortSignal.timeout(15000),
+  });
+  if (!r.ok) return null;
+  const j = await r.json();
+  if (!j || j.Response === 'False') return null;
+  return j;
+}
+
+/** TMDB collection/{id} → 前端合集条与合集页 */
+async function fetchTmdbCollectionParts(tmdbCollectionId) {
+  if (!TMDB_API_KEY || !tmdbCollectionId) return null;
+  const url = `https://api.themoviedb.org/3/collection/${tmdbCollectionId}?api_key=${TMDB_API_KEY}&language=zh-CN`;
+  const r = await fetch(url, {
+    headers: { 'User-Agent': 'Mozilla/5.0 (compatible; MovieRecommend/1.0)' },
+    signal: AbortSignal.timeout(20000),
+  });
+  if (!r.ok) return null;
+  const col = await r.json();
+  if (!col || col.id == null) return null;
+  const parts = (col.parts || [])
+    .filter((p) => p && (!p.media_type || p.media_type === 'movie'))
+    .sort((a, b) => String(a.release_date || '').localeCompare(String(b.release_date || '')))
+    .map((p) => {
+      const ours = db.prepare('SELECT id FROM movies WHERE tmdb_id = ?').get(p.id);
+      return {
+        tmdb_id: p.id,
+        title: p.title || p.original_title || '',
+        poster_path: p.poster_path ? `${TMDB_IMG}/w342${p.poster_path}` : null,
+        release_date: p.release_date || null,
+        local_id: ours?.id ?? null,
+      };
+    });
+  return {
+    id: col.id,
+    name: col.name || '',
+    overview: col.overview || '',
+    backdrop_path: col.backdrop_path ? `${TMDB_IMG}/w1280${col.backdrop_path}` : null,
+    poster_path: col.poster_path ? `${TMDB_IMG}/w500${col.poster_path}` : null,
+    parts,
+  };
+}
 
 /** TMDB credits.crew → 详情 Hero 主创网格（与 TMDB 页：姓名+下划线、下一行职位） */
 function buildFeaturedCrew(crew) {
@@ -216,8 +280,13 @@ router.get('/:id/credits', asyncHandler(async (req, res) => {
   };
   const emptyData = {
     cast: [], featured_crew: [], recommendations: [], backdrop_path: null, tagline: null,
-    tmdb_details: { original_title: null, status: null, original_language: null, budget: null, revenue: null, keywords: [], tmdb_id: null, homepage: null, facebook_id: null, instagram_id: null, twitter_id: null },
+    tmdb_details: {
+      original_title: null, status: null, original_language: null, budget: null, revenue: null, keywords: [], tmdb_id: null,
+      homepage: null, facebook_id: null, instagram_id: null, twitter_id: null, imdb_id: null,
+    },
     media: emptyMedia,
+    collection: null,
+    awards_meta: { tmdb_awards_url: null, nomination_count: null, omdb_awards_text: null },
   };
   if (!row?.tmdb_id || !TMDB_API_KEY) {
     return res.json({ code: 0, data: emptyData });
@@ -338,6 +407,35 @@ router.get('/:id/credits', asyncHandler(async (req, res) => {
     } catch (_) {}
 
     const origLang = details.original_language || null;
+    const imdbId = externalIds.imdb_id || null;
+
+    let collection = null;
+    try {
+      const bc = details.belongs_to_collection;
+      if (bc && bc.id) {
+        collection = await fetchTmdbCollectionParts(bc.id);
+      }
+    } catch (_) {}
+
+    let omdbAwardsText = null;
+    let nominationCount = null;
+    if (imdbId && OMDB_API_KEY) {
+      try {
+        const omdb = await fetchOmdbMovieByImdb(imdbId);
+        const aw = omdb?.Awards;
+        if (aw && String(aw).trim() && String(aw).trim() !== 'N/A') {
+          omdbAwardsText = String(aw).trim();
+          nominationCount = parseNominationCountFromAwardsText(omdbAwardsText);
+        }
+      } catch (_) {}
+    }
+
+    const awards_meta = {
+      tmdb_awards_url: `https://www.themoviedb.org/movie/${row.tmdb_id}/awards`,
+      nomination_count: nominationCount,
+      omdb_awards_text: omdbAwardsText,
+    };
+
     const tmdb_details = {
       tmdb_id: row.tmdb_id,
       original_title: details.original_title || null,
@@ -353,13 +451,110 @@ router.get('/:id/credits', asyncHandler(async (req, res) => {
       facebook_id: externalIds.facebook_id || null,
       instagram_id: externalIds.instagram_id || null,
       twitter_id: externalIds.twitter_id || null,
+      imdb_id: imdbId,
     };
-    res.json({ code: 0, data: { cast, featured_crew, recommendations, backdrop_path, tagline, tmdb_details, media } });
+    res.json({
+      code: 0,
+      data: {
+        cast,
+        featured_crew,
+        recommendations,
+        backdrop_path,
+        tagline,
+        tmdb_details,
+        media,
+        collection,
+        awards_meta,
+      },
+    });
   } catch (e) {
     res.json({ code: 0, data: emptyData });
   }
 }));
 
+// TMDB 合集（含各片在本站的 local_id，供合集页）
+router.get('/collection/tmdb/:tmdbCollectionId', asyncHandler(async (req, res) => {
+  const cid = parseInt(req.params.tmdbCollectionId, 10);
+  if (!Number.isFinite(cid) || cid < 1) {
+    return res.status(400).json({ code: 400, message: '无效的合集 ID' });
+  }
+  if (!TMDB_API_KEY) {
+    return res.status(503).json({ code: 503, message: '未配置 TMDB_API_KEY' });
+  }
+  const col = await fetchTmdbCollectionParts(cid);
+  if (!col) {
+    return res.status(404).json({ code: 404, message: '合集不存在或无法拉取' });
+  }
+  res.json({ code: 0, data: col });
+}));
+
+// 奖项详情页：OMDb Awards 全文 + 分行 + TMDB 奖项页外链（需 IMDB + 可选 OMDB_API_KEY）
+router.get('/:id/awards-data', asyncHandler(async (req, res) => {
+  const id = parseInt(req.params.id, 10);
+  if (!Number.isFinite(id)) {
+    return res.status(400).json({ code: 400, message: '无效的作品 ID' });
+  }
+  const movie = await db.prepare('SELECT id, title, cover, release_year, tmdb_id FROM movies WHERE id = ?').get(id);
+  if (!movie) {
+    return res.status(404).json({ code: 404, message: '作品不存在' });
+  }
+  const tmdbAwardsUrl = movie.tmdb_id ? `https://www.themoviedb.org/movie/${movie.tmdb_id}/awards` : null;
+  if (!movie.tmdb_id || !TMDB_API_KEY) {
+    return res.json({
+      code: 0,
+      data: {
+        movie: { title: movie.title, cover: movie.cover, release_year: movie.release_year },
+        tmdb_id: movie.tmdb_id,
+        imdb_id: null,
+        awards_text: null,
+        nomination_count: null,
+        award_lines: [],
+        tmdb_awards_url: tmdbAwardsUrl,
+      },
+    });
+  }
+  let imdbId = null;
+  try {
+    const extRes = await fetch(`https://api.themoviedb.org/3/movie/${movie.tmdb_id}/external_ids?api_key=${TMDB_API_KEY}`, {
+      headers: { 'User-Agent': 'Mozilla/5.0 (compatible; MovieRecommend/1.0)' },
+      signal: AbortSignal.timeout(15000),
+    });
+    const ext = extRes.ok ? await extRes.json() : {};
+    imdbId = ext.imdb_id || null;
+  } catch (_) {}
+
+  let awardsText = null;
+  let nominationCount = null;
+  if (imdbId && OMDB_API_KEY) {
+    try {
+      const omdb = await fetchOmdbMovieByImdb(imdbId);
+      const aw = omdb?.Awards;
+      if (aw && String(aw).trim() && String(aw).trim() !== 'N/A') {
+        awardsText = String(aw).trim();
+        nominationCount = parseNominationCountFromAwardsText(awardsText);
+      }
+    } catch (_) {}
+  }
+  const awardLines = awardsText
+    ? awardsText
+        .split(/\.\s+/)
+        .map((s) => s.trim())
+        .filter(Boolean)
+        .map((s) => (s.endsWith('.') ? s : `${s}.`))
+    : [];
+  res.json({
+    code: 0,
+    data: {
+      movie: { title: movie.title, cover: movie.cover, release_year: movie.release_year },
+      tmdb_id: movie.tmdb_id,
+      imdb_id: imdbId,
+      awards_text: awardsText,
+      nomination_count: nominationCount,
+      award_lines: awardLines,
+      tmdb_awards_url: tmdbAwardsUrl,
+    },
+  });
+}));
 
 // 封面代理：解决外部图床防盗链/CORS/网络加载失败
 // 先直连，失败则通过 wsrv.nl 全球 CDN 代理拉取

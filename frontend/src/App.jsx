@@ -10,6 +10,8 @@ const Login = lazy(() => import('./pages/Login'));
 const Register = lazy(() => import('./pages/Register'));
 const MovieList = lazy(() => import('./pages/MovieList'));
 const MovieDetail = lazy(() => import('./pages/MovieDetail'));
+const MovieAwards = lazy(() => import('./pages/MovieAwards'));
+const MovieCollection = lazy(() => import('./pages/MovieCollection'));
 const TmdbMovieEntry = lazy(() => import('./pages/TmdbMovieEntry'));
 const TvDetail = lazy(() => import('./pages/TvDetail'));
 const Recommend = lazy(() => import('./pages/Recommend'));
@@ -60,6 +62,8 @@ export default function App() {
             <Route path="movies" element={<MovieList />} />
             <Route path="movies/tmdb/:tmdbId" element={<TmdbMovieEntry />} />
             <Route path="tv/tmdb/:tmdbId" element={<TvDetail />} />
+            <Route path="movies/collection/:tmdbCollectionId" element={<MovieCollection />} />
+            <Route path="movies/:id/awards" element={<MovieAwards />} />
             <Route path="movies/:id" element={<MovieDetail />} />
             <Route path="actors/:tmdbId" element={<ActorDetail />} />
             <Route path="recommend" element={<Recommend />} />

@@ -6733,6 +6733,321 @@ a.admin-dashboard-card--link:hover {
   }
 }
 
+/* 详情页 · 奖项条 + 合集条（TMDB 奖项页、系列合集） */
+.detail-section--extras {
+  margin-top: var(--space-2xl);
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.detail-awards-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: relative;
+  overflow: hidden;
+  min-height: 56px;
+  padding: 0.85rem 1.25rem;
+  padding-right: 5.5rem;
+  border-radius: 999px;
+  text-decoration: none;
+  color: #fff;
+  background: linear-gradient(105deg, #0c1e2e 0%, #0f2840 45%, #143d52 100%);
+  box-shadow: 0 4px 20px rgba(15, 23, 42, 0.12);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.detail-awards-banner:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 28px rgba(15, 23, 42, 0.18);
+  color: #fff;
+}
+.detail-awards-banner__decor {
+  position: absolute;
+  right: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  pointer-events: none;
+}
+.detail-awards-banner__star {
+  width: 8px;
+  height: 8px;
+  background: #fff;
+  clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
+  opacity: 0.85;
+  flex-shrink: 0;
+}
+.detail-awards-banner__star--lg {
+  width: 14px;
+  height: 14px;
+  opacity: 1;
+}
+.detail-awards-banner__star--sm {
+  width: 5px;
+  height: 5px;
+}
+.detail-awards-banner__text {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.65rem 1rem;
+}
+.detail-awards-banner__title {
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 1.15rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+}
+.detail-awards-banner__sub {
+  font-size: 0.875rem;
+  font-weight: 500;
+  opacity: 0.95;
+}
+.detail-awards-banner__arrow {
+  margin-left: 0.35rem;
+  font-weight: 400;
+}
+
+.detail-collection-banner {
+  position: relative;
+  display: block;
+  min-height: 160px;
+  border-radius: 12px;
+  overflow: hidden;
+  text-decoration: none;
+  color: #fff;
+  background-size: cover;
+  background-position: center center;
+  background-color: #1e293b;
+  box-shadow: 0 4px 24px rgba(15, 23, 42, 0.15);
+  transition: transform 0.15s ease;
+}
+.detail-collection-banner:hover {
+  transform: translateY(-2px);
+  color: #fff;
+}
+.detail-collection-banner__scrim {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, rgba(8, 20, 40, 0.88) 0%, rgba(15, 35, 55, 0.55) 55%, rgba(20, 40, 60, 0.35) 100%);
+}
+.detail-collection-banner__inner {
+  position: relative;
+  z-index: 1;
+  padding: 1.35rem 1.5rem 1.5rem;
+  max-width: 640px;
+}
+.detail-collection-banner__title {
+  margin: 0 0 0.5rem;
+  font-size: 1.2rem;
+  font-weight: 700;
+  line-height: 1.35;
+  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.35);
+}
+.detail-collection-banner__desc {
+  margin: 0 0 1rem;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  opacity: 0.95;
+  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.4);
+}
+.detail-collection-banner__cta {
+  display: inline-block;
+  padding: 0.45rem 1.15rem;
+  border-radius: 999px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #0f172a;
+  background: #bfe9f5;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+/* 奖项独立页 */
+.movie-awards-page {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 0 1rem 3rem;
+}
+.movie-awards-header {
+  background: linear-gradient(135deg, rgba(219, 39, 119, 0.12) 0%, rgba(190, 24, 93, 0.08) 50%, rgba(15, 118, 110, 0.06) 100%);
+  border-bottom: 1px solid var(--border, #e2e8f0);
+  margin: 0 -1rem 1.5rem;
+  padding: 1.25rem 1rem 1.5rem;
+}
+.movie-awards-header__inner {
+  display: flex;
+  gap: 1rem;
+  align-items: flex-start;
+  max-width: 960px;
+  margin: 0 auto;
+}
+.movie-awards-header__poster {
+  width: 72px;
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+  flex-shrink: 0;
+}
+.movie-awards-header__title {
+  margin: 0 0 0.35rem;
+  font-size: 1.35rem;
+  font-weight: 800;
+  color: #0f172a;
+}
+.movie-awards-back {
+  font-size: 0.9rem;
+  color: var(--accent, #db2777);
+  text-decoration: none;
+}
+.movie-awards-back:hover {
+  text-decoration: underline;
+}
+.movie-awards-main {
+  padding-top: 0.5rem;
+}
+.movie-awards-headrow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+.movie-awards-title-serif {
+  margin: 0;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 2rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: #0f172a;
+}
+.movie-awards-count {
+  font-size: 0.9375rem;
+  color: #475569;
+}
+.movie-awards-rule {
+  border: none;
+  border-top: 1px solid #e2e8f0;
+  margin: 0.75rem 0 1.5rem;
+}
+.movie-awards-lines {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+.movie-awards-line-card {
+  margin: 0;
+  padding: 1rem 1.1rem;
+  background: #fff;
+  border: 1px solid #e8edf3;
+  border-radius: 10px;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.06);
+}
+.movie-awards-line-card p {
+  margin: 0;
+  font-size: 0.9375rem;
+  line-height: 1.55;
+  color: #1e293b;
+}
+.movie-awards-fallback-text {
+  font-size: 0.9375rem;
+  line-height: 1.65;
+  color: #334155;
+}
+.movie-awards-external {
+  margin-top: 2rem;
+  font-size: 0.9rem;
+}
+.movie-awards-external a {
+  color: var(--accent, #db2777);
+}
+
+/* 合集独立页 */
+.movie-collection-page {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding-bottom: 3rem;
+}
+.movie-collection-hero {
+  position: relative;
+  min-height: 220px;
+  margin: 0 0 2rem;
+  background-size: cover;
+  background-position: center;
+  border-radius: 0 0 12px 12px;
+  overflow: hidden;
+}
+.movie-collection-hero--plain {
+  background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+  border-radius: 12px;
+}
+.movie-collection-hero__scrim {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(15, 23, 42, 0.45) 0%, rgba(8, 15, 30, 0.82) 100%);
+}
+.movie-collection-hero__text {
+  position: relative;
+  z-index: 1;
+  padding: 2rem 1.25rem;
+  color: #fff;
+  max-width: 720px;
+}
+.movie-collection-hero__text h1 {
+  margin: 0 0 0.5rem;
+  font-size: 1.5rem;
+  font-weight: 800;
+}
+.movie-collection-hero__overview {
+  font-size: 0.9rem;
+  opacity: 0.92;
+  line-height: 1.5;
+}
+.movie-collection-grid-wrap {
+  padding: 0 1rem;
+}
+.movie-collection-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 1.25rem;
+}
+.movie-collection-cell__link {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  text-decoration: none;
+  color: #0f172a;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+.movie-collection-cell__link:hover {
+  color: var(--accent, #db2777);
+}
+.movie-collection-cell img {
+  width: 100%;
+  aspect-ratio: 2/3;
+  object-fit: cover;
+  border-radius: var(--poster-card-radius, 8px);
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.1);
+}
+.movie-collection-poster-ph {
+  width: 100%;
+  aspect-ratio: 2/3;
+  border-radius: var(--poster-card-radius, 8px);
+  background: #e2e8f0;
+}
+.movie-collection-cell__hint {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: #64748b;
+}
+
 /* 详情页 · 媒体横条（TMDB：标题 + Tab 下划线 + 横向无缝图带） */
 .detail-section--media {
   margin-top: var(--space-2xl);

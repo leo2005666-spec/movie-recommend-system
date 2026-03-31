@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import MovieCard, { getScoreColor } from '../components/MovieCard';
 import { useAuth } from '../context/AuthContext';
-import { api, getCoverUrl } from '../api/request';
+import { api, getCoverUrl, getProxiedImageUrl } from '../api/request';
 import { normalizeMovieListResponse } from '../utils/recommendApi';
 import UserAvatar from '../components/UserAvatar';
 import DetailPageLoading from '../components/DetailPageLoading';
@@ -49,6 +49,8 @@ export default function MovieDetail() {
   const [tmdbDetails, setTmdbDetails] = useState(null);
   const [detailMedia, setDetailMedia] = useState(null);
   const [featuredCrew, setFeaturedCrew] = useState([]);
+  const [collection, setCollection] = useState(null);
+  const [awardsMeta, setAwardsMeta] = useState(null);
   const [comments, setComments] = useState([]);
   const [commentTotal, setCommentTotal] = useState(0);
   const [commentPage, setCommentPage] = useState(1);
@@ -105,6 +107,8 @@ export default function MovieDetail() {
     let cancelled = false;
     setDetailMedia(null);
     setFeaturedCrew([]);
+    setCollection(null);
+    setAwardsMeta(null);
     setCommentPage(1);
     loadCommentsPage(1, false);
     Promise.all([
@@ -120,6 +124,8 @@ export default function MovieDetail() {
       setTagline(cd.tagline || null);
       setTmdbDetails(cd.tmdb_details || null);
       setDetailMedia(cd.media || null);
+      setCollection(cd.collection || null);
+      setAwardsMeta(cd.awards_meta || null);
       const list = normalizeMovieListResponse(recRes);
       setSimilar(list);
       if (list.length > 0 && user) {
@@ -405,6 +411,59 @@ export default function MovieDetail() {
           )}
 
           <MovieDetailMedia media={detailMedia} />
+
+          {(awardsMeta?.tmdb_awards_url || collection?.id) && (
+            <section className="detail-section detail-section--extras" aria-label="奖项与合集">
+              {awardsMeta?.tmdb_awards_url && (
+                <Link to={`/movies/${id}/awards`} className="detail-awards-banner">
+                  <span className="detail-awards-banner__decor" aria-hidden>
+                    <span className="detail-awards-banner__star detail-awards-banner__star--lg" />
+                    <span className="detail-awards-banner__star" />
+                    <span className="detail-awards-banner__star detail-awards-banner__star--sm" />
+                  </span>
+                  <span className="detail-awards-banner__text">
+                    <span className="detail-awards-banner__title">AWARDS</span>
+                    <span className="detail-awards-banner__sub">
+                      {awardsMeta.nomination_count != null
+                        ? `共 ${awardsMeta.nomination_count} 项提名`
+                        : '奖项与提名'}
+                      <span className="detail-awards-banner__arrow" aria-hidden>
+                        →
+                      </span>
+                    </span>
+                  </span>
+                </Link>
+              )}
+              {collection?.id && (
+                <Link
+                  to={`/movies/collection/${collection.id}`}
+                  className="detail-collection-banner"
+                  style={
+                    collection.backdrop_path
+                      ? { backgroundImage: `url(${getProxiedImageUrl(collection.backdrop_path)})` }
+                      : undefined
+                  }
+                >
+                  <div className="detail-collection-banner__scrim" />
+                  <div className="detail-collection-banner__inner">
+                    <h3 className="detail-collection-banner__title">
+                      {collection.name}（系列）
+                      {tmdbDetails?.tmdb_id &&
+                      collection.parts?.some((p) => p.tmdb_id === tmdbDetails.tmdb_id)
+                        ? ' 之一'
+                        : ''}
+                    </h3>
+                    {collection.parts?.length > 0 && (
+                      <p className="detail-collection-banner__desc">
+                        包括 {collection.parts.map((p) => p.title).filter(Boolean).join('，')}
+                      </p>
+                    )}
+                    <span className="detail-collection-banner__cta">查看合集</span>
+                  </div>
+                </Link>
+              )}
+            </section>
+          )}
 
           {/* 用户评论（TMDB 风格卡片头 + 正文） */}
           <section className="detail-section detail-section--comments">

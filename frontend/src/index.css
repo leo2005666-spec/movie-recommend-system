@@ -2567,6 +2567,7 @@ a.brand-text-gradient:hover {
   flex: 1;
   min-width: 0;
   overflow: hidden;
+  contain: layout style;
   mask-image: linear-gradient(to bottom, transparent 0%, #000 12%, #000 88%, transparent 100%);
   -webkit-mask-image: linear-gradient(to bottom, transparent 0%, #000 12%, #000 88%, transparent 100%);
 }
@@ -2577,7 +2578,8 @@ a.brand-text-gradient:hover {
   gap: 10px;
   width: 100%;
   animation: auth-filmflow-scroll linear infinite;
-  will-change: transform;
+  transform: translateZ(0);
+  backface-visibility: hidden;
 }
 
 @keyframes auth-filmflow-scroll {
@@ -2610,6 +2612,7 @@ a.brand-text-gradient:hover {
   object-fit: cover;
   display: block;
   filter: saturate(1.06);
+  content-visibility: auto;
 }
 
 .auth-split__filmflow-ph {

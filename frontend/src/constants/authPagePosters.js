@@ -52,7 +52,7 @@ export const AUTH_PAGE_POSTER_URLS = [
 ];
 
 /** 分列：轮询分配，保证各列海报不重复且条数均衡 */
-export function splitPostersIntoColumns(urls, columnCount = 4) {
+export function splitPostersIntoColumns(urls, columnCount = 3) {
   const seen = new Set();
   const unique = [];
   for (const u of urls) {

@@ -2,21 +2,63 @@ import { useEffect, useMemo, useState } from 'react';
 import { api, getCoverUrl, getProxiedImageUrl } from '../api/request';
 import { AUTH_PAGE_POSTER_URLS, splitPostersIntoColumns } from '../constants/authPagePosters';
 
-const COLS = 4;
-/** 各列滚动周期（秒），错开避免齐步 */
-const DURATIONS_SEC = [46, 60, 52, 68];
-const DELAY_SEC = [0, -18, -9, -24];
+/** 3 列：更少 DOM、滚动更省资源 */
+const COLS = 3;
+const MAX_POSTERS = 36;
+/** 各列滚动周期（秒），略拉长减轻卡顿感 */
+const DURATIONS_SEC = [56, 72, 64];
+const DELAY_SEC = [0, -22, -11];
 
-function FlowPoster({ url, pool }) {
-  const ib = pool.indexOf(url);
-  const baseIndex = ib >= 0 ? ib : 0;
-  const [skip, setSkip] = useState(0);
-  const [dead, setDead] = useState(false);
-  const idx = (baseIndex + skip) % pool.length;
-  const raw = pool[idx];
-  const src = /^https?:\/\//i.test(raw) ? getProxiedImageUrl(raw) : raw;
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
 
-  if (dead) {
+/**
+ * 同一影片只保留一条：按本地 id；封面 URL 也去重（避免库内脏数据两张片同封面）
+ */
+function uniqueCoverUrlsFromMovies(movies) {
+  const byId = new Map();
+  const seenCover = new Set();
+  for (const m of movies) {
+    if (!m || m.id == null) continue;
+    const id = Number(m.id);
+    if (!Number.isFinite(id) || id <= 0) continue;
+    if (byId.has(id)) continue;
+    const u = getCoverUrl(m, { w: 300 });
+    if (!u || seenCover.has(u)) continue;
+    seenCover.add(u);
+    byId.set(id, u);
+  }
+  return [...byId.values()];
+}
+
+function resolvePosterSrc(raw) {
+  if (!raw) return '';
+  if (/^https?:\/\//i.test(raw)) return getProxiedImageUrl(raw);
+  return raw;
+}
+
+function FlowPoster({ posterUrl, fallbackPool }) {
+  const [attempt, setAttempt] = useState(0);
+  const chain = useMemo(() => {
+    const first = posterUrl;
+    const rest = fallbackPool.filter((u) => u !== first);
+    return [first, ...rest].filter(Boolean);
+  }, [posterUrl, fallbackPool]);
+
+  if (attempt >= chain.length) {
+    return <div className="auth-split__filmflow-ph" aria-hidden />;
+  }
+
+  const raw = chain[attempt];
+  const src = resolvePosterSrc(raw);
+
+  if (!src) {
     return <div className="auth-split__filmflow-ph" aria-hidden />;
   }
 
@@ -28,42 +70,33 @@ function FlowPoster({ url, pool }) {
       loading="lazy"
       decoding="async"
       draggable={false}
-      onError={() => {
-        setSkip((s) => {
-          if (s + 1 >= pool.length) {
-            setDead(true);
-            return s;
-          }
-          return s + 1;
-        });
-      }}
+      onError={() => setAttempt((a) => a + 1)}
     />
   );
 }
 
 export default function AuthFilmflow() {
-  const [posterPool, setPosterPool] = useState(AUTH_PAGE_POSTER_URLS);
+  const [posterPool, setPosterPool] = useState(() => shuffle([...AUTH_PAGE_POSTER_URLS]));
 
   useEffect(() => {
     let cancelled = false;
     (async () => {
       try {
-        const r = await api.get('/movies', { page: 1, limit: 120, orderBy: 'rating_desc' });
-        const list = Array.isArray(r?.data?.list) ? r.data.list : [];
-        const covers = [];
-        const seen = new Set();
-        for (const m of list) {
-          if (!m?.id) continue;
-          const key = `${m.tmdb_id || ''}-${m.id}-${m.title || ''}`;
-          if (seen.has(key)) continue;
-          seen.add(key);
-          covers.push(getCoverUrl(m, { w: 342 }));
-        }
-        if (!cancelled && covers.length >= 16) {
+        const [r1, r2] = await Promise.all([
+          api.get('/movies', { page: 1, limit: 80, orderBy: 'rating_desc' }),
+          api.get('/movies', { page: 2, limit: 80, orderBy: 'rating_desc' }),
+        ]);
+        const list = [
+          ...(Array.isArray(r1?.data?.list) ? r1.data.list : []),
+          ...(Array.isArray(r2?.data?.list) ? r2.data.list : []),
+        ];
+        let covers = uniqueCoverUrlsFromMovies(list);
+        covers = shuffle(covers).slice(0, MAX_POSTERS);
+        if (!cancelled && covers.length >= 12) {
           setPosterPool(covers);
         }
       } catch {
-        /* 保持 TMDB 备用池 */
+        /* 保持初始 TMDB 池 */
       }
     })();
     return () => {
@@ -72,6 +105,8 @@ export default function AuthFilmflow() {
   }, []);
 
   const columns = useMemo(() => splitPostersIntoColumns(posterPool, COLS), [posterPool]);
+
+  const fallbackPool = useMemo(() => [...new Set(posterPool.length ? posterPool : AUTH_PAGE_POSTER_URLS)], [posterPool]);
 
   return (
     <div className="auth-split__filmflow" aria-hidden>
@@ -89,8 +124,8 @@ export default function AuthFilmflow() {
               }}
             >
               {loop.map((url, i) => (
-                <div key={`${colIdx}-${i}`} className="auth-split__filmflow-cell">
-                  <FlowPoster url={url} pool={posterPool} />
+                <div key={`${colIdx}-${i}-${url}`} className="auth-split__filmflow-cell">
+                  <FlowPoster posterUrl={url} fallbackPool={fallbackPool} />
                 </div>
               ))}
             </div>

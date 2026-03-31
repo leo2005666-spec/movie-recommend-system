@@ -17,7 +17,7 @@ const router = express.Router();
  */
 async function getWeeklyTop(limit = 10) {
   const rows = await db.prepare(`
-    SELECT m.id, m.title, m.cover, m.release_year,
+    SELECT m.id, m.title, m.cover, m.release_year, m.tmdb_rating,
            AVG(r.score) as avg_score,
            COUNT(*) as cnt
     FROM ratings r
@@ -28,7 +28,11 @@ async function getWeeklyTop(limit = 10) {
     ORDER BY avg_score * (cnt * 1.0) DESC, cnt DESC
     LIMIT ?
   `).all(limit);
-  return rows.map((r, i) => ({ rank: i + 1, ...r, avg_score: Math.round(r.avg_score * 10) / 10 }));
+  return rows.map((r, i) => ({
+    rank: i + 1,
+    ...r,
+    avg_score: Math.round(r.avg_score * 10) / 10,
+  }));
 }
 
 /**
@@ -49,7 +53,8 @@ async function getTopRated(limit = 10) {
     title: r.title,
     cover: r.cover,
     release_year: r.release_year,
-    avg_score: Math.round((r.tmdb_rating || 0) * 10) / 10,
+    tmdb_rating: r.tmdb_rating,
+    avg_score: null,
     cnt: 0,
   }));
 }
@@ -74,7 +79,8 @@ async function getHotList(limit = 10) {
     title: r.title,
     cover: r.cover,
     release_year: r.release_year,
-    avg_score: r.user_avg != null ? Math.round(r.user_avg * 10) / 10 : (r.tmdb_rating != null ? Math.round(r.tmdb_rating * 10) / 10 : null),
+    tmdb_rating: r.tmdb_rating,
+    avg_score: r.user_avg != null ? Math.round(r.user_avg * 10) / 10 : null,
     cnt: r.rating_cnt || 0,
   }));
 }

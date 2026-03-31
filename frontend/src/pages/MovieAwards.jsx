@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { api, getCoverUrl } from '../api/request';
+import TmdbAwardsListing from '../components/TmdbAwardsListing';
 
 export default function MovieAwards() {
   const { id } = useParams();
@@ -45,8 +46,16 @@ export default function MovieAwards() {
     );
   }
 
-  const { movie, nomination_count: nomRaw, award_lines: linesRaw, awards_text: awardsText, tmdb_awards_url: tmdbUrl } = payload;
+  const {
+    movie,
+    nomination_count: nomRaw,
+    award_lines: linesRaw,
+    awards_text: awardsText,
+    tmdb_awards_url: tmdbUrl,
+    groups: groupsRaw,
+  } = payload;
   const awardLines = Array.isArray(linesRaw) ? linesRaw : [];
+  const groups = Array.isArray(groupsRaw) ? groupsRaw : [];
   const nominationCount = nomRaw != null ? nomRaw : (awardLines.length > 0 ? awardLines.length : null);
   const mid = parseInt(id, 10);
 
@@ -74,26 +83,35 @@ export default function MovieAwards() {
       </header>
 
       <main className="movie-awards-main">
-        <div className="movie-awards-headrow">
-          <h2 className="movie-awards-title-serif">AWARDS</h2>
-          <span className="movie-awards-count">共 {nominationCount != null ? nominationCount : '—'} 项提名</span>
-        </div>
-        <hr className="movie-awards-rule" />
-
-        {awardLines.length > 0 ? (
-          <ul className="movie-awards-lines">
-            {awardLines.map((line, i) => (
-              <li key={i} className="movie-awards-line-card">
-                <p>{line}</p>
-              </li>
-            ))}
-          </ul>
-        ) : awardsText ? (
-          <p className="movie-awards-fallback-text">{awardsText}</p>
+        {groups.length > 0 ? (
+          <TmdbAwardsListing
+            data={payload}
+            panelId="movie-awards-standalone-panel"
+            wrapClassName="movie-awards-standalone-card"
+            showStrip={false}
+          />
         ) : (
-          <p className="empty-hint">
-            未配置 OMDb API 时本站仅展示摘要占位。完整结构化奖项请以 TMDB 页面为准。
-          </p>
+          <>
+            <div className="movie-awards-headrow">
+              <h2 className="movie-awards-title-serif">AWARDS</h2>
+              <span className="movie-awards-count">共 {nominationCount != null ? nominationCount : '—'} 项提名</span>
+            </div>
+            <hr className="movie-awards-rule" />
+
+            {awardLines.length > 0 ? (
+              <ul className="movie-awards-lines">
+                {awardLines.map((line, i) => (
+                  <li key={i} className="movie-awards-line-card">
+                    <p>{line}</p>
+                  </li>
+                ))}
+              </ul>
+            ) : awardsText ? (
+              <p className="movie-awards-fallback-text">{awardsText}</p>
+            ) : (
+              <p className="empty-hint">暂无结构化奖项数据。若 TMDB 官网有该片奖项页，请稍后重试或前往 TMDB 查看。</p>
+            )}
+          </>
         )}
 
         {tmdbUrl && (

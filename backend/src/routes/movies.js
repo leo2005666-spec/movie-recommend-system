@@ -9,8 +9,41 @@ const { authMiddleware, requireAdmin, optionalAuth } = require('../middleware/au
 const { logActivity } = require('../middleware/log');
 const { buildTasteWhereSql, TASTE_ORDER_BY } = require('../utils/taste-presets');
 const { asyncHandler } = require('../utils/asyncHandler');
+const { fetchMovieAwardsFromTmdbWeb, absolutizeTmdbPath } = require('../utils/tmdbPersonAwards');
 
 const router = express.Router();
+
+/** 影片奖项 groups：补全外链与本片/他片在本站的 movie_local_id */
+function enrichMovieAwardGroups(groups) {
+  if (!Array.isArray(groups) || !groups.length) return [];
+  const tmdbIds = new Set();
+  groups.forEach((g) => {
+    (g.entries || []).forEach((e) => {
+      if (e.movie_tmdb_id) tmdbIds.add(e.movie_tmdb_id);
+    });
+  });
+  const localByTmdb = {};
+  if (tmdbIds.size) {
+    const ids = [...tmdbIds];
+    const ph = ids.map(() => '?').join(',');
+    const rows = db.prepare(`SELECT id, tmdb_id FROM movies WHERE tmdb_id IN (${ph})`).all(...ids);
+    rows.forEach((r) => {
+      localByTmdb[r.tmdb_id] = r.id;
+    });
+  }
+  return groups.map((g) => ({
+    organization_name: g.organization_name,
+    organization_path: g.organization_path,
+    organization_url: absolutizeTmdbPath(g.organization_path),
+    organization_logo_url: g.organization_logo_url,
+    entries: (g.entries || []).map((e) => ({
+      ...e,
+      ceremony_url: absolutizeTmdbPath(e.ceremony_path),
+      category_url: absolutizeTmdbPath(e.category_path),
+      movie_local_id: e.movie_tmdb_id != null ? localByTmdb[e.movie_tmdb_id] ?? null : null,
+    })),
+  }));
+}
 
 /** 影视库「类型」多选：typeKeys=c:1,c:2,t:3 表示须同时满足分类与标签 */
 function parseTypeKeys(raw) {
@@ -488,7 +521,7 @@ router.get('/collection/tmdb/:tmdbCollectionId', asyncHandler(async (req, res) =
   res.json({ code: 0, data: col });
 }));
 
-// 奖项详情页：OMDb Awards 全文 + 分行 + TMDB 奖项页外链（需 IMDB + 可选 OMDB_API_KEY）
+// 奖项详情：优先解析 TMDB 官网影片奖项页（与 TMDB 一致）；OMDb 作补充文案
 router.get('/:id/awards-data', asyncHandler(async (req, res) => {
   const id = parseInt(req.params.id, 10);
   if (!Number.isFinite(id)) {
@@ -508,11 +541,25 @@ router.get('/:id/awards-data', asyncHandler(async (req, res) => {
         imdb_id: null,
         awards_text: null,
         nomination_count: null,
+        win_count: null,
+        summary_text: null,
+        groups: [],
+        listing_source: 'none',
         award_lines: [],
         tmdb_awards_url: tmdbAwardsUrl,
       },
     });
   }
+
+  let tmdbListing = null;
+  try {
+    tmdbListing = await fetchMovieAwardsFromTmdbWeb(movie.tmdb_id);
+  } catch (e) {
+    console.error('[movies/awards-data] tmdb web', movie.tmdb_id, e.message);
+  }
+
+  const groups = tmdbListing?.groups?.length ? enrichMovieAwardGroups(tmdbListing.groups) : [];
+
   let imdbId = null;
   try {
     const extRes = await fetch(`https://api.themoviedb.org/3/movie/${movie.tmdb_id}/external_ids?api_key=${TMDB_API_KEY}`, {
@@ -524,14 +571,14 @@ router.get('/:id/awards-data', asyncHandler(async (req, res) => {
   } catch (_) {}
 
   let awardsText = null;
-  let nominationCount = null;
+  let omdbNominationCount = null;
   if (imdbId && OMDB_API_KEY) {
     try {
       const omdb = await fetchOmdbMovieByImdb(imdbId);
       const aw = omdb?.Awards;
       if (aw && String(aw).trim() && String(aw).trim() !== 'N/A') {
         awardsText = String(aw).trim();
-        nominationCount = parseNominationCountFromAwardsText(awardsText);
+        omdbNominationCount = parseNominationCountFromAwardsText(awardsText);
       }
     } catch (_) {}
   }
@@ -542,14 +589,25 @@ router.get('/:id/awards-data', asyncHandler(async (req, res) => {
         .filter(Boolean)
         .map((s) => (s.endsWith('.') ? s : `${s}.`))
     : [];
+
+  const nomination_count = tmdbListing?.nomination_count ?? omdbNominationCount;
+  const win_count = tmdbListing?.win_count ?? null;
+  let listingSource = 'none';
+  if (groups.length) listingSource = 'tmdb_web';
+  else if (awardsText) listingSource = 'omdb';
+
   res.json({
     code: 0,
     data: {
       movie: { title: movie.title, cover: movie.cover, release_year: movie.release_year },
       tmdb_id: movie.tmdb_id,
       imdb_id: imdbId,
+      nomination_count,
+      win_count,
+      summary_text: tmdbListing?.summary_text || null,
+      groups,
+      listing_source: listingSource,
       awards_text: awardsText,
-      nomination_count: nominationCount,
       award_lines: awardLines,
       tmdb_awards_url: tmdbAwardsUrl,
     },

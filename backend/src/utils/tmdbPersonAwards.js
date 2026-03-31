@@ -1,6 +1,7 @@
 /**
- * TMDB 公开 API 无人物奖项列表，与官网一致的数据来自人物奖项页 HTML。
- * 抓取并解析 https://www.themoviedb.org/person/{id}/awards?language=zh-CN
+ * TMDB 公开 API 无结构化奖项列表；人物/影片奖项与官网一致的数据来自奖项页 HTML。
+ * 人物：https://www.themoviedb.org/person/{id}/awards?language=zh-CN
+ * 影片：https://www.themoviedb.org/movie/{id}/awards?language=zh-CN
  */
 const cheerio = require('cheerio');
 
@@ -20,7 +21,8 @@ const TMDB_ORIGIN = 'https://www.themoviedb.org';
  *   }>
  * }}
  */
-function parsePersonAwardsHtml(html) {
+/** 人物页与影片页奖项区 DOM 结构一致，共用同一解析器 */
+function parseTmdbAwardsPageHtml(html) {
   const $ = cheerio.load(html);
 
   const summaryText = $('p.text-lg.font-semibold').first().text().replace(/\s+/g, ' ').trim();
@@ -129,8 +131,7 @@ function parsePersonAwardsHtml(html) {
   };
 }
 
-async function fetchPersonAwardsFromTmdbWeb(tmdbPersonId) {
-  const url = `${TMDB_ORIGIN}/person/${tmdbPersonId}/awards?language=zh-CN`;
+async function fetchTmdbAwardsHtml(url) {
   const r = await fetch(url, {
     headers: { 'User-Agent': 'Mozilla/5.0 (compatible; MovieRecommend/1.0)' },
     signal: AbortSignal.timeout(28000),
@@ -140,7 +141,17 @@ async function fetchPersonAwardsFromTmdbWeb(tmdbPersonId) {
     throw new Error(`TMDB 网页 HTTP ${r.status}`);
   }
   const html = await r.text();
-  return parsePersonAwardsHtml(html);
+  return parseTmdbAwardsPageHtml(html);
+}
+
+async function fetchPersonAwardsFromTmdbWeb(tmdbPersonId) {
+  const url = `${TMDB_ORIGIN}/person/${tmdbPersonId}/awards?language=zh-CN`;
+  return fetchTmdbAwardsHtml(url);
+}
+
+async function fetchMovieAwardsFromTmdbWeb(tmdbMovieId) {
+  const url = `${TMDB_ORIGIN}/movie/${tmdbMovieId}/awards?language=zh-CN`;
+  return fetchTmdbAwardsHtml(url);
 }
 
 function absolutizeTmdbPath(path) {
@@ -150,8 +161,10 @@ function absolutizeTmdbPath(path) {
 }
 
 module.exports = {
-  parsePersonAwardsHtml,
+  parseTmdbAwardsPageHtml,
+  parsePersonAwardsHtml: parseTmdbAwardsPageHtml,
   fetchPersonAwardsFromTmdbWeb,
+  fetchMovieAwardsFromTmdbWeb,
   absolutizeTmdbPath,
   TMDB_ORIGIN,
 };

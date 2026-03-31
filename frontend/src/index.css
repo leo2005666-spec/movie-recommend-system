@@ -6740,6 +6740,24 @@ a.admin-dashboard-card--link:hover {
   flex-direction: column;
   gap: 1rem;
 }
+.detail-extras-loading {
+  margin: 0;
+}
+/* 影片详情页内嵌 TMDB 式奖项块 */
+.detail-movie-awards {
+  width: 100%;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  box-shadow: 0 2px 12px rgba(15, 23, 42, 0.06);
+}
+.movie-awards-standalone-card {
+  width: 100%;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  box-shadow: 0 2px 12px rgba(15, 23, 42, 0.06);
+}
 
 .detail-awards-banner {
   display: flex;

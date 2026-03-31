@@ -1,9 +1,15 @@
 import { Link } from 'react-router-dom';
-import { getProxiedImageUrl } from '../api/request';
+import { getProxiedImageUrl, upgradeTmdbImageUrl } from '../api/request';
 
-function posterSrc(url) {
+function awardImgSrc(url, { highRes = false, kind = 'default' } = {}) {
   if (!url) return '';
-  return getProxiedImageUrl(url);
+  let u = url;
+  if (highRes) {
+    if (kind === 'poster') u = upgradeTmdbImageUrl(u, 'w780');
+    else if (kind === 'profile') u = upgradeTmdbImageUrl(u, 'h632');
+    else u = upgradeTmdbImageUrl(u, 'w500');
+  }
+  return getProxiedImageUrl(u);
 }
 
 /**
@@ -69,7 +75,7 @@ export default function TmdbAwardsListing({ data, panelId = 'tmdb-awards-panel',
                 <div className="actor-awards-group__mob-logo">
                   {g.organization_logo_url ? (
                     <a href={g.organization_url} target="_blank" rel="noopener noreferrer" className="actor-awards-group__logo-link">
-                      <img src={posterSrc(g.organization_logo_url)} alt="" className="actor-awards-group__logo-sm" />
+                      <img src={awardImgSrc(g.organization_logo_url, { highRes: highResImages, kind: 'logo' })} alt="" className="actor-awards-group__logo-sm" />
                     </a>
                   ) : null}
                 </div>
@@ -82,7 +88,7 @@ export default function TmdbAwardsListing({ data, panelId = 'tmdb-awards-panel',
                 <div className="actor-awards-group__logo-col">
                   {g.organization_logo_url ? (
                     <a href={g.organization_url} target="_blank" rel="noopener noreferrer" className="actor-awards-group__logo-box">
-                      <img src={posterSrc(g.organization_logo_url)} alt="" />
+                      <img src={awardImgSrc(g.organization_logo_url, { highRes: highResImages, kind: 'logo' })} alt="" />
                     </a>
                   ) : (
                     <div className="actor-awards-group__logo-ph" />
@@ -96,7 +102,7 @@ export default function TmdbAwardsListing({ data, panelId = 'tmdb-awards-panel',
                         {e.poster_url ? (
                           e.movie_local_id ? (
                             <Link to={`/movies/${e.movie_local_id}`}>
-                              <img src={posterSrc(e.poster_url)} alt="" />
+                              <img src={awardImgSrc(e.poster_url, { highRes: highResImages, kind: 'poster' })} alt="" decoding="async" />
                             </Link>
                           ) : (
                             <a
@@ -104,7 +110,7 @@ export default function TmdbAwardsListing({ data, panelId = 'tmdb-awards-panel',
                               target="_blank"
                               rel="noopener noreferrer"
                             >
-                              <img src={posterSrc(e.poster_url)} alt="" />
+                              <img src={awardImgSrc(e.poster_url, { highRes: highResImages, kind: 'poster' })} alt="" decoding="async" />
                             </a>
                           )
                         ) : (
@@ -134,11 +140,11 @@ export default function TmdbAwardsListing({ data, panelId = 'tmdb-awards-panel',
                                   {p.profile_thumb ? (
                                     p.tmdb_id ? (
                                       <Link to={`/actors/${p.tmdb_id}`} className="actor-awards-card__shared-av">
-                                        <img src={posterSrc(p.profile_thumb)} alt="" />
+                                        <img src={awardImgSrc(p.profile_thumb, { highRes: highResImages, kind: 'profile' })} alt="" decoding="async" />
                                       </Link>
                                     ) : (
                                       <span className="actor-awards-card__shared-av">
-                                        <img src={posterSrc(p.profile_thumb)} alt="" />
+                                        <img src={awardImgSrc(p.profile_thumb, { highRes: highResImages, kind: 'profile' })} alt="" decoding="async" />
                                       </span>
                                     )
                                   ) : (

@@ -474,6 +474,13 @@ a.brand-text-gradient:hover {
   padding-right: clamp(0.5rem, 1.5vw, 1.25rem);
 }
 
+/** 演员奖项独立页：与影视库同档加宽铺满 */
+.main--actor-awards {
+  max-width: min(1680px, 100%);
+  padding-left: clamp(0.5rem, 1.5vw, 1.25rem);
+  padding-right: clamp(0.5rem, 1.5vw, 1.25rem);
+}
+
 /** 首页：主区域横向铺满，由各区段 inner 控制内容最大宽度 */
 .main--home-tmdb {
   max-width: none;
@@ -6890,6 +6897,63 @@ a.admin-dashboard-card--link:hover {
   max-width: 960px;
   margin: 0 auto;
   padding: 0 1rem 3rem;
+}
+/* 演员奖项页：与主区域同宽铺满，顶栏头像更大 */
+.actor-awards-page--wide.movie-awards-page {
+  max-width: 100%;
+  width: 100%;
+  margin: 0;
+  padding: 0 0 3rem;
+}
+.actor-awards-page__header-inner.movie-awards-header__inner {
+  max-width: 100%;
+}
+.actor-awards-page--wide .movie-awards-header__poster {
+  width: 120px;
+  height: auto;
+  aspect-ratio: 2 / 3;
+  object-fit: cover;
+  border-radius: 8px;
+  box-shadow: 0 6px 22px rgba(15, 23, 42, 0.14);
+}
+.actor-awards-page--wide .movie-awards-header__poster--ph {
+  width: 120px;
+  height: 180px;
+}
+.actor-awards-page--wide .movie-awards-header__title {
+  font-size: clamp(1.4rem, 2.2vw, 1.65rem);
+}
+/* 与 main 左右内边距抵消，顶栏渐变横向铺满视口内容区 */
+.actor-awards-page--wide .movie-awards-header {
+  margin-left: calc(-1 * clamp(0.5rem, 1.5vw, 1.25rem));
+  margin-right: calc(-1 * clamp(0.5rem, 1.5vw, 1.25rem));
+  padding-left: clamp(0.5rem, 1.5vw, 1.25rem);
+  padding-right: clamp(0.5rem, 1.5vw, 1.25rem);
+}
+.actor-awards-page__listing-card .actor-awards-card__poster {
+  width: 112px;
+}
+.actor-awards-page__listing-card .actor-awards-card__poster img {
+  width: 112px;
+  height: auto;
+  border-radius: 8px;
+  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.1);
+}
+.actor-awards-page__listing-card .actor-awards-card__poster-ph {
+  width: 112px;
+}
+.actor-awards-page__listing-card .actor-awards-group__logo-box {
+  width: min(240px, 28vw);
+  height: min(240px, 28vw);
+}
+.actor-awards-page__listing-card .actor-awards-group__logo-ph {
+  width: min(240px, 28vw);
+  height: min(240px, 28vw);
+}
+.actor-awards-page__listing-card .actor-awards-card__shared-av {
+  width: 52px;
+  height: 52px;
+  border-radius: 10px;
 }
 .movie-awards-header {
   background: linear-gradient(135deg, rgba(219, 39, 119, 0.12) 0%, rgba(190, 24, 93, 0.08) 50%, rgba(15, 118, 110, 0.06) 100%);

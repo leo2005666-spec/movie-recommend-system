@@ -70,6 +70,18 @@ export function getProxiedImageUrl(url) {
 }
 
 /**
+ * 将 TMDB / media.themoviedb 图片 URL 中的尺寸段换成更大图（奖项页海报、头像等更清晰）
+ * @param {string} url 完整 https 地址
+ * @param {'w342'|'w500'|'w780'|'h632'|'original'} size TMDB t/p 尺寸名
+ */
+export function upgradeTmdbImageUrl(url, size = 'w500') {
+  if (!url || typeof url !== 'string') return '';
+  const s = url.trim();
+  if (!/themoviedb\.org/i.test(s)) return s;
+  return s.replace(/\/t\/p\/(w\d+|h\d+|original)(?=\/)/i, `/t/p/${size}`);
+}
+
+/**
  * 用户头像地址：支持外链 http(s) 与本站上传路径 /uploads/...
  * 生产环境若 VITE_API_BASE 为完整域名（如 https://xxx/api），会自动拼成后端域名下的静态地址。
  */

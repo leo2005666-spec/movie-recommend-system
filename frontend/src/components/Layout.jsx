@@ -45,6 +45,8 @@ export default function Layout() {
   const isHome = loc.pathname === '/' || loc.pathname === '';
   /** 登录/注册：顶栏仅保留 Logo，主区垂直居中 */
   const isAuthPage = loc.pathname === '/login' || loc.pathname === '/register';
+  /** 演员奖项独立页：与影视库同级加宽，列表铺满 */
+  const isActorAwardsPage = /^\/actors\/\d+\/awards\/?$/.test(loc.pathname);
 
   const isActive = (to) =>
     loc.pathname === to || (to !== '/' && loc.pathname.startsWith(to + '/'));
@@ -160,7 +162,7 @@ export default function Layout() {
         ) : null}
       </header>
       <main
-        className={`main${isMovieDetail ? ' main--movie-detail' : ''}${isMovieList ? ' main--movie-list' : ''}${isHome ? ' main--home-tmdb' : ''}${isAuthPage ? ' main--auth' : ''}`}
+        className={`main${isMovieDetail ? ' main--movie-detail' : ''}${isMovieList ? ' main--movie-list' : ''}${isHome ? ' main--home-tmdb' : ''}${isAuthPage ? ' main--auth' : ''}${isActorAwardsPage ? ' main--actor-awards' : ''}`}
       >
         <Outlet />
       </main>

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { api, getProxiedImageUrl } from '../api/request';
+import { api, getProxiedImageUrl, upgradeTmdbImageUrl } from '../api/request';
 import DetailPageLoading from '../components/DetailPageLoading';
 import TmdbAwardsListing from '../components/TmdbAwardsListing';
 
@@ -53,14 +53,23 @@ export default function ActorAwardsPage() {
     );
   }
 
-  const poster = person.profile_path ? getProxiedImageUrl(person.profile_path) : '';
+  const poster = person.profile_path
+    ? getProxiedImageUrl(upgradeTmdbImageUrl(person.profile_path, 'h632'))
+    : '';
 
   return (
-    <div className="movie-awards-page actor-awards-page">
+    <div className="movie-awards-page actor-awards-page actor-awards-page--wide">
       <header className="movie-awards-header">
-        <div className="movie-awards-header__inner">
+        <div className="movie-awards-header__inner actor-awards-page__header-inner">
           {poster ? (
-            <img src={poster} alt="" className="movie-awards-header__poster" width={72} height={108} />
+            <img
+              src={poster}
+              alt=""
+              className="movie-awards-header__poster"
+              width={120}
+              height={180}
+              decoding="async"
+            />
           ) : (
             <div className="movie-awards-header__poster movie-awards-header__poster--ph" aria-hidden />
           )}
@@ -79,6 +88,7 @@ export default function ActorAwardsPage() {
             data={awards}
             panelId="actor-awards-page-panel"
             showStrip={false}
+            highResImages
             wrapClassName="actor-awards-page__listing-card"
           />
         ) : (

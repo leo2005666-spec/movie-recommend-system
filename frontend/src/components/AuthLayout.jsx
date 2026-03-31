@@ -35,6 +35,16 @@ export default function AuthLayout({
               className="auth-split__mosaic-cell"
               loading={i < 4 ? 'eager' : 'lazy'}
               decoding="async"
+              onError={(e) => {
+                const el = e.currentTarget;
+                if (el.dataset.authPosterFallback === '1') {
+                  el.style.opacity = '0';
+                  return;
+                }
+                el.dataset.authPosterFallback = '1';
+                const altUrl = AUTH_PAGE_POSTER_URLS[(i + 1) % AUTH_PAGE_POSTER_URLS.length];
+                el.src = getProxiedImageUrl(altUrl);
+              }}
             />
           ))}
         </div>

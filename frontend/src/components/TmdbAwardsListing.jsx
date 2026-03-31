@@ -18,8 +18,15 @@ function awardImgSrc(url, { highRes = false, kind = 'default' } = {}) {
  * @param {string} panelId 锚点 id，用于顶部横条跳转
  * @param {string} [wrapClassName] 白底卡片额外 class（如演员页 actor-page__card）
  * @param {boolean} [showStrip=true] 是否显示深色 AWARDS 横条（独立奖项页可关闭）
+ * @param {boolean} [highResImages=false] 是否使用更大尺寸 TMDB 图源（演员奖项独立页）
  */
-export default function TmdbAwardsListing({ data, panelId = 'tmdb-awards-panel', wrapClassName = '', showStrip = true }) {
+export default function TmdbAwardsListing({
+  data,
+  panelId = 'tmdb-awards-panel',
+  wrapClassName = '',
+  showStrip = true,
+  highResImages = false,
+}) {
   if (!data?.groups?.length) return null;
 
   const n = data.nomination_count;
@@ -96,7 +103,7 @@ export default function TmdbAwardsListing({ data, panelId = 'tmdb-awards-panel',
                 </div>
 
                 <div className="actor-awards-group__cards">
-                  {g.entries.map((e, idx) => (
+                  {(g.entries || []).map((e, idx) => (
                     <div key={`${e.ceremony_label}-${e.category_name}-${idx}`} className="actor-awards-card">
                       <div className="actor-awards-card__poster">
                         {e.poster_url ? (

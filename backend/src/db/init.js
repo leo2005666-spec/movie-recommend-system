@@ -115,6 +115,18 @@ async function run() {
     )
   `);
   await db.exec(`
+    CREATE TABLE IF NOT EXISTS user_movie_shelves (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL,
+      movie_id INTEGER NOT NULL,
+      shelf_type TEXT NOT NULL,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      UNIQUE(user_id, movie_id, shelf_type),
+      FOREIGN KEY (user_id) REFERENCES users(id),
+      FOREIGN KEY (movie_id) REFERENCES movies(id)
+    )
+  `);
+  await db.exec(`
     CREATE TABLE IF NOT EXISTS comments (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       user_id INTEGER NOT NULL,

@@ -6,7 +6,6 @@ import { useParams, Link } from 'react-router-dom';
 import { api, getProxiedImageUrl } from '../api/request';
 import { getScoreColor } from '../components/MovieCard';
 import DetailPageLoading from '../components/DetailPageLoading';
-import { castNameInitial, castPlaceholderGradient } from '../utils/castCard';
 
 function formatEpRuntime(minsArr) {
   if (!Array.isArray(minsArr) || !minsArr.length) return null;
@@ -20,6 +19,7 @@ export default function TvDetail() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState('');
+  const castWithImages = (data?.cast || []).filter((c) => Boolean(c?.profile_path));
 
   useEffect(() => {
     let cancelled = false;
@@ -177,26 +177,16 @@ export default function TvDetail() {
 
       <div className="detail-body detail-body--no-sidebar">
         <div className="detail-main">
-          {data.cast?.length > 0 && (
+          {castWithImages.length > 0 && (
             <section className="detail-section detail-section--cast">
               <h2 className="section-title section-title--cast">演员阵容</h2>
               <div className="cast-row cast-row--filmstrip">
-                {data.cast.map((c, i) => (
+                {castWithImages.map((c, i) => (
                   <div key={c.id || i} className="cast-card cast-card--filmstrip">
                     {c.id ? (
                       <Link to={`/actors/${c.id}`} className="cast-card__link">
                         <div className="cast-photo cast-photo--filmstrip">
-                          {c.profile_path ? (
-                            <img src={c.profile_path} alt={c.name} onError={(e) => { e.target.style.display = 'none'; }} />
-                          ) : (
-                            <div
-                              className="cast-placeholder cast-placeholder--filmstrip"
-                              style={{ background: castPlaceholderGradient(c.id || i) }}
-                              aria-hidden
-                            >
-                              {castNameInitial(c.name)}
-                            </div>
-                          )}
+                          <img src={c.profile_path} alt={c.name} onError={(e) => { e.target.closest('.cast-card--filmstrip')?.remove(); }} />
                         </div>
                         <div className="cast-info cast-info--filmstrip">
                           <div className="cast-name cast-name--filmstrip">{c.name}</div>
@@ -205,8 +195,12 @@ export default function TvDetail() {
                       </Link>
                     ) : (
                       <div className="cast-card__link">
+                        <div className="cast-photo cast-photo--filmstrip">
+                          <img src={c.profile_path} alt={c.name} onError={(e) => { e.target.closest('.cast-card--filmstrip')?.remove(); }} />
+                        </div>
                         <div className="cast-info cast-info--filmstrip">
                           <div className="cast-name cast-name--filmstrip">{c.name}</div>
+                          <div className="cast-character cast-character--filmstrip">{c.character || '—'}</div>
                         </div>
                       </div>
                     )}

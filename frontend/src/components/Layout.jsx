@@ -8,6 +8,7 @@ import {
   ChartBarIcon,
   PaperPlaneTiltIcon,
   HeartIcon,
+  ListBulletsIcon,
   FileTextIcon,
   GearIcon,
   SignInIcon,
@@ -136,6 +137,10 @@ export default function Layout() {
               <Link to="/favorites">
                 <HeartIcon size={18} weight="regular" className="nav-icon" />
                 收藏
+              </Link>
+              <Link to="/shelves">
+                <ListBulletsIcon size={18} weight="regular" className="nav-icon" />
+                片单/待看
               </Link>
               <Link to="/logs">
                 <FileTextIcon size={18} weight="regular" className="nav-icon" />

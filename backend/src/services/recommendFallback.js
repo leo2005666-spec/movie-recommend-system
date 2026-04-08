@@ -23,25 +23,44 @@ function getDemographicRecommendations(userId, limit = 12) {
 async function getPersonalizedRecommendations(userId, limit = 12) {
   const seen = new Set();
   const result = [];
+  const interestRows = await db.prepare(`
+    SELECT movie_id FROM ratings WHERE user_id = ? AND score >= 4
+    UNION
+    SELECT movie_id FROM favorites WHERE user_id = ?
+    UNION
+    SELECT movie_id FROM user_movie_shelves WHERE user_id = ?
+    UNION
+    SELECT movie_id FROM recommend_events WHERE user_id = ? AND event_type IN ('click','favorite')
+    ORDER BY movie_id DESC
+    LIMIT 80
+  `).all(userId, userId, userId, userId);
+  const interestIds = (Array.isArray(interestRows) ? interestRows : [])
+    .map((r) => Number(r.movie_id))
+    .filter((n) => Number.isFinite(n) && n > 0);
+  interestIds.forEach((id) => seen.add(id));
 
-  const likedCategories = await db.prepare(`
-    SELECT mc.category_id, AVG(r.score) as avg_score
-    FROM ratings r
-    INNER JOIN movie_categories mc ON r.movie_id = mc.movie_id
-    WHERE r.user_id = ? AND r.score >= 4
-    GROUP BY mc.category_id ORDER BY avg_score DESC LIMIT 3
-  `).all(userId);
+  const placeholders = interestIds.length ? interestIds.map(() => '?').join(',') : '';
+  const likedCategories = interestIds.length
+    ? await db.prepare(`
+      SELECT mc.category_id, COUNT(*) as hit_cnt
+      FROM movie_categories mc
+      WHERE mc.movie_id IN (${placeholders})
+      GROUP BY mc.category_id
+      ORDER BY hit_cnt DESC, mc.category_id ASC
+      LIMIT 4
+    `).all(...interestIds)
+    : [];
 
-  const likedTags = await db.prepare(`
-    SELECT mt.tag_id, AVG(r.score) as avg_score
-    FROM ratings r
-    INNER JOIN movie_tags mt ON r.movie_id = mt.movie_id
-    WHERE r.user_id = ? AND r.score >= 4
-    GROUP BY mt.tag_id ORDER BY avg_score DESC LIMIT 3
-  `).all(userId);
-
-  const favMovieIds = (await db.prepare('SELECT movie_id FROM favorites WHERE user_id = ?').all(userId)).map(r => r.movie_id);
-  favMovieIds.forEach(id => seen.add(id));
+  const likedTags = interestIds.length
+    ? await db.prepare(`
+      SELECT mt.tag_id, COUNT(*) as hit_cnt
+      FROM movie_tags mt
+      WHERE mt.movie_id IN (${placeholders})
+      GROUP BY mt.tag_id
+      ORDER BY hit_cnt DESC, mt.tag_id ASC
+      LIMIT 4
+    `).all(...interestIds)
+    : [];
 
   const perSource = Math.ceil(limit / 3);
   for (const { category_id } of likedCategories) {

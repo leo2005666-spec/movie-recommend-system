@@ -18,6 +18,14 @@ export default function Recommend() {
   const [tasteType, setTasteType] = useState('');
   const [loading, setLoading] = useState(true);
 
+  const backfillFromTmdbIfNeeded = async () => {
+    const hot = await api.get('/tmdb/lists', { kind: 'popular', region: 'CN' }).catch(() => null);
+    const rows = Array.isArray(hot?.data?.list) ? hot.data.list : [];
+    const ids = rows.map((x) => Number(x?.tmdb_id)).filter((n) => Number.isFinite(n) && n > 0).slice(0, 10);
+    if (!ids.length) return;
+    await Promise.all(ids.map((tid) => api.post(`/movies/from-tmdb/${tid}`).catch(() => null)));
+  };
+
   useEffect(() => {
     api.get('/recommend/tastes').then((r) => setTastes(r.data || [])).catch(() => {});
   }, []);
@@ -61,6 +69,9 @@ export default function Recommend() {
         const popularList = Array.isArray(popularRes?.data) ? popularRes.data : [];
         let data = recList.length ? recList : popularList;
         if (!data.length) {
+          if (userId != null) {
+            await backfillFromTmdbIfNeeded().catch(() => null);
+          }
           const fb = await api.get('/recommend', params).catch(() => null);
           data = Array.isArray(fb?.data) ? fb.data : [];
         }

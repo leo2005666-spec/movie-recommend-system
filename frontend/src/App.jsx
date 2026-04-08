@@ -22,6 +22,7 @@ const MyComments = lazy(() => import('./pages/MyComments'));
 const ActorDetail = lazy(() => import('./pages/ActorDetail'));
 const ActorAwardsPage = lazy(() => import('./pages/ActorAwardsPage'));
 const MyFavorites = lazy(() => import('./pages/MyFavorites'));
+const MyShelves = lazy(() => import('./pages/MyShelves'));
 const MyLogs = lazy(() => import('./pages/MyLogs'));
 const Feedback = lazy(() => import('./pages/Feedback'));
 const AdminDashboard = lazy(() => import('./pages/admin/Dashboard'));
@@ -101,6 +102,14 @@ export default function App() {
               element={
                 <ProtectedRoute>
                   <MyFavorites />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="shelves"
+              element={
+                <ProtectedRoute>
+                  <MyShelves />
                 </ProtectedRoute>
               }
             />

@@ -7,7 +7,6 @@ import { normalizeMovieListResponse } from '../utils/recommendApi';
 import UserAvatar from '../components/UserAvatar';
 import DetailPageLoading from '../components/DetailPageLoading';
 import MovieDetailMedia from '../components/detail/MovieDetailMedia';
-import { castNameInitial, castPlaceholderGradient } from '../utils/castCard';
 
 const SCENE_SIMILAR = 'similar';
 const MAX_COMMENT_IMAGES = 4;
@@ -71,6 +70,9 @@ export default function MovieDetail() {
   const [commentImages, setCommentImages] = useState([]);
   const commentFileInputRef = useRef(null);
   const [score, setScore] = useState(0);
+  const [inPlaylist, setInPlaylist] = useState(false);
+  const [inWatchlist, setInWatchlist] = useState(false);
+  const [shelfBusy, setShelfBusy] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState('');
@@ -80,10 +82,20 @@ export default function MovieDetail() {
   }, []);
 
   const load = () => {
-    api.get(`/movies/${id}`)
-      .then((r) => {
-        setMovie(r.data);
-        if (r.data?.myScore != null) setScore(Number(r.data.myScore));
+    Promise.all([
+      api.get(`/movies/${id}`),
+      user ? api.get(`/shelves/status/${id}`).catch(() => ({ data: { playlist: false, watchlist: false } })) : null,
+    ])
+      .then(([movieRes, shelfRes]) => {
+        setMovie(movieRes.data);
+        if (movieRes.data?.myScore != null) setScore(Number(movieRes.data.myScore));
+        if (shelfRes?.data) {
+          setInPlaylist(Boolean(shelfRes.data.playlist));
+          setInWatchlist(Boolean(shelfRes.data.watchlist));
+        } else {
+          setInPlaylist(false);
+          setInWatchlist(false);
+        }
       })
       .catch(() => setMovie(null))
       .finally(() => setLoading(false));
@@ -92,7 +104,7 @@ export default function MovieDetail() {
   useEffect(() => {
     setLoading(true);
     load();
-  }, [id]);
+  }, [id, user]);
 
   const loadCommentsPage = useCallback(
     (page, append) => {
@@ -190,6 +202,27 @@ export default function MovieDetail() {
     }
   };
 
+  const handleShelfToggle = async (type) => {
+    if (!user || !movie?.id || shelfBusy) return;
+    const active = type === 'playlist' ? inPlaylist : inWatchlist;
+    setShelfBusy(type);
+    try {
+      if (active) await api.delete(`/shelves/${type}/${movie.id}`);
+      else await api.post(`/shelves/${type}`, { movieId: movie.id });
+      if (type === 'playlist') setInPlaylist(!active);
+      else setInWatchlist(!active);
+      api.post('/recommend/events', {
+        scene: 'movie_detail',
+        movieId: movie.id,
+        eventType: active ? 'click' : 'favorite',
+      }).catch(() => {});
+    } catch (e) {
+      setErr(e.message || '操作失败');
+    } finally {
+      setShelfBusy('');
+    }
+  };
+
   const onCommentImagesChange = async (e) => {
     const files = Array.from(e.target.files || []);
     e.target.value = '';
@@ -261,6 +294,8 @@ export default function MovieDetail() {
   const formatMoney = (n) => (n != null && n > 0 ? `$${Number(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : null);
   const hasSocial = tmdbDetails && (tmdbDetails.facebook_id || tmdbDetails.instagram_id || tmdbDetails.twitter_id || tmdbDetails.homepage);
   const hasSidebar = tmdbDetails && (hasSocial || tmdbDetails.original_title || tmdbDetails.status || tmdbDetails.original_language || tmdbDetails.budget || tmdbDetails.revenue || (tmdbDetails.keywords?.length > 0));
+
+  const castWithImages = cast.filter((c) => Boolean(c?.profile_path));
 
   return (
     <div className="detail-page detail-page--tmdb-light">
@@ -334,13 +369,27 @@ export default function MovieDetail() {
               <div className="detail-actions detail-actions--icons">
                 {user && (
                   <>
-                    <button type="button" className="detail-action-icon" title="添加到片单" aria-label="片单">
+                    <button
+                      type="button"
+                      className={`detail-action-icon ${inPlaylist ? 'active' : ''}`}
+                      title={inPlaylist ? '已在片单，点击移除' : '添加到片单'}
+                      aria-label="片单"
+                      disabled={shelfBusy === 'playlist'}
+                      onClick={() => handleShelfToggle('playlist')}
+                    >
                       <svg viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M4 6h2v12H4V6zm4 0h2v12H8V6zm4 0h2v12h-2V6zm4 0h2v12h-2V6z" /></svg>
                     </button>
                     <button type="button" className={`detail-action-icon ${movie.isFavorite ? 'active' : ''}`} title="收藏" onClick={handleFavorite} aria-label="收藏">
                       <svg viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" /></svg>
                     </button>
-                    <button type="button" className="detail-action-icon" title="待看" aria-label="待看">
+                    <button
+                      type="button"
+                      className={`detail-action-icon ${inWatchlist ? 'active' : ''}`}
+                      title={inWatchlist ? '已在待看，点击移除' : '加入待看'}
+                      aria-label="待看"
+                      disabled={shelfBusy === 'watchlist'}
+                      onClick={() => handleShelfToggle('watchlist')}
+                    >
                       <svg viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M17 3H7c-1.1 0-2 .9-2 2v16l7-3 7 3V5c0-1.1-.9-2-2-2z" /></svg>
                     </button>
                     {tmdbDetails?.trailer_url && (
@@ -397,26 +446,16 @@ export default function MovieDetail() {
       <div className={`detail-body ${hasSidebar ? '' : 'detail-body--no-sidebar'}`}>
         <div className="detail-main">
           {/* 演员阵容 · 横向剧照卡（上照下文、白底圆角，参考第四张参考图） */}
-          {cast.length > 0 && (
+          {castWithImages.length > 0 && (
             <section className="detail-section detail-section--cast">
               <h2 className="section-title section-title--cast">演员阵容</h2>
               <div className="cast-row cast-row--filmstrip">
-                {cast.map((c, i) => (
+                {castWithImages.map((c, i) => (
                   <div key={c.id || i} className="cast-card cast-card--filmstrip">
                     {c.id ? (
                       <Link to={`/actors/${c.id}`} className="cast-card__link">
                         <div className="cast-photo cast-photo--filmstrip">
-                          {c.profile_path ? (
-                            <img src={c.profile_path} alt={c.name} onError={(e) => { e.target.style.display = 'none'; }} />
-                          ) : (
-                            <div
-                              className="cast-placeholder cast-placeholder--filmstrip"
-                              style={{ background: castPlaceholderGradient(c.id) }}
-                              aria-hidden
-                            >
-                              {castNameInitial(c.name)}
-                            </div>
-                          )}
+                          <img src={c.profile_path} alt={c.name} onError={(e) => { e.target.closest('.cast-card--filmstrip')?.remove(); }} />
                         </div>
                         <div className="cast-info cast-info--filmstrip">
                           <div className="cast-name cast-name--filmstrip">{c.name}</div>
@@ -426,17 +465,7 @@ export default function MovieDetail() {
                     ) : (
                       <>
                         <div className="cast-photo cast-photo--filmstrip">
-                          {c.profile_path ? (
-                            <img src={c.profile_path} alt={c.name} onError={(e) => { e.target.style.display = 'none'; }} />
-                          ) : (
-                            <div
-                              className="cast-placeholder cast-placeholder--filmstrip"
-                              style={{ background: castPlaceholderGradient(c.id || i) }}
-                              aria-hidden
-                            >
-                              {castNameInitial(c.name)}
-                            </div>
-                          )}
+                          <img src={c.profile_path} alt={c.name} onError={(e) => { e.target.closest('.cast-card--filmstrip')?.remove(); }} />
                         </div>
                         <div className="cast-info cast-info--filmstrip">
                           <div className="cast-name cast-name--filmstrip">{c.name}</div>

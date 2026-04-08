@@ -40,6 +40,7 @@ async function start() {
   const chartsRouter = require('./routes/charts');
   const ratingsRouter = require('./routes/ratings');
   const favoritesRouter = require('./routes/favorites');
+  const shelvesRouter = require('./routes/shelves');
   const commentsRouter = require('./routes/comments');
   const qaRouter = require('./routes/qa');
   const feedbacksRouter = require('./routes/feedbacks');
@@ -62,6 +63,7 @@ async function start() {
   app.use('/api/charts', chartsRouter);
   app.use('/api/ratings', ratingsRouter);
   app.use('/api/favorites', favoritesRouter);
+  app.use('/api/shelves', shelvesRouter);
   app.use('/api/comments', commentsRouter);
   app.use('/api/qa', qaRouter);
   app.use('/api/feedbacks', feedbacksRouter);

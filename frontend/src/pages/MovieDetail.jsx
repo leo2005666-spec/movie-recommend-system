@@ -7,7 +7,6 @@ import { normalizeMovieListResponse } from '../utils/recommendApi';
 import UserAvatar from '../components/UserAvatar';
 import DetailPageLoading from '../components/DetailPageLoading';
 import MovieDetailMedia from '../components/detail/MovieDetailMedia';
-import TmdbAwardsListing from '../components/TmdbAwardsListing';
 import { castNameInitial, castPlaceholderGradient } from '../utils/castCard';
 
 const SCENE_SIMILAR = 'similar';
@@ -63,8 +62,6 @@ export default function MovieDetail() {
   const [featuredCrew, setFeaturedCrew] = useState([]);
   const [collection, setCollection] = useState(null);
   const [awardsMeta, setAwardsMeta] = useState(null);
-  const [movieAwardsFull, setMovieAwardsFull] = useState(null);
-  const [movieAwardsLoading, setMovieAwardsLoading] = useState(true);
   const [comments, setComments] = useState([]);
   const [commentTotal, setCommentTotal] = useState(0);
   const [commentPage, setCommentPage] = useState(1);
@@ -126,8 +123,6 @@ export default function MovieDetail() {
     setFeaturedCrew([]);
     setCollection(null);
     setAwardsMeta(null);
-    setMovieAwardsFull(null);
-    setMovieAwardsLoading(true);
     setCommentPage(1);
     loadCommentsPage(1, false);
     Promise.all([
@@ -159,26 +154,6 @@ export default function MovieDetail() {
       cancelled = true;
     };
   }, [id, user, loadCommentsPage]);
-
-  /** TMDB 式完整奖项列表（解析官网影片奖项页，与详情页内嵌展示） */
-  useEffect(() => {
-    if (!id) return;
-    let cancelled = false;
-    api
-      .get(`/movies/${id}/awards-data`)
-      .then((r) => {
-        if (!cancelled) setMovieAwardsFull(r.data);
-      })
-      .catch(() => {
-        if (!cancelled) setMovieAwardsFull(null);
-      })
-      .finally(() => {
-        if (!cancelled) setMovieAwardsLoading(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [id]);
 
   const handleRate = async () => {
     if (!user) return;
@@ -482,20 +457,9 @@ export default function MovieDetail() {
 
           <MovieDetailMedia media={detailMedia} />
 
-          {(movieAwardsLoading ||
-            (movieAwardsFull?.groups?.length ?? 0) > 0 ||
-            awardsMeta?.tmdb_awards_url ||
-            collection?.id) && (
+          {(awardsMeta?.tmdb_awards_url || collection?.id) && (
             <section className="detail-section detail-section--extras" aria-label="奖项与合集">
-              {movieAwardsLoading && <p className="empty-hint detail-extras-loading">正在加载奖项与提名…</p>}
-              {!movieAwardsLoading && (movieAwardsFull?.groups?.length ?? 0) > 0 && (
-                <TmdbAwardsListing
-                  data={movieAwardsFull}
-                  panelId="movie-detail-awards-panel"
-                  wrapClassName="detail-movie-awards"
-                />
-              )}
-              {!movieAwardsLoading && !(movieAwardsFull?.groups?.length > 0) && awardsMeta?.tmdb_awards_url && (
+              {awardsMeta?.tmdb_awards_url && (
                 <Link to={`/movies/${id}/awards`} className="detail-awards-banner">
                   <span className="detail-awards-banner__decor" aria-hidden>
                     <span className="detail-awards-banner__star detail-awards-banner__star--lg" />

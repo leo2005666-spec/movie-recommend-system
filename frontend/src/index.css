@@ -8241,6 +8241,19 @@ a.admin-dashboard-card--link:hover {
 .actor-awards-card__shared-name:hover {
   text-decoration: underline;
 }
+.actor-awards-card__shared-toggle {
+  margin-top: 0.35rem;
+  border: none;
+  background: transparent;
+  color: var(--accent);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0;
+}
+.actor-awards-card__shared-toggle:hover {
+  text-decoration: underline;
+}
 .actor-awards-card__year {
   flex-shrink: 0;
   min-width: 3.5rem;

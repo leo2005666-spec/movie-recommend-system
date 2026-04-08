@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { getProxiedImageUrl, upgradeTmdbImageUrl } from '../api/request';
 
@@ -107,11 +108,11 @@ export default function TmdbAwardsListing({
                         {e.poster_url ? (
                           e.movie_local_id ? (
                             <Link to={`/movies/${e.movie_local_id}`}>
-                              <img src={awardImgSrc(e.poster_url, { highRes: highResImages, kind: 'poster' })} alt="" decoding="async" />
+                              <img src={awardImgSrc(e.poster_url, { highRes: highResImages, kind: 'poster' })} alt="" loading="lazy" decoding="async" />
                             </Link>
                           ) : (
                             <span>
-                              <img src={awardImgSrc(e.poster_url, { highRes: highResImages, kind: 'poster' })} alt="" decoding="async" />
+                              <img src={awardImgSrc(e.poster_url, { highRes: highResImages, kind: 'poster' })} alt="" loading="lazy" decoding="async" />
                             </span>
                           )
                         ) : (
@@ -127,35 +128,7 @@ export default function TmdbAwardsListing({
                           <span className="actor-awards-card__cat-name">{e.category_name}</span>
                         </p>
                         {e.shared_with?.length > 0 && (
-                          <div className="actor-awards-card__shared">
-                            <p className="actor-awards-card__shared-label">Shared with...</p>
-                            <ul className="actor-awards-card__shared-list">
-                              {e.shared_with.map((p) => (
-                                <li key={`${p.tmdb_id ?? 'x'}-${p.name}`} className="actor-awards-card__shared-item">
-                                  {p.profile_thumb ? (
-                                    p.tmdb_id ? (
-                                      <Link to={`/actors/${p.tmdb_id}`} className="actor-awards-card__shared-av">
-                                        <img src={awardImgSrc(p.profile_thumb, { highRes: highResImages, kind: 'profile' })} alt="" decoding="async" />
-                                      </Link>
-                                    ) : (
-                                      <span className="actor-awards-card__shared-av">
-                                        <img src={awardImgSrc(p.profile_thumb, { highRes: highResImages, kind: 'profile' })} alt="" decoding="async" />
-                                      </span>
-                                    )
-                                  ) : (
-                                    <div className="actor-awards-card__shared-av actor-awards-card__shared-av--ph" />
-                                  )}
-                                  {p.tmdb_id ? (
-                                    <Link to={`/actors/${p.tmdb_id}`} className="actor-awards-card__shared-name">
-                                      {p.name}
-                                    </Link>
-                                  ) : (
-                                    <span className="actor-awards-card__shared-name">{p.name}</span>
-                                  )}
-                                </li>
-                              ))}
-                            </ul>
-                          </div>
+                          <SharedWithList people={e.shared_with} highResImages={highResImages} />
                         )}
                       </div>
                       <div className="actor-awards-card__year">{e.year_label}</div>
@@ -167,6 +140,72 @@ export default function TmdbAwardsListing({
           ))}
         </div>
       </div>
+    </div>
+  );
+}
+
+function SharedWithList({ people = [], highResImages = false }) {
+  const [expanded, setExpanded] = useState(false);
+
+  return (
+    <div className="actor-awards-card__shared">
+      <p className="actor-awards-card__shared-label">Shared with...</p>
+      {!expanded && (
+        <button
+          type="button"
+          className="actor-awards-card__shared-toggle"
+          onClick={() => setExpanded((v) => !v)}
+        >
+          展开名单（{people.length}人）
+        </button>
+      )}
+      {expanded && (
+        <>
+          <ul className="actor-awards-card__shared-list">
+            {people.map((p) => (
+              <li key={`${p.tmdb_id ?? 'x'}-${p.name}`} className="actor-awards-card__shared-item">
+                {p.profile_thumb ? (
+                  p.tmdb_id ? (
+                    <Link to={`/actors/${p.tmdb_id}`} className="actor-awards-card__shared-av">
+                      <img
+                        src={awardImgSrc(p.profile_thumb, { highRes: highResImages, kind: 'profile' })}
+                        alt=""
+                        loading="lazy"
+                        decoding="async"
+                      />
+                    </Link>
+                  ) : (
+                    <span className="actor-awards-card__shared-av">
+                      <img
+                        src={awardImgSrc(p.profile_thumb, { highRes: highResImages, kind: 'profile' })}
+                        alt=""
+                        loading="lazy"
+                        decoding="async"
+                      />
+                    </span>
+                  )
+                ) : (
+                  <div className="actor-awards-card__shared-av actor-awards-card__shared-av--ph" />
+                )}
+                {p.tmdb_id ? (
+                  <Link to={`/actors/${p.tmdb_id}`} className="actor-awards-card__shared-name">
+                    {p.name}
+                  </Link>
+                ) : (
+                  <span className="actor-awards-card__shared-name">{p.name}</span>
+                )}
+              </li>
+            ))}
+          </ul>
+          <button
+            type="button"
+            className="actor-awards-card__shared-toggle"
+            onClick={() => setExpanded(false)}
+          >
+            收起名单
+          </button>
+        </>
+      )}
     </div>
   );
 }

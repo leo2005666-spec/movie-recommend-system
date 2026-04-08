@@ -7209,9 +7209,19 @@ a.admin-dashboard-card--link:hover {
   color: #0f172a;
   font-size: 0.875rem;
   font-weight: 600;
+  background: transparent;
+  border: 0;
+  padding: 0;
+  text-align: left;
+  width: 100%;
+  cursor: pointer;
 }
 .movie-collection-cell__link:hover {
   color: var(--accent, #db2777);
+}
+.movie-collection-cell__link:disabled {
+  opacity: 0.72;
+  cursor: wait;
 }
 .movie-collection-cell img {
   width: 100%;

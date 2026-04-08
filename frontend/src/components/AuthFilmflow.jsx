@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { api, getCoverUrl, getProxiedImageUrl } from '../api/request';
 import { AUTH_PAGE_POSTER_URLS, splitPostersIntoColumns } from '../constants/authPagePosters';
 
@@ -11,8 +11,11 @@ const VISIBLE_COUNT = COLS * ROWS;
 const MAX_POSTERS = 24;
 /** 封面宽度：登录侧卡片不大，略小像素加快首包 */
 const COVER_W = 220;
-/** 静态宫格：每次只替换一张，保持稳定感 */
-const ROTATE_EVERY_MS = 2200;
+/** 低频更新：默认 1 小时；可通过 VITE_AUTH_FILMFLOW_REFRESH_MS 调整（建议 1 天：86400000） */
+const REFRESH_MS = Math.max(
+  60 * 60 * 1000,
+  Number(import.meta.env.VITE_AUTH_FILMFLOW_REFRESH_MS || 60 * 60 * 1000)
+);
 
 function shuffle(arr) {
   const a = [...arr];
@@ -85,6 +88,13 @@ function resolvePosterSrc(raw) {
   return raw;
 }
 
+function pickVisibleUnique(pool, count) {
+  if (!Array.isArray(pool) || pool.length === 0) return [];
+  const start = Math.floor(Math.random() * pool.length);
+  const rotated = [...pool.slice(start), ...pool.slice(0, start)];
+  return rotated.slice(0, Math.min(count, rotated.length));
+}
+
 /** 条带在 overflow 内滚动，lazy 常导致解码很晚；首若干张优先加载 */
 function FlowPoster({ posterUrl, fallbackPool, priority }) {
   const [attempt, setAttempt] = useState(0);
@@ -121,9 +131,7 @@ function FlowPoster({ posterUrl, fallbackPool, priority }) {
 
 export default function AuthFilmflow() {
   const [posterPool, setPosterPool] = useState(() => shuffle([...AUTH_PAGE_POSTER_URLS]));
-  const [visiblePosters, setVisiblePosters] = useState(() => shuffle([...AUTH_PAGE_POSTER_URLS]).slice(0, VISIBLE_COUNT));
-  const replaceIndexRef = useRef(0);
-  const poolCursorRef = useRef(0);
+  const [visiblePosters, setVisiblePosters] = useState(() => pickVisibleUnique(shuffle([...AUTH_PAGE_POSTER_URLS]), VISIBLE_COUNT));
 
   useEffect(() => {
     let cancelled = false;
@@ -165,41 +173,22 @@ export default function AuthFilmflow() {
   }, [posterPool]);
 
   useEffect(() => {
-    const initial = shuffle([...fallbackPool]).slice(0, VISIBLE_COUNT);
-    setVisiblePosters(initial);
-    replaceIndexRef.current = 0;
-    poolCursorRef.current = 0;
+    setVisiblePosters(pickVisibleUnique(fallbackPool, VISIBLE_COUNT));
   }, [fallbackPool]);
 
   useEffect(() => {
     if (!fallbackPool.length) return undefined;
     const timer = setInterval(() => {
-      setVisiblePosters((prev) => {
-        if (!prev.length) return prev;
-        const next = [...prev];
-        const used = new Set(next);
-        let candidate = '';
-        const maxTry = Math.max(fallbackPool.length, 1);
-        for (let i = 0; i < maxTry; i += 1) {
-          const idx = (poolCursorRef.current + i) % fallbackPool.length;
-          const u = fallbackPool[idx];
-          if (!used.has(u)) {
-            candidate = u;
-            poolCursorRef.current = (idx + 1) % fallbackPool.length;
-            break;
-          }
-        }
-        if (!candidate) return prev;
-        const rep = replaceIndexRef.current % next.length;
-        next[rep] = candidate;
-        replaceIndexRef.current = (replaceIndexRef.current + 1) % next.length;
-        return next;
-      });
-    }, ROTATE_EVERY_MS);
+      setVisiblePosters(pickVisibleUnique(fallbackPool, VISIBLE_COUNT));
+    }, REFRESH_MS);
     return () => clearInterval(timer);
   }, [fallbackPool]);
 
-  const columns = useMemo(() => splitPostersIntoColumns(visiblePosters, COLS), [visiblePosters]);
+  const columns = useMemo(() => {
+    const padded = [...visiblePosters];
+    while (padded.length < VISIBLE_COUNT) padded.push('');
+    return splitPostersIntoColumns(padded, COLS);
+  }, [visiblePosters]);
 
   return (
     <div className="auth-split__filmflow" aria-hidden>

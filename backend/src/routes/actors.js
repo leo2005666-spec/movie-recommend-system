@@ -37,7 +37,8 @@ router.get('/:tmdbPersonId/awards', asyncHandler(async (req, res) => {
   if (tmdbIds.size) {
     const ids = [...tmdbIds];
     const placeholders = ids.map(() => '?').join(',');
-    const rows = await db.prepare(`SELECT id, tmdb_id FROM movies WHERE tmdb_id IN (${placeholders})`).all(...ids);
+    const rawRows = await db.prepare(`SELECT id, tmdb_id FROM movies WHERE tmdb_id IN (${placeholders})`).all(...ids);
+    const rows = Array.isArray(rawRows) ? rawRows : [];
     rows.forEach((r) => {
       localByTmdb[r.tmdb_id] = r.id;
     });

@@ -26,7 +26,8 @@ function enrichMovieAwardGroups(groups) {
   if (tmdbIds.size) {
     const ids = [...tmdbIds];
     const ph = ids.map(() => '?').join(',');
-    const rows = db.prepare(`SELECT id, tmdb_id FROM movies WHERE tmdb_id IN (${ph})`).all(...ids);
+    const rawRows = db.prepare(`SELECT id, tmdb_id FROM movies WHERE tmdb_id IN (${ph})`).all(...ids);
+    const rows = Array.isArray(rawRows) ? rawRows : [];
     rows.forEach((r) => {
       localByTmdb[r.tmdb_id] = r.id;
     });

@@ -81,22 +81,20 @@ export default function TmdbAwardsListing({
               <div className="actor-awards-group__title-row">
                 <div className="actor-awards-group__mob-logo">
                   {g.organization_logo_url ? (
-                    <a href={g.organization_url} target="_blank" rel="noopener noreferrer" className="actor-awards-group__logo-link">
+                    <span className="actor-awards-group__logo-link">
                       <img src={awardImgSrc(g.organization_logo_url, { highRes: highResImages, kind: 'logo' })} alt="" className="actor-awards-group__logo-sm" />
-                    </a>
+                    </span>
                   ) : null}
                 </div>
-                <a href={g.organization_url} target="_blank" rel="noopener noreferrer" className="actor-awards-group__org-link">
-                  {g.organization_name}
-                </a>
+                <span className="actor-awards-group__org-link">{g.organization_name}</span>
               </div>
 
               <div className="actor-awards-group__body">
                 <div className="actor-awards-group__logo-col">
                   {g.organization_logo_url ? (
-                    <a href={g.organization_url} target="_blank" rel="noopener noreferrer" className="actor-awards-group__logo-box">
+                    <span className="actor-awards-group__logo-box">
                       <img src={awardImgSrc(g.organization_logo_url, { highRes: highResImages, kind: 'logo' })} alt="" />
-                    </a>
+                    </span>
                   ) : (
                     <div className="actor-awards-group__logo-ph" />
                   )}
@@ -112,31 +110,21 @@ export default function TmdbAwardsListing({
                               <img src={awardImgSrc(e.poster_url, { highRes: highResImages, kind: 'poster' })} alt="" decoding="async" />
                             </Link>
                           ) : (
-                            <a
-                              href={e.movie_tmdb_id ? `https://www.themoviedb.org/movie/${e.movie_tmdb_id}` : e.ceremony_url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                            >
+                            <span>
                               <img src={awardImgSrc(e.poster_url, { highRes: highResImages, kind: 'poster' })} alt="" decoding="async" />
-                            </a>
+                            </span>
                           )
                         ) : (
                           <div className="actor-awards-card__poster-ph" />
                         )}
                       </div>
                       <div className="actor-awards-card__main">
-                        <p className="actor-awards-card__ceremony">
-                          <a href={e.ceremony_url} target="_blank" rel="noopener noreferrer">
-                            {e.ceremony_label}
-                          </a>
-                        </p>
+                        <p className="actor-awards-card__ceremony">{e.ceremony_label}</p>
                         <p className="actor-awards-card__category-line">
                           <span className={e.is_winner ? 'actor-awards-badge actor-awards-badge--win' : 'actor-awards-badge actor-awards-badge--nom'}>
                             {e.is_winner ? '获奖' : '提名'}
                           </span>{' '}
-                          <a href={e.category_url} target="_blank" rel="noopener noreferrer" className="actor-awards-card__cat-name">
-                            {e.category_name}
-                          </a>
+                          <span className="actor-awards-card__cat-name">{e.category_name}</span>
                         </p>
                         {e.shared_with?.length > 0 && (
                           <div className="actor-awards-card__shared">

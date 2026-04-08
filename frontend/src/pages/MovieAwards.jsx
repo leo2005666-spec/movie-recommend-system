@@ -51,7 +51,6 @@ export default function MovieAwards() {
     nomination_count: nomRaw,
     award_lines: linesRaw,
     awards_text: awardsText,
-    tmdb_awards_url: tmdbUrl,
     groups: groupsRaw,
   } = payload;
   const awardLines = Array.isArray(linesRaw) ? linesRaw : [];
@@ -112,14 +111,6 @@ export default function MovieAwards() {
               <p className="empty-hint">暂无结构化奖项数据。若 TMDB 官网有该片奖项页，请稍后重试或前往 TMDB 查看。</p>
             )}
           </>
-        )}
-
-        {tmdbUrl && (
-          <p className="movie-awards-external">
-            <a href={tmdbUrl} target="_blank" rel="noopener noreferrer">
-              在 The Movie Database 上查看完整奖项
-            </a>
-          </p>
         )}
       </main>
     </div>

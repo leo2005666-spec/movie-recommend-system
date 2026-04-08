@@ -2571,7 +2571,7 @@ a.brand-text-gradient:hover {
   background: linear-gradient(145deg, #0c4a6e 0%, #0369a1 40%, #0284c7 100%);
 }
 
-/* 右侧：三列自上而下无限循环滚动（无缝拼接双份列表） */
+/* 右侧：三列静态宫格，定时替换单张（同屏不重复） */
 .auth-split__filmflow {
   position: absolute;
   inset: 0;
@@ -2588,33 +2588,14 @@ a.brand-text-gradient:hover {
   min-width: 0;
   overflow: hidden;
   contain: layout style;
-  mask-image: linear-gradient(to bottom, transparent 0%, #000 12%, #000 88%, transparent 100%);
-  -webkit-mask-image: linear-gradient(to bottom, transparent 0%, #000 12%, #000 88%, transparent 100%);
 }
 
-.auth-split__filmflow-track {
+.auth-split__filmflow-stack {
   display: flex;
   flex-direction: column;
   gap: 10px;
   width: 100%;
-  animation: auth-filmflow-scroll linear infinite;
-  transform: translateZ(0);
-  backface-visibility: hidden;
-}
-
-@keyframes auth-filmflow-scroll {
-  from {
-    transform: translate3d(0, 0, 0);
-  }
-  to {
-    transform: translate3d(0, -50%, 0);
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .auth-split__filmflow-track {
-    animation: none;
-  }
+  padding-top: 4px;
 }
 
 .auth-split__filmflow-cell {

@@ -23,6 +23,12 @@ export default function Recommend() {
   }, []);
 
   useEffect(() => {
+    if (!tasteType) return;
+    const exists = tastes.some((t) => t.key === tasteType);
+    if (!exists) setTasteType('');
+  }, [tastes, tasteType]);
+
+  useEffect(() => {
     let cancelled = false;
     setLoading(true);
     const params = { limit: 48 };

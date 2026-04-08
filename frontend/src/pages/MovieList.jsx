@@ -13,6 +13,7 @@ const BROWSE_MODES = [
   { key: 'upcoming', label: '即将上映' },
   { key: 'top_rated', label: '高分' },
 ];
+const HIDDEN_FILTER_TAG_LABELS = new Set(['高分', '经典', '热门', '新片', '治愈', '烧脑']);
 
 export default function MovieList() {
   const [searchParams] = useSearchParams();
@@ -107,6 +108,12 @@ export default function MovieList() {
   }, []);
 
   useEffect(() => {
+    if (!tasteType) return;
+    const exists = tastes.some((t) => t.key === tasteType);
+    if (!exists) setTasteType('');
+  }, [tastes, tasteType]);
+
+  useEffect(() => {
     load();
   }, [load]);
 
@@ -149,7 +156,9 @@ export default function MovieList() {
   const typeMerged = useMemo(() => {
     const rows = [];
     categories.forEach((c) => rows.push({ key: `c:${c.id}`, label: c.name, kind: 'c' }));
-    tags.forEach((t) => rows.push({ key: `t:${t.id}`, label: t.name, kind: 't' }));
+    tags
+      .filter((t) => !HIDDEN_FILTER_TAG_LABELS.has(String(t?.name || '').trim()))
+      .forEach((t) => rows.push({ key: `t:${t.id}`, label: t.name, kind: 't' }));
     return rows;
   }, [categories, tags]);
 

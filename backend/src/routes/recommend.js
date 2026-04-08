@@ -12,6 +12,7 @@ const { getColdStartRecommendations, getPopularRecommendations: getPop } = requi
 const { asyncHandler } = require('../utils/asyncHandler');
 
 const router = express.Router();
+const HIDDEN_TASTE_KEYS = new Set(['couple', 'buff']);
 
 /**
  * 按人群口味推荐：与影视库相同条件（分类∩标签）+ 偏经典/高分的排序，与「仅按 id 新」区分
@@ -76,7 +77,9 @@ router.post('/events', optionalAuth, asyncHandler(async (req, res) => {
 
 /** 获取人群口味预设列表（供前端展示快捷标签） */
 router.get('/tastes', asyncHandler(async (req, res) => {
-  const list = Object.entries(TASTE_PRESETS).map(([key, v]) => ({ key, label: v.label, desc: v.desc }));
+  const list = Object.entries(TASTE_PRESETS)
+    .filter(([key]) => !HIDDEN_TASTE_KEYS.has(key))
+    .map(([key, v]) => ({ key, label: v.label, desc: v.desc }));
   res.json({ code: 0, data: list });
 }));
 

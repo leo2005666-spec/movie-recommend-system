@@ -122,6 +122,11 @@ export default function ForumThread() {
         ← 返回论坛
       </Link>
       <div className="card" style={{ padding: 'var(--space-lg)', marginBottom: 'var(--space-lg)' }}>
+        {thread.topic_display ? (
+          <div className="forum-thread__topic" style={{ color: 'var(--text-tertiary)', fontSize: 13, fontWeight: 700, marginBottom: 6 }}>
+            话题：{thread.topic_label ? `${thread.topic_label} · ` : ''}{thread.topic_display}
+          </div>
+        ) : null}
         <h1 style={{ fontSize: '1.35rem', marginBottom: '0.35rem' }}>{thread.title}</h1>
         <div className="empty-hint" style={{ marginBottom: '0.75rem' }}>
           {thread.username} · {thread.created_at}

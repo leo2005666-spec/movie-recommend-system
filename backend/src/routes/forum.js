@@ -103,6 +103,49 @@ function normalizeReplyRow(r) {
   return mapCommentUserAvatar(r);
 }
 
+async function enrichThreadTopics(rows) {
+  const list = Array.isArray(rows) ? rows : [];
+  const movieIds = [];
+  const directorKeys = [];
+  for (const r of list) {
+    const tk = String(r.topic_key || '').trim();
+    if (/^movie:\d+$/.test(tk)) {
+      const mid = parseInt(tk.split(':')[1], 10);
+      if (Number.isFinite(mid) && mid > 0) movieIds.push(mid);
+    } else if (tk.startsWith('director:')) {
+      directorKeys.push(tk);
+    }
+  }
+  const uniqMovieIds = [...new Set(movieIds)];
+  const movieTitleById = {};
+  if (uniqMovieIds.length) {
+    const ph = uniqMovieIds.map(() => '?').join(',');
+    const mrows = await db.prepare(`SELECT id, title FROM movies WHERE id IN (${ph})`).all(...uniqMovieIds);
+    (mrows || []).forEach((m) => { movieTitleById[m.id] = m.title; });
+  }
+
+  const baseByKey = Object.fromEntries(BASE_TOPICS.map((t) => [t.key, t]));
+  return list.map((r) => {
+    const tk = String(r.topic_key || '').trim();
+    let topic_label = '讨论';
+    let topic_display = '';
+    if (/^movie:\d+$/.test(tk)) {
+      const mid = parseInt(tk.split(':')[1], 10);
+      const title = movieTitleById[mid] || '某部电影';
+      topic_label = '电影';
+      topic_display = `《${title}》`;
+    } else if (tk.startsWith('director:')) {
+      const name = tk.slice('director:'.length);
+      topic_label = '导演';
+      topic_display = String(name || '').trim();
+    } else if (baseByKey[tk]) {
+      topic_label = baseByKey[tk].label;
+      topic_display = baseByKey[tk].label;
+    }
+    return { ...r, topic_label, topic_display };
+  });
+}
+
 router.get('/threads', optionalAuth, asyncHandler(async (req, res) => {
   const page = clamp(parseInt(req.query.page || '1', 10) || 1, 1, 200);
   const limit = clamp(parseInt(req.query.limit || '20', 10) || 20, 5, 50);
@@ -129,7 +172,9 @@ router.get('/threads', optionalAuth, asyncHandler(async (req, res) => {
   const total = topicKey
     ? ((await db.prepare('SELECT COUNT(*) as n FROM forum_threads WHERE topic_key = ?').get(topicKey))?.n ?? 0)
     : ((await db.prepare('SELECT COUNT(*) as n FROM forum_threads').get())?.n ?? 0);
-  res.json({ code: 0, data: { list: (rows || []).map(normalizeThreadRow), total, page, limit } });
+  const normalized = (rows || []).map(normalizeThreadRow);
+  const enriched = await enrichThreadTopics(normalized);
+  res.json({ code: 0, data: { list: enriched, total, page, limit } });
 }));
 
 router.get('/topics', optionalAuth, asyncHandler(async (req, res) => {
@@ -169,7 +214,9 @@ router.get('/threads/:id', optionalAuth, asyncHandler(async (req, res) => {
     ORDER BY r.id ASC
   `).all(id);
 
-  res.json({ code: 0, data: { thread: normalizeThreadRow(thread), replies: (replies || []).map(normalizeReplyRow) } });
+  const tNorm = normalizeThreadRow(thread);
+  const [tEnriched] = await enrichThreadTopics([tNorm]);
+  res.json({ code: 0, data: { thread: tEnriched, replies: (replies || []).map(normalizeReplyRow) } });
 }));
 
 router.post('/threads', authMiddleware, asyncHandler(async (req, res) => {
@@ -222,43 +269,106 @@ router.post('/seed', authMiddleware, requireAdmin, asyncHandler(async (req, res)
   const hotMovieTopic = TOPICS.find((t) => String(t.key).startsWith('movie:'))?.label?.replace(/^电影：/, '') || '这部电影';
   const hotDirectorTopic = TOPICS.find((t) => String(t.key).startsWith('director:'))?.label?.replace(/^导演：/, '') || '这位导演';
 
-  const sampleTitles = [
-    `《${hotMovieTopic}》结局你们怎么理解？`,
-    `《${hotMovieTopic}》有哪些被忽略的细节？`,
-    `${hotDirectorTopic} 的入坑顺序怎么排？`,
-    `${hotDirectorTopic} 最强的一部是哪部？`,
-    '大家最近看了什么？求推荐',
-    '有没有类似风格的电影？',
-    '你最喜欢的反转电影是哪部？',
-    '周末想轻松一点，有没有喜剧推荐',
-    '你会给这部片打几分？理由是？',
-    '来聊聊你最喜欢的角色',
-  ];
-  const sampleBodies = [
-    '我最近片荒了，想找点不踩雷的。大家有推荐吗？',
-    '感觉前半段铺垫很多，后半段一下子爆发，挺爽的。',
-    '我更喜欢这种节奏慢一点但情绪很足的片子。',
-    '有些细节我没看懂，尤其是最后那一段，想听听你们的理解。',
-    '我觉得评分有点虚高，但也可能是我没共鸣到点。',
-    '配乐太加分了，氛围拉满。',
-    '我最喜欢的是人物关系的变化，很真实。',
-  ];
-  const sampleReplies = [
-    '同感！我也被最后那段震到了。',
-    '我推荐你看一下同类型的经典片，风格很像。',
-    '我觉得核心是“选择”，不是“结果”。',
-    '我反而喜欢它不解释太明白，留点空间。',
-    '如果喜欢这种氛围，可以试试导演的另一部。',
-    '这部我给 4 分，情绪很到位。',
-    '我当时看完缓了好久，后劲很大。',
-  ];
+  const titlePoolByKind = {
+    movie: [
+      `《${hotMovieTopic}》结局你们怎么理解？`,
+      `《${hotMovieTopic}》最打动你的是哪一段？`,
+      `《${hotMovieTopic}》有哪些细节二刷才懂？`,
+      `《${hotMovieTopic}》如果删掉一个情节会更好吗？`,
+    ],
+    director: [
+      `${hotDirectorTopic} 的入坑顺序怎么排？`,
+      `${hotDirectorTopic} 最强的一部是哪部？`,
+      `${hotDirectorTopic} 的风格你更喜欢哪一面？`,
+    ],
+    recommend: [
+      '大家最近看了什么？求推荐',
+      '想找一部不太烧脑但有反转的片子，有吗？',
+      '有没有节奏舒服、后劲很大的电影？',
+    ],
+    review: [
+      '评分高但我没看懂，是我问题吗？',
+      '这部片的主题到底是什么？我有点纠结',
+      '来聊聊你最喜欢的角色',
+    ],
+    actor: [
+      '这位演员的演技巅峰是哪部？',
+      '同一个演员在不同作品里差别太大了',
+    ],
+    list: [
+      '想做一个“周末轻松片单”，你会放哪些？',
+      '年度十佳怎么选？欢迎互相安利',
+    ],
+  };
+
+  const bodyPoolByKind = {
+    movie: [
+      `我想认真聊聊《${hotMovieTopic}》。我最在意的是“动机”那块：前面铺垫很多，但最后的选择让我有点纠结。`,
+      `《${hotMovieTopic}》我看完后劲很大。不是爽片那种，是会反复回想一些台词和镜头。`,
+      `我觉得《${hotMovieTopic}》最强的是节奏：前半段像在慢慢把你带进去，后半段情绪一下子拉满。`,
+    ],
+    director: [
+      `${hotDirectorTopic} 的片子我感觉都有一种共同气质：看似冷静，但情绪很克制地往里走。`,
+      `想问问大家：${hotDirectorTopic} 如果只看一部入坑，选哪部最合适？`,
+    ],
+    recommend: [
+      '我最近片荒了，想找点不踩雷的。最好节奏舒服一点、情绪到位一点。',
+      '不想看太烧脑的，但也不想太平。有没有“好看又不累”的推荐？',
+    ],
+    review: [
+      '我有点两极分化：很多地方喜欢，但也有些地方觉得解释不够清楚。想听听你们的理解。',
+      '我更关心它想表达什么，而不是情节本身。大家觉得它的核心是什么？',
+    ],
+    actor: [
+      '这位演员的表演细节很厉害，你们有哪部印象最深？',
+      '同一个演员在不同作品里的气质差别很大，怎么做到的？',
+    ],
+    list: [
+      '想整理一个片单：适合周末晚上放松的那种。你会推荐哪些？',
+      '如果只能给朋友推荐 3 部不踩雷的，你会选什么？',
+    ],
+  };
+
+  const replyPoolByKind = {
+    movie: [
+      `我也在聊《${hotMovieTopic}》。我更站“主题”这一边，结局其实是为了把主题推到极致。`,
+      `关于《${hotMovieTopic}》我同意你说的节奏，后半段那个点一下就把前面都串起来了。`,
+      `我觉得《${hotMovieTopic}》留白是优点，不解释太死反而更真实。`,
+    ],
+    director: [
+      `如果聊 ${hotDirectorTopic}，我建议先看他/她更“好入口”的那部，再看更实验的。`,
+      `${hotDirectorTopic} 的强项是气氛营造和细节，很多镜头不是为了推进情节，而是为了情绪。`,
+    ],
+    generic: [
+      '同感！我也是这样想的。',
+      '我不太同意，不过你的角度挺有意思。',
+      '这个点我之前没注意到，准备二刷。',
+      '我更喜欢它的配乐和氛围，真的加分。',
+    ],
+  };
+
+  const existing = await db.prepare('SELECT topic_key, title FROM forum_threads ORDER BY id DESC LIMIT 400').all();
+  const existsSet = new Set((existing || []).map((r) => `${String(r.topic_key || '')}||${String(r.title || '')}`));
 
   let createdThreads = 0;
   for (let i = 0; i < threadsN; i += 1) {
     const uid = userIds[i % userIds.length];
     const topicKey = TOPICS[i % TOPICS.length].key;
-    const title = sampleTitles[i % sampleTitles.length];
-    const content = sampleBodies[(i * 3) % sampleBodies.length] + '\n\n' + sampleBodies[(i * 5 + 1) % sampleBodies.length];
+    const kind = String(topicKey).startsWith('movie:') ? 'movie'
+      : String(topicKey).startsWith('director:') ? 'director'
+        : (BASE_TOPICS.find((t) => t.key === topicKey)?.key || 'review');
+    const titlePool = titlePoolByKind[kind] || titlePoolByKind.review;
+    const bodyPool = bodyPoolByKind[kind] || bodyPoolByKind.review;
+    let title = titlePool[i % titlePool.length];
+    const content = bodyPool[(i * 3) % bodyPool.length] + '\n\n' + bodyPool[(i * 5 + 1) % bodyPool.length];
+
+    // 避免重复标题：如已存在则加后缀
+    const baseKey = `${topicKey}||${title}`;
+    if (existsSet.has(baseKey)) {
+      title = `${title}（第${(i % 9) + 2}聊）`;
+    }
+    existsSet.add(`${topicKey}||${title}`);
+
     await db.prepare('INSERT INTO forum_threads (user_id, topic_key, title, content) VALUES (?, ?, ?, ?)').run(uid, topicKey, title, content);
     const tidRow = await db.prepare('SELECT last_insert_rowid() as id').get();
     const tid = tidRow?.id;
@@ -268,7 +378,12 @@ router.post('/seed', authMiddleware, requireAdmin, asyncHandler(async (req, res)
     let lastParent = null;
     for (let j = 0; j < repliesN; j += 1) {
       const ruid = userIds[(i + j + 1) % userIds.length];
-      const body = sampleReplies[(i + j) % sampleReplies.length];
+      const pool = kind === 'movie'
+        ? [...replyPoolByKind.movie, ...replyPoolByKind.generic]
+        : kind === 'director'
+          ? [...replyPoolByKind.director, ...replyPoolByKind.generic]
+          : replyPoolByKind.generic;
+      const body = pool[(i + j) % pool.length];
       const parentId = j % 4 === 3 ? lastParent : null;
       await db.prepare('INSERT INTO forum_replies (thread_id, user_id, parent_id, content) VALUES (?, ?, ?, ?)').run(tid, ruid, parentId, body);
       const ridRow = await db.prepare('SELECT last_insert_rowid() as id').get();

@@ -1852,6 +1852,12 @@ a.brand-text-gradient:hover {
   color: inherit;
   border-radius: var(--radius-lg);
 }
+.forum-feed__topic {
+  font-size: 0.78rem;
+  color: var(--text-tertiary);
+  font-weight: 800;
+  margin-bottom: 0.25rem;
+}
 .forum-feed__title {
   font-weight: 900;
   font-size: 1.05rem;

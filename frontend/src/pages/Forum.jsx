@@ -158,6 +158,11 @@ export default function Forum() {
         <div className="forum-feed">
           {list.map((t) => (
             <Link key={t.id} to={`/forum/${t.id}`} className="forum-feed__item card">
+              {t.topic_display ? (
+                <div className="forum-feed__topic">
+                  {t.topic_label ? `${t.topic_label} · ` : ''}{t.topic_display}
+                </div>
+              ) : null}
               <div className="forum-feed__title">{t.title}</div>
               <div className="forum-feed__excerpt">
                 {String(t.content || '').slice(0, 160)}{String(t.content || '').length > 160 ? '…' : ''}

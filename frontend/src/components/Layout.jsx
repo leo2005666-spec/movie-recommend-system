@@ -15,8 +15,6 @@ import {
   SignInIcon,
   UserPlusIcon,
   SignOutIcon,
-  Moon,
-  Sun,
 } from '@phosphor-icons/react';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
@@ -34,7 +32,7 @@ const navItems = [
 
 export default function Layout() {
   const { user, logout, isAdmin } = useAuth();
-  const { theme, toggleTheme } = useTheme();
+  const { theme } = useTheme();
   const loc = useLocation();
   /** 向下滚动时收起顶栏，向上滚动时展开，减少遮挡海报/Hero */
   const [headerScrollHidden, setHeaderScrollHidden] = useState(false);
@@ -100,15 +98,7 @@ export default function Layout() {
           ))}
         </nav>
         )}
-        <button
-          type="button"
-          className="header-theme-toggle"
-          onClick={toggleTheme}
-          aria-label={theme === 'dark' ? '切换到浅色主题' : '切换到深色主题'}
-          title={theme === 'dark' ? '浅色' : '深色'}
-        >
-          {theme === 'dark' ? <Sun size={22} weight="regular" /> : <Moon size={22} weight="regular" />}
-        </button>
+        {/* 已移除暗夜模式切换按钮：保持界面统一 */}
         {!isAuthPage ? (
         <div className="user-area">
           {user ? (

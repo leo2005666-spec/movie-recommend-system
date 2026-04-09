@@ -6,20 +6,91 @@ const { mapCommentUserAvatar } = require('../utils/userPublic');
 const { logActivity } = require('../middleware/log');
 
 const router = express.Router();
-const TOPICS = [
-  { key: 'movie', label: '电影', desc: '剧情、结局解析、观后感、冷门佳作' },
-  { key: 'actor', label: '演员', desc: '演技、角色、作品推荐、八卦（克制）' },
+const BASE_TOPICS = [
+  { key: 'actor', label: '演员', desc: '演技、角色、作品推荐、花絮趣谈' },
   { key: 'recommend', label: '求推荐', desc: '片荒求助、同类型安利、入坑顺序' },
   { key: 'review', label: '影评讨论', desc: '观点碰撞、细节解读、彩蛋挖掘' },
   { key: 'list', label: '片单', desc: '主题片单、年度十佳、必看清单' },
 ];
 
-function topicByKey(key) {
-  return TOPICS.find((t) => t.key === key) || null;
-}
-
 function clamp(n, a, b) {
   return Math.min(b, Math.max(a, n));
+}
+
+function normalizeTopicKey(raw) {
+  const s = String(raw || '').trim();
+  if (!s) return '';
+  const base = BASE_TOPICS.find((t) => t.key === s);
+  if (base) return base.key;
+  if (/^movie:\d{1,9}$/.test(s)) return s;
+  if (/^director:[\w .\-\u4e00-\u9fa5]{1,40}$/i.test(s)) return s;
+  return '';
+}
+
+function svgAvatarData(username) {
+  const name = String(username || 'U').trim() || 'U';
+  const initial = name.slice(0, 1).toUpperCase();
+  const seed = Array.from(name).reduce((a, c) => a + c.charCodeAt(0), 0);
+  const hue = seed % 360;
+  const hue2 = (hue + 42) % 360;
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="hsl(${hue},85%,58%)"/><stop offset="1" stop-color="hsl(${hue2},85%,50%)"/></linearGradient></defs><rect width="128" height="128" rx="64" fill="url(#g)"/><text x="64" y="72" font-family="system-ui,Segoe UI,Arial" font-size="56" text-anchor="middle" fill="rgba(255,255,255,0.92)" font-weight="800">${initial}</text></svg>`;
+  const b64 = Buffer.from(svg, 'utf8').toString('base64');
+  return `data:image/svg+xml;base64,${b64}`;
+}
+
+async function ensureSomeUserAvatars() {
+  const rows = await db.prepare('SELECT id, username, avatar, avatar_data FROM users ORDER BY id ASC').all();
+  const users = Array.isArray(rows) ? rows : [];
+  let updated = 0;
+  for (const u of users.slice(0, 8)) {
+    const has = (u.avatar && String(u.avatar).trim()) || (u.avatar_data && String(u.avatar_data).trim());
+    if (has) continue;
+    const data = svgAvatarData(u.username);
+    await db.prepare('UPDATE users SET avatar_data = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?').run(data, u.id);
+    updated += 1;
+  }
+  return updated;
+}
+
+async function buildTopics() {
+  const hotMovie = await db.prepare(`
+    SELECT id, title, tmdb_vote_count
+    FROM movies
+    ORDER BY COALESCE(tmdb_vote_count, 0) DESC, id DESC
+    LIMIT 1
+  `).get();
+  const hotDirector = await db.prepare(`
+    SELECT director, COUNT(*) as cnt
+    FROM movies
+    WHERE director IS NOT NULL AND TRIM(director) <> ''
+    GROUP BY director
+    ORDER BY cnt DESC
+    LIMIT 1
+  `).get();
+
+  const out = [];
+  if (hotMovie?.id && hotMovie?.title) {
+    out.push({
+      key: `movie:${hotMovie.id}`,
+      label: `电影：${hotMovie.title}`,
+      desc: '围绕这部电影聊剧情、细节、结局与彩蛋',
+      kind: 'movie',
+    });
+  } else {
+    out.push({ key: 'movie:0', label: '电影：热门作品', desc: '聊剧情、细节、结局与彩蛋', kind: 'movie' });
+  }
+  if (hotDirector?.director) {
+    out.push({
+      key: `director:${String(hotDirector.director).trim()}`,
+      label: `导演：${String(hotDirector.director).trim()}`,
+      desc: '聊导演风格、代表作与入坑顺序',
+      kind: 'director',
+    });
+  } else {
+    out.push({ key: 'director:热门导演', label: '导演：热门导演', desc: '聊风格、代表作与入坑顺序', kind: 'director' });
+  }
+  out.push(...BASE_TOPICS.map((t) => ({ ...t, kind: 'base' })));
+  return out;
 }
 
 function normalizeThreadRow(r) {
@@ -37,8 +108,7 @@ router.get('/threads', optionalAuth, asyncHandler(async (req, res) => {
   const limit = clamp(parseInt(req.query.limit || '20', 10) || 20, 5, 50);
   const offset = (page - 1) * limit;
   const sort = String(req.query.sort || 'latest').toLowerCase();
-  const topic = String(req.query.topic || '').trim().toLowerCase();
-  const topicKey = topicByKey(topic)?.key || '';
+  const topicKey = normalizeTopicKey(req.query.topic);
   const orderBy = sort === 'hot'
     ? 'reply_cnt DESC, t.id DESC'
     : 't.id DESC';
@@ -63,6 +133,7 @@ router.get('/threads', optionalAuth, asyncHandler(async (req, res) => {
 }));
 
 router.get('/topics', optionalAuth, asyncHandler(async (req, res) => {
+  const TOPICS = await buildTopics();
   const counts = await db.prepare(`
     SELECT topic_key, COUNT(*) as cnt
     FROM forum_threads
@@ -102,8 +173,7 @@ router.get('/threads/:id', optionalAuth, asyncHandler(async (req, res) => {
 }));
 
 router.post('/threads', authMiddleware, asyncHandler(async (req, res) => {
-  const topic = String(req.body?.topic || '').trim().toLowerCase();
-  const topicKey = topicByKey(topic)?.key || null;
+  const topicKey = normalizeTopicKey(req.body?.topic) || null;
   const title = String(req.body?.title || '').trim();
   const content = String(req.body?.content || '').trim();
   if (!title || title.length < 2 || title.length > 80) {
@@ -143,19 +213,24 @@ router.post('/seed', authMiddleware, requireAdmin, asyncHandler(async (req, res)
   const threadsN = clamp(parseInt(req.body?.threads || '12', 10) || 12, 3, 60);
   const maxReplies = clamp(parseInt(req.body?.maxReplies || '10', 10) || 10, 2, 40);
 
+  await ensureSomeUserAvatars();
+  const TOPICS = await buildTopics();
   const users = await db.prepare('SELECT id, username FROM users ORDER BY id ASC').all();
   const userIds = (users || []).map((u) => u.id).filter((n) => Number.isFinite(n) && n > 0);
   if (!userIds.length) return res.status(400).json({ code: 400, message: '无可用用户' });
 
+  const hotMovieTopic = TOPICS.find((t) => String(t.key).startsWith('movie:'))?.label?.replace(/^电影：/, '') || '这部电影';
+  const hotDirectorTopic = TOPICS.find((t) => String(t.key).startsWith('director:'))?.label?.replace(/^导演：/, '') || '这位导演';
+
   const sampleTitles = [
+    `《${hotMovieTopic}》结局你们怎么理解？`,
+    `《${hotMovieTopic}》有哪些被忽略的细节？`,
+    `${hotDirectorTopic} 的入坑顺序怎么排？`,
+    `${hotDirectorTopic} 最强的一部是哪部？`,
     '大家最近看了什么？求推荐',
-    '这部片结局你们怎么理解？',
     '有没有类似风格的电影？',
-    '这位导演的入坑顺序怎么排？',
-    '评分高但我没看懂，是我问题吗？',
-    '周末想轻松一点，有没有喜剧推荐',
     '你最喜欢的反转电影是哪部？',
-    '有没有看完会治愈一点的片子',
+    '周末想轻松一点，有没有喜剧推荐',
     '你会给这部片打几分？理由是？',
     '来聊聊你最喜欢的角色',
   ];

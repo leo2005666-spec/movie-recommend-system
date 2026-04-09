@@ -1,13 +1,16 @@
-import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useEffect, useMemo, useState } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
 import { ChatCircleDotsIcon } from '@phosphor-icons/react';
 import { api } from '../api/request';
 import { useAuth } from '../context/AuthContext';
 
 export default function Forum() {
   const { user, isAdmin } = useAuth();
+  const [sp, setSp] = useSearchParams();
+  const topic = (sp.get('topic') || '').trim();
   const [loading, setLoading] = useState(true);
   const [list, setList] = useState([]);
+  const [topics, setTopics] = useState([]);
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [busy, setBusy] = useState(false);
@@ -15,15 +18,21 @@ export default function Forum() {
 
   const load = () => {
     setLoading(true);
-    api.get('/forum/threads', { page: 1, limit: 20, sort: 'latest' })
+    api.get('/forum/threads', { page: 1, limit: 20, sort: 'latest', topic: topic || undefined })
       .then((r) => setList(r?.data?.list || []))
       .catch(() => setList([]))
       .finally(() => setLoading(false));
   };
 
   useEffect(() => {
-    load();
+    api.get('/forum/topics').then((r) => setTopics(Array.isArray(r?.data) ? r.data : [])).catch(() => setTopics([]));
   }, []);
+
+  useEffect(() => {
+    load();
+  }, [topic]);
+
+  const topicMeta = useMemo(() => topics.find((t) => t.key === topic) || null, [topics, topic]);
 
   const postThread = async (e) => {
     e.preventDefault();
@@ -35,7 +44,7 @@ export default function Forum() {
     if (c.length < 1) return setErr('内容不能为空');
     setBusy(true);
     try {
-      await api.post('/forum/threads', { title: t, content: c });
+      await api.post('/forum/threads', { topic: topic || undefined, title: t, content: c });
       setTitle('');
       setContent('');
       load();
@@ -67,12 +76,48 @@ export default function Forum() {
         讨论论坛
       </h1>
 
-      {isAdmin && (
-        <div style={{ marginBottom: 'var(--space-md)' }}>
-          <button type="button" className="btn btn-outline" disabled={busy} onClick={seed}>
-            生成一批虚拟讨论
-          </button>
-        </div>
+      {topics.length > 0 && (
+        <section className="forum-topics">
+          <div className="forum-topics__grid">
+            {topics.map((tp) => (
+              <button
+                key={tp.key}
+                type="button"
+                className={`forum-topic-tile ${topic === tp.key ? 'active' : ''}`}
+                onClick={() => {
+                  const next = new URLSearchParams(sp);
+                  next.set('topic', tp.key);
+                  setSp(next);
+                }}
+              >
+                <div className="forum-topic-tile__label">{tp.label}</div>
+                <div className="forum-topic-tile__desc">{tp.desc}</div>
+                <div className="forum-topic-tile__meta">{tp.thread_cnt ?? 0} 讨论</div>
+              </button>
+            ))}
+          </div>
+          <div className="forum-topics__bar">
+            <span className="forum-topics__current">
+              当前话题：<b>{topicMeta?.label || (topic ? topic : '全部')}</b>
+            </span>
+            <button
+              type="button"
+              className="forum-topics__clear"
+              onClick={() => {
+                const next = new URLSearchParams(sp);
+                next.delete('topic');
+                setSp(next);
+              }}
+            >
+              清除话题筛选
+            </button>
+            {isAdmin && (
+              <button type="button" className="btn btn-outline forum-admin-seed" disabled={busy} onClick={seed}>
+                生成虚拟讨论
+              </button>
+            )}
+          </div>
+        </section>
       )}
 
       {user ? (
@@ -110,16 +155,15 @@ export default function Forum() {
       {loading ? (
         <p className="empty-hint">加载中…</p>
       ) : list.length ? (
-        <div className="forum-thread-list">
+        <div className="forum-feed">
           {list.map((t) => (
-            <Link key={t.id} to={`/forum/${t.id}`} className="forum-thread-card card">
-              <div className="forum-thread-card__title">{t.title}</div>
-              <div className="forum-thread-card__meta">
-                {t.username} · {t.created_at} · {t.reply_cnt ?? 0} 回复
+            <Link key={t.id} to={`/forum/${t.id}`} className="forum-feed__item card">
+              <div className="forum-feed__title">{t.title}</div>
+              <div className="forum-feed__excerpt">
+                {String(t.content || '').slice(0, 160)}{String(t.content || '').length > 160 ? '…' : ''}
               </div>
-              <div className="forum-thread-card__excerpt">
-                {String(t.content || '').slice(0, 110)}
-                {String(t.content || '').length > 110 ? '…' : ''}
+              <div className="forum-feed__meta">
+                {t.username} · {t.created_at} · {t.reply_cnt ?? 0} 回复
               </div>
             </Link>
           ))}

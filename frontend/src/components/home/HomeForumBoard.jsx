@@ -6,16 +6,19 @@ import { api } from '../../api/request';
 export default function HomeForumBoard() {
   const [loading, setLoading] = useState(true);
   const [threads, setThreads] = useState([]);
+  const [topics, setTopics] = useState([]);
 
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
-    api.get('/forum/threads', { page: 1, limit: 6, sort: 'latest' })
-      .then((r) => {
-        if (!cancelled) setThreads(r?.data?.list || []);
-      })
-      .catch(() => {
-        if (!cancelled) setThreads([]);
+    Promise.all([
+      api.get('/forum/topics').catch(() => ({ data: [] })),
+      api.get('/forum/threads', { page: 1, limit: 6, sort: 'latest' }).catch(() => ({ data: { list: [] } })),
+    ])
+      .then(([topicRes, threadRes]) => {
+        if (cancelled) return;
+        setTopics(Array.isArray(topicRes?.data) ? topicRes.data : []);
+        setThreads(threadRes?.data?.list || []);
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
@@ -32,6 +35,15 @@ export default function HomeForumBoard() {
         </h2>
         <Link to="/forum" className="home-forum-board__more">进入论坛 →</Link>
       </div>
+      {!loading && topics.length > 0 ? (
+        <div className="home-forum-board__topics">
+          {topics.slice(0, 5).map((t) => (
+            <Link key={t.key} to={`/forum?topic=${encodeURIComponent(t.key)}`} className="home-forum-topic">
+              {t.label}
+            </Link>
+          ))}
+        </div>
+      ) : null}
       {loading ? (
         <p className="empty-hint">加载中…</p>
       ) : threads.length ? (

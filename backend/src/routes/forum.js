@@ -6,6 +6,17 @@ const { mapCommentUserAvatar } = require('../utils/userPublic');
 const { logActivity } = require('../middleware/log');
 
 const router = express.Router();
+const TOPICS = [
+  { key: 'movie', label: '电影', desc: '剧情、结局解析、观后感、冷门佳作' },
+  { key: 'actor', label: '演员', desc: '演技、角色、作品推荐、八卦（克制）' },
+  { key: 'recommend', label: '求推荐', desc: '片荒求助、同类型安利、入坑顺序' },
+  { key: 'review', label: '影评讨论', desc: '观点碰撞、细节解读、彩蛋挖掘' },
+  { key: 'list', label: '片单', desc: '主题片单、年度十佳、必看清单' },
+];
+
+function topicByKey(key) {
+  return TOPICS.find((t) => t.key === key) || null;
+}
 
 function clamp(n, a, b) {
   return Math.min(b, Math.max(a, n));
@@ -26,22 +37,41 @@ router.get('/threads', optionalAuth, asyncHandler(async (req, res) => {
   const limit = clamp(parseInt(req.query.limit || '20', 10) || 20, 5, 50);
   const offset = (page - 1) * limit;
   const sort = String(req.query.sort || 'latest').toLowerCase();
+  const topic = String(req.query.topic || '').trim().toLowerCase();
+  const topicKey = topicByKey(topic)?.key || '';
   const orderBy = sort === 'hot'
     ? 'reply_cnt DESC, t.id DESC'
     : 't.id DESC';
 
+  const whereSql = topicKey ? 'WHERE t.topic_key = ?' : '';
+  const params = topicKey ? [topicKey, limit, offset] : [limit, offset];
   const rows = await db.prepare(`
     SELECT t.id, t.user_id, u.username, u.avatar, u.avatar_data, u.avatar_style,
            u.updated_at AS user_updated_at,
-           t.title, t.content, t.created_at,
+           t.topic_key, t.title, t.content, t.created_at,
            (SELECT COUNT(*) FROM forum_replies r WHERE r.thread_id = t.id) AS reply_cnt
     FROM forum_threads t
     INNER JOIN users u ON u.id = t.user_id
+    ${whereSql}
     ORDER BY ${orderBy}
     LIMIT ? OFFSET ?
-  `).all(limit, offset);
-  const total = (await db.prepare('SELECT COUNT(*) as n FROM forum_threads').get())?.n ?? 0;
+  `).all(...params);
+  const total = topicKey
+    ? ((await db.prepare('SELECT COUNT(*) as n FROM forum_threads WHERE topic_key = ?').get(topicKey))?.n ?? 0)
+    : ((await db.prepare('SELECT COUNT(*) as n FROM forum_threads').get())?.n ?? 0);
   res.json({ code: 0, data: { list: (rows || []).map(normalizeThreadRow), total, page, limit } });
+}));
+
+router.get('/topics', optionalAuth, asyncHandler(async (req, res) => {
+  const counts = await db.prepare(`
+    SELECT topic_key, COUNT(*) as cnt
+    FROM forum_threads
+    WHERE topic_key IS NOT NULL AND TRIM(topic_key) <> ''
+    GROUP BY topic_key
+  `).all();
+  const byKey = Object.fromEntries((counts || []).map((r) => [String(r.topic_key), Number(r.cnt) || 0]));
+  const list = TOPICS.map((t) => ({ ...t, thread_cnt: byKey[t.key] || 0 }));
+  res.json({ code: 0, data: list });
 }));
 
 router.get('/threads/:id', optionalAuth, asyncHandler(async (req, res) => {
@@ -51,7 +81,7 @@ router.get('/threads/:id', optionalAuth, asyncHandler(async (req, res) => {
   const thread = await db.prepare(`
     SELECT t.id, t.user_id, u.username, u.avatar, u.avatar_data, u.avatar_style,
            u.updated_at AS user_updated_at,
-           t.title, t.content, t.created_at
+           t.topic_key, t.title, t.content, t.created_at
     FROM forum_threads t
     INNER JOIN users u ON u.id = t.user_id
     WHERE t.id = ?
@@ -72,6 +102,8 @@ router.get('/threads/:id', optionalAuth, asyncHandler(async (req, res) => {
 }));
 
 router.post('/threads', authMiddleware, asyncHandler(async (req, res) => {
+  const topic = String(req.body?.topic || '').trim().toLowerCase();
+  const topicKey = topicByKey(topic)?.key || null;
   const title = String(req.body?.title || '').trim();
   const content = String(req.body?.content || '').trim();
   if (!title || title.length < 2 || title.length > 80) {
@@ -80,7 +112,7 @@ router.post('/threads', authMiddleware, asyncHandler(async (req, res) => {
   if (!content || content.length < 1 || content.length > 4000) {
     return res.status(400).json({ code: 400, message: '内容需 1-4000 字' });
   }
-  await db.prepare('INSERT INTO forum_threads (user_id, title, content) VALUES (?, ?, ?)').run(req.user.id, title, content);
+  await db.prepare('INSERT INTO forum_threads (user_id, topic_key, title, content) VALUES (?, ?, ?, ?)').run(req.user.id, topicKey, title, content);
   const row = await db.prepare('SELECT last_insert_rowid() as id').get();
   await logActivity(req, 'FORUM_THREAD', 'forum', row.id, title);
   res.json({ code: 0, data: { id: row.id } });
@@ -149,9 +181,10 @@ router.post('/seed', authMiddleware, requireAdmin, asyncHandler(async (req, res)
   let createdThreads = 0;
   for (let i = 0; i < threadsN; i += 1) {
     const uid = userIds[i % userIds.length];
+    const topicKey = TOPICS[i % TOPICS.length].key;
     const title = sampleTitles[i % sampleTitles.length];
     const content = sampleBodies[(i * 3) % sampleBodies.length] + '\n\n' + sampleBodies[(i * 5 + 1) % sampleBodies.length];
-    await db.prepare('INSERT INTO forum_threads (user_id, title, content) VALUES (?, ?, ?)').run(uid, title, content);
+    await db.prepare('INSERT INTO forum_threads (user_id, topic_key, title, content) VALUES (?, ?, ?, ?)').run(uid, topicKey, title, content);
     const tidRow = await db.prepare('SELECT last_insert_rowid() as id').get();
     const tid = tidRow?.id;
     if (!tid) continue;

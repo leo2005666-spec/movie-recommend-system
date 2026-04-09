@@ -182,6 +182,7 @@ async function run() {
     CREATE TABLE IF NOT EXISTS forum_threads (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       user_id INTEGER NOT NULL,
+      topic_key TEXT,
       title TEXT NOT NULL,
       content TEXT NOT NULL,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -234,6 +235,9 @@ async function run() {
   } catch (_) {}
   try {
     await db.exec('ALTER TABLE forum_threads ADD COLUMN updated_at DATETIME');
+  } catch (_) {}
+  try {
+    await db.exec('ALTER TABLE forum_threads ADD COLUMN topic_key TEXT');
   } catch (_) {}
   await db.exec(`
     UPDATE users SET avatar_style = (ABS(id * 17 + LENGTH(COALESCE(username,''))) % 12)

@@ -1875,6 +1875,14 @@ a.brand-text-gradient:hover {
   color: var(--text-tertiary);
 }
 
+.detail-comments-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: var(--space-md);
+}
+
 .home-reviews-board__cols {
   display: grid;
   grid-template-columns: 1fr 1fr;

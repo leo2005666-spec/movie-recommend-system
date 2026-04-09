@@ -65,6 +65,7 @@ export default function MovieDetail() {
   const [commentTotal, setCommentTotal] = useState(0);
   const [commentPage, setCommentPage] = useState(1);
   const [commentsBusy, setCommentsBusy] = useState(false);
+  const [seedBusy, setSeedBusy] = useState(false);
   const [commentContent, setCommentContent] = useState('');
   const [replyDraft, setReplyDraft] = useState({ parentId: null, replyToUserId: null, replyToUsername: '' });
   const [replyOpenById, setReplyOpenById] = useState({});
@@ -283,6 +284,21 @@ export default function MovieDetail() {
       setCommentTotal((t) => Math.max(0, t - 1));
     } catch (e) {
       setErr(e.message || '删除失败');
+    }
+  };
+
+  const seedCommentTalk = async () => {
+    if (!user || user.role !== 'admin') return;
+    setSeedBusy(true);
+    setErr('');
+    try {
+      await api.post('/comments/seed', { movieId: parseInt(id, 10), roots: 8, maxReplies: 10 });
+      setCommentPage(1);
+      loadCommentsPage(1, false);
+    } catch (e) {
+      setErr(e.message || '生成失败');
+    } finally {
+      setSeedBusy(false);
     }
   };
 
@@ -547,9 +563,16 @@ export default function MovieDetail() {
 
           {/* 用户评论（TMDB 风格卡片头 + 正文） */}
           <section className="detail-section detail-section--comments">
-            <h2 className="section-title">
-              评论 {commentTotal > 0 ? `(${commentTotal})` : comments.length > 0 ? `(${comments.length})` : ''}
-            </h2>
+            <div className="detail-comments-head">
+              <h2 className="section-title" style={{ marginBottom: 0 }}>
+                评论 {commentTotal > 0 ? `(${commentTotal})` : comments.length > 0 ? `(${comments.length})` : ''}
+              </h2>
+              {user?.role === 'admin' && (
+                <button type="button" className="btn btn-outline" disabled={seedBusy} onClick={seedCommentTalk}>
+                  {seedBusy ? '生成中…' : '生成影评对话'}
+                </button>
+              )}
+            </div>
             {user && (
               <form onSubmit={handleComment} className="social-form social-form--tmdb">
                 <textarea className="form-textarea form-input" value={commentContent} onChange={(e) => setCommentContent(e.target.value)} placeholder="写下你的影评…" rows={3} maxLength={2000} />

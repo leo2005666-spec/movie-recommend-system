@@ -4,7 +4,7 @@
 const express = require('express');
 const { body, validationResult } = require('express-validator');
 const db = require('../db/db');
-const { authMiddleware, optionalAuth } = require('../middleware/auth');
+const { authMiddleware, optionalAuth, requireAdmin } = require('../middleware/auth');
 const { logActivity } = require('../middleware/log');
 const { asyncHandler } = require('../utils/asyncHandler');
 const { mapCommentUserAvatar } = require('../utils/userPublic');
@@ -175,6 +175,69 @@ router.delete('/:id', authMiddleware, asyncHandler(async (req, res) => {
   await db.prepare('DELETE FROM comments WHERE id = ?').run(id);
   await logActivity(req, 'DELETE_COMMENT', 'comment', id, '');
   res.json({ code: 0, message: '已删除' });
+}));
+
+// 管理员：为某部作品生成一批“讨论式”评论（含回复），用于冷启动撑场面
+router.post('/seed', authMiddleware, requireAdmin, asyncHandler(async (req, res) => {
+  const movieId = parseInt(req.body?.movieId, 10);
+  if (!Number.isFinite(movieId) || movieId < 1) {
+    return res.status(400).json({ code: 400, message: '缺少 movieId' });
+  }
+  const rootsN = Math.min(30, Math.max(3, parseInt(req.body?.roots || 8, 10) || 8));
+  const maxReplies = Math.min(30, Math.max(2, parseInt(req.body?.maxReplies || 10, 10) || 10));
+
+  const movie = await db.prepare('SELECT id, title FROM movies WHERE id = ?').get(movieId);
+  if (!movie) return res.status(404).json({ code: 404, message: '作品不存在' });
+
+  const users = await db.prepare('SELECT id, username FROM users ORDER BY id ASC').all();
+  const userIds = (Array.isArray(users) ? users : []).map((u) => u.id).filter((n) => Number.isFinite(n) && n > 0);
+  if (userIds.length < 2) return res.status(400).json({ code: 400, message: '用户太少，无法生成对话' });
+
+  const rootTexts = [
+    '我刚看完，感觉节奏很舒服，情绪也很到位。',
+    '这部片我有点两极分化，一开始没进入状态，后面越看越上头。',
+    '有没有人和我一样最喜欢配乐？氛围真的绝了。',
+    '我觉得结局挺有意思的，你们怎么理解？',
+    '不剧透地说一句：有几个细节回想起来很妙。',
+    '角色塑造很强，尤其是主角的变化。',
+    '我更喜欢它的镜头语言，信息量很大。',
+    '如果你喜欢这种类型，强烈建议补同导演的其他作品。',
+  ];
+  const replyTexts = [
+    '同感，我也是这样想的。',
+    '我觉得重点是“选择”，不是“结果”。',
+    '我当时没注意到这个细节，回头再刷一遍。',
+    '我反而喜欢它留白，不把话说死。',
+    '我给 4 分，属于会推荐给朋友的那种。',
+    '我更吃这种慢热的叙事方式。',
+    '我不太同意，感觉还有更好的处理方式。',
+    '哈哈哈这段我也笑了。',
+  ];
+
+  let created = 0;
+  for (let i = 0; i < rootsN; i += 1) {
+    const uid = userIds[i % userIds.length];
+    const content = rootTexts[i % rootTexts.length];
+    await db.prepare('INSERT INTO comments (user_id, movie_id, parent_id, reply_to_user_id, content, images) VALUES (?, ?, NULL, NULL, ?, NULL)')
+      .run(uid, movieId, content);
+    const ridRow = await db.prepare('SELECT last_insert_rowid() as id').get();
+    const rootId = ridRow?.id;
+    if (!rootId) continue;
+    created += 1;
+
+    const repliesN = 2 + (i % Math.min(6, maxReplies));
+    let lastReplyUserId = uid;
+    for (let j = 0; j < repliesN; j += 1) {
+      const ruid = userIds[(i + j + 1) % userIds.length];
+      const rcontent = replyTexts[(i + j) % replyTexts.length];
+      await db.prepare('INSERT INTO comments (user_id, movie_id, parent_id, reply_to_user_id, content, images) VALUES (?, ?, ?, ?, ?, NULL)')
+        .run(ruid, movieId, rootId, lastReplyUserId, rcontent);
+      lastReplyUserId = ruid;
+    }
+  }
+
+  await logActivity(req, 'SEED_COMMENTS', 'movie', movieId, `seed ${created} roots`);
+  res.json({ code: 0, data: { createdRoots: created }, message: '已生成影评对话' });
 }));
 
 module.exports = router;

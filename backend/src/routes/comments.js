@@ -97,10 +97,15 @@ router.get('/movie/:movieId', optionalAuth, asyncHandler(async (req, res) => {
   const rows = await db.prepare(`
     SELECT c.id, c.user_id, u.username, u.avatar, u.avatar_data, u.avatar_style,
            u.updated_at AS user_updated_at,
+           c.parent_id, c.reply_to_user_id,
+           ru.username AS reply_to_username,
+           pc.content AS parent_content,
            c.content, c.created_at, c.images,
            r.score AS rating_score
     FROM comments c
     INNER JOIN users u ON c.user_id = u.id
+    LEFT JOIN users ru ON ru.id = c.reply_to_user_id
+    LEFT JOIN comments pc ON pc.id = c.parent_id
     LEFT JOIN ratings r ON r.user_id = c.user_id AND r.movie_id = c.movie_id
     WHERE c.movie_id = ?
     ORDER BY c.id DESC LIMIT ? OFFSET ?
@@ -115,11 +120,15 @@ router.get('/movie/:movieId', optionalAuth, asyncHandler(async (req, res) => {
 router.post('/', authMiddleware, [
   body('movieId').isInt(),
   body('content').trim().isLength({ min: 1, max: 2000 }),
+  body('parentId').optional(),
+  body('replyToUserId').optional(),
   body('images').optional(),
 ], asyncHandler(async (req, res) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) return res.status(400).json({ code: 400, message: '评论1-2000字' });
   const { movieId, content, images: rawImages } = req.body;
+  const parentId = req.body?.parentId != null ? parseInt(req.body.parentId, 10) : null;
+  const replyToUserId = req.body?.replyToUserId != null ? parseInt(req.body.replyToUserId, 10) : null;
   let imageArr;
   try {
     imageArr = validateCommentImagesPayload(rawImages);
@@ -130,10 +139,23 @@ router.post('/', authMiddleware, [
   const movie = await db.prepare('SELECT id, title FROM movies WHERE id = ?').get(movieId);
   if (!movie) return res.status(404).json({ code: 404, message: '作品不存在' });
 
+  let safeParentId = null;
+  let safeReplyToUserId = null;
+  if (parentId != null && Number.isFinite(parentId) && parentId > 0) {
+    const parent = await db.prepare('SELECT id, user_id, movie_id FROM comments WHERE id = ?').get(parentId);
+    if (!parent || Number(parent.movie_id) !== Number(movieId)) {
+      return res.status(400).json({ code: 400, message: '父评论不存在' });
+    }
+    safeParentId = parent.id;
+    safeReplyToUserId = replyToUserId && Number.isFinite(replyToUserId) ? replyToUserId : parent.user_id;
+  }
+
   const imagesJson = imageArr.length > 0 ? JSON.stringify(imageArr) : null;
-  await db.prepare('INSERT INTO comments (user_id, movie_id, content, images) VALUES (?, ?, ?, ?)').run(
+  await db.prepare('INSERT INTO comments (user_id, movie_id, parent_id, reply_to_user_id, content, images) VALUES (?, ?, ?, ?, ?, ?)').run(
     req.user.id,
     movieId,
+    safeParentId,
+    safeReplyToUserId,
     content,
     imagesJson
   );

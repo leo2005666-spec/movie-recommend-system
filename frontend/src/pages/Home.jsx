@@ -8,6 +8,7 @@ import TrailerStripCard from '../components/home/TrailerStripCard';
 import HomeTmdbRails from '../components/home/HomeTmdbRails';
 import HomePosterSkeletonRow from '../components/home/HomePosterSkeletonRow';
 import HomeReviewsBoard from '../components/home/HomeReviewsBoard';
+import HomeForumBoard from '../components/home/HomeForumBoard';
 import HomeWelcomeHero from '../components/home/HomeWelcomeHero';
 import { MOCK_HOME_REVIEWS } from '../constants/mockHomeReviews';
 
@@ -395,6 +396,7 @@ export default function Home() {
       </section>
 
       <HomeReviewsBoard realComments={hotComments} mockReviews={MOCK_HOME_REVIEWS} linkMovie={linkMovie} />
+      <HomeForumBoard />
     </div>
   );
 }

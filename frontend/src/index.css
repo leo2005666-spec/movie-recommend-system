@@ -1699,6 +1699,182 @@ a.brand-text-gradient:hover {
   margin: 0;
 }
 
+/* ========== 首页讨论论坛 ========== */
+.home-forum-board {
+  margin-top: var(--space-2xl);
+}
+.home-forum-board__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.75rem;
+}
+.home-forum-board__title {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+.home-forum-board__more {
+  color: var(--accent);
+  text-decoration: none;
+  font-weight: 600;
+}
+.home-forum-board__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1rem;
+}
+.home-forum-card {
+  padding: 0.9rem 1rem;
+  text-decoration: none;
+  color: inherit;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border);
+  background: var(--bg-surface);
+  box-shadow: var(--shadow-xs);
+}
+.home-forum-card:hover {
+  border-color: var(--accent);
+  box-shadow: var(--shadow-sm);
+  transform: translateY(-2px);
+}
+.home-forum-card__title {
+  font-weight: 700;
+  margin-bottom: 0.25rem;
+}
+.home-forum-card__meta {
+  font-size: 0.8rem;
+  color: var(--text-tertiary);
+  margin-bottom: 0.45rem;
+}
+.home-forum-card__excerpt {
+  font-size: 0.92rem;
+  color: var(--text-secondary);
+  line-height: 1.45;
+}
+
+/* ========== 论坛页 ========== */
+.forum-thread-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 1rem;
+}
+.forum-thread-card {
+  padding: 1rem;
+  text-decoration: none;
+  color: inherit;
+}
+.forum-thread-card__title {
+  font-weight: 800;
+  margin-bottom: 0.35rem;
+}
+.forum-thread-card__meta {
+  font-size: 0.8rem;
+  color: var(--text-tertiary);
+  margin-bottom: 0.55rem;
+}
+.forum-thread-card__excerpt {
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+.forum-reply {
+  display: flex;
+  gap: 0.6rem;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid rgba(15, 23, 42, 0.06);
+}
+.forum-reply__head {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-bottom: 0.25rem;
+}
+.forum-reply__name { font-weight: 700; }
+.forum-reply__time { font-size: 0.78rem; color: var(--text-tertiary); }
+.forum-reply__btn {
+  margin-left: auto;
+  background: transparent;
+  border: 0;
+  color: var(--accent);
+  cursor: pointer;
+  font-weight: 600;
+}
+.forum-reply__children {
+  margin-top: 0.5rem;
+  padding-left: 0.8rem;
+  border-left: 2px solid rgba(219, 39, 119, 0.18);
+}
+.forum-replyto {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.5rem;
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+}
+.forum-replyto__cancel {
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  color: var(--text-tertiary);
+}
+
+/* ========== 电影详情评论回复（楼中楼） ========== */
+.comment-reply-btn {
+  margin-left: 0.5rem;
+}
+.comment-reply-btn--small {
+  padding: 0.2rem 0.5rem;
+  font-size: 0.78rem;
+}
+.tmdb-replies-block {
+  margin: 0.25rem 0 1rem 3.2rem;
+}
+.tmdb-replies-toggle {
+  background: transparent;
+  border: 0;
+  color: var(--accent);
+  cursor: pointer;
+  font-weight: 600;
+  padding: 0;
+  margin-bottom: 0.5rem;
+}
+.tmdb-replies {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding-left: 0.8rem;
+  border-left: 2px solid rgba(219, 39, 119, 0.18);
+}
+.tmdb-reply {
+  display: flex;
+  gap: 0.6rem;
+}
+.tmdb-reply__body { flex: 1; }
+.tmdb-reply__meta {
+  display: flex;
+  gap: 0.6rem;
+  align-items: baseline;
+  margin-bottom: 0.2rem;
+}
+.tmdb-reply__name { font-weight: 700; }
+.tmdb-reply__time { font-size: 0.78rem; color: var(--text-tertiary); }
+.tmdb-reply__text { color: var(--text-secondary); line-height: 1.55; }
+.tmdb-reply__at { color: var(--accent); font-weight: 700; }
+.tmdb-reply-draft {
+  margin-top: 0.5rem;
+  color: var(--text-secondary);
+}
+.tmdb-reply-draft__cancel {
+  margin-left: 0.6rem;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  color: var(--text-tertiary);
+}
+
 .home-reviews-board__cols {
   display: grid;
   grid-template-columns: 1fr 1fr;

@@ -7,6 +7,7 @@ import {
   SparkleIcon,
   ChartBarIcon,
   PaperPlaneTiltIcon,
+  ChatCircleDotsIcon,
   HeartIcon,
   ListBulletsIcon,
   FileTextIcon,
@@ -27,6 +28,7 @@ const navItems = [
   { to: '/movies', label: '影视库', Icon: FilmStripIcon },
   { to: '/recommend', label: '个性推荐', Icon: SparkleIcon },
   { to: '/charts', label: '榜单', Icon: ChartBarIcon },
+  { to: '/forum', label: '论坛', Icon: ChatCircleDotsIcon },
   { to: '/feedback', label: '意见反馈', Icon: PaperPlaneTiltIcon },
 ];
 

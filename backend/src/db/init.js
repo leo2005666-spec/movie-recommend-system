@@ -131,10 +131,14 @@ async function run() {
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       user_id INTEGER NOT NULL,
       movie_id INTEGER NOT NULL,
+      parent_id INTEGER,
+      reply_to_user_id INTEGER,
       content TEXT NOT NULL,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY (user_id) REFERENCES users(id),
-      FOREIGN KEY (movie_id) REFERENCES movies(id)
+      FOREIGN KEY (movie_id) REFERENCES movies(id),
+      FOREIGN KEY (parent_id) REFERENCES comments(id),
+      FOREIGN KEY (reply_to_user_id) REFERENCES users(id)
     )
   `);
   await db.exec(`
@@ -174,6 +178,31 @@ async function run() {
     )
   `);
 
+  await db.exec(`
+    CREATE TABLE IF NOT EXISTS forum_threads (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL,
+      title TEXT NOT NULL,
+      content TEXT NOT NULL,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (user_id) REFERENCES users(id)
+    )
+  `);
+  await db.exec(`
+    CREATE TABLE IF NOT EXISTS forum_replies (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      thread_id INTEGER NOT NULL,
+      user_id INTEGER NOT NULL,
+      parent_id INTEGER,
+      content TEXT NOT NULL,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (thread_id) REFERENCES forum_threads(id),
+      FOREIGN KEY (user_id) REFERENCES users(id),
+      FOREIGN KEY (parent_id) REFERENCES forum_replies(id)
+    )
+  `);
+
   const bcrypt = require('bcryptjs');
   const adminPass = bcrypt.hashSync('admin123', 10);
   const userPass = bcrypt.hashSync('user123', 10);
@@ -197,6 +226,15 @@ async function run() {
   } catch (_) {
     /* 列已存在 */
   }
+  try {
+    await db.exec('ALTER TABLE comments ADD COLUMN parent_id INTEGER');
+  } catch (_) {}
+  try {
+    await db.exec('ALTER TABLE comments ADD COLUMN reply_to_user_id INTEGER');
+  } catch (_) {}
+  try {
+    await db.exec('ALTER TABLE forum_threads ADD COLUMN updated_at DATETIME');
+  } catch (_) {}
   await db.exec(`
     UPDATE users SET avatar_style = (ABS(id * 17 + LENGTH(COALESCE(username,''))) % 12)
     WHERE avatar_style IS NULL

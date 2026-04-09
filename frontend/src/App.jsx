@@ -25,6 +25,8 @@ const MyFavorites = lazy(() => import('./pages/MyFavorites'));
 const MyShelves = lazy(() => import('./pages/MyShelves'));
 const MyLogs = lazy(() => import('./pages/MyLogs'));
 const Feedback = lazy(() => import('./pages/Feedback'));
+const Forum = lazy(() => import('./pages/Forum'));
+const ForumThread = lazy(() => import('./pages/ForumThread'));
 const AdminDashboard = lazy(() => import('./pages/admin/Dashboard'));
 const AdminMovies = lazy(() => import('./pages/admin/Movies'));
 const AdminCategories = lazy(() => import('./pages/admin/Categories'));
@@ -72,6 +74,8 @@ export default function App() {
             <Route path="recommend" element={<Recommend />} />
             <Route path="charts" element={<Charts />} />
             <Route path="feedback" element={<Feedback />} />
+            <Route path="forum" element={<Forum />} />
+            <Route path="forum/:id" element={<ForumThread />} />
 
             <Route
               path="profile"

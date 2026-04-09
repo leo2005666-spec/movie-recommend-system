@@ -66,6 +66,8 @@ export default function MovieDetail() {
   const [commentPage, setCommentPage] = useState(1);
   const [commentsBusy, setCommentsBusy] = useState(false);
   const [commentContent, setCommentContent] = useState('');
+  const [replyDraft, setReplyDraft] = useState({ parentId: null, replyToUserId: null, replyToUsername: '' });
+  const [replyOpenById, setReplyOpenById] = useState({});
   /** 待发评论配图：data URL，与后端存库一致，避免仅前端临时图 */
   const [commentImages, setCommentImages] = useState([]);
   const commentFileInputRef = useRef(null);
@@ -256,10 +258,14 @@ export default function MovieDetail() {
       await api.post('/comments', {
         movieId: parseInt(id, 10),
         content: commentContent.trim(),
+        parentId: replyDraft.parentId || undefined,
+        replyToUserId: replyDraft.replyToUserId || undefined,
         images: commentImages.length > 0 ? commentImages : undefined,
       });
       setCommentContent('');
       setCommentImages([]);
+      setReplyDraft({ parentId: null, replyToUserId: null, replyToUsername: '' });
+      setReplyOpenById({});
       setCommentPage(1);
       loadCommentsPage(1, false);
     } catch (e) {
@@ -587,9 +593,25 @@ export default function MovieDetail() {
               </form>
             )}
             {!user && <p className="empty-hint" style={{ marginBottom: 'var(--space-md)' }}><Link to="/login">登录</Link>后可以评论</p>}
-            <div className="social-discuss-list">
-              {comments.map((c) => {
+            {(() => {
+              const list = Array.isArray(comments) ? comments : [];
+              const byParent = {};
+              const roots = [];
+              for (const c of list) {
+                const pid = c.parent_id ? Number(c.parent_id) : 0;
+                if (pid > 0) {
+                  if (!byParent[pid]) byParent[pid] = [];
+                  byParent[pid].push(c);
+                } else {
+                  roots.push(c);
+                }
+              }
+              return (
+                <div className="social-discuss-list">
+                  {roots.map((c) => {
                 const pct = scoreToPercent(c.rating_score);
+                const replies = byParent[c.id] || [];
+                const isOpen = Boolean(replyOpenById[c.id]);
                 return (
                   <div key={c.id} className="tmdb-review-card">
                     <UserAvatar
@@ -633,11 +655,96 @@ export default function MovieDetail() {
                           删除
                         </button>
                       )}
+                      {user && (
+                        <button
+                          type="button"
+                          className="btn btn-outline comment-reply-btn"
+                          onClick={() => {
+                            setReplyDraft({ parentId: c.id, replyToUserId: c.user_id, replyToUsername: c.username });
+                            setCommentImages([]);
+                            setReplyOpenById((p) => ({ ...p, [c.id]: true }));
+                            document.querySelector('.social-form--tmdb textarea')?.focus();
+                          }}
+                        >
+                          回复
+                        </button>
+                      )}
                     </div>
                   </div>
                 );
-              })}
-            </div>
+                  })}
+                  {roots.map((c) => {
+                    const replies = byParent[c.id] || [];
+                    if (!replies.length) return null;
+                    const isOpen = Boolean(replyOpenById[c.id]);
+                    return (
+                      <div key={`replies-${c.id}`} className="tmdb-replies-block">
+                        <button
+                          type="button"
+                          className="tmdb-replies-toggle"
+                          onClick={() => setReplyOpenById((p) => ({ ...p, [c.id]: !p[c.id] }))}
+                        >
+                          {isOpen ? '收起回复' : `展开回复（${replies.length}）`}
+                        </button>
+                        {isOpen && (
+                          <div className="tmdb-replies">
+                            {replies.map((r) => (
+                              <div key={r.id} className="tmdb-reply">
+                                <UserAvatar
+                                  userId={r.user_id}
+                                  username={r.username}
+                                  avatar={r.avatar}
+                                  avatarStyle={r.avatar_style}
+                                  size={34}
+                                  className="tmdb-reply__av"
+                                />
+                                <div className="tmdb-reply__body">
+                                  <div className="tmdb-reply__meta">
+                                    <span className="tmdb-reply__name">{r.username}</span>
+                                    <span className="tmdb-reply__time">{formatReviewDate(r.created_at)}</span>
+                                  </div>
+                                  <div className="tmdb-reply__text">
+                                    {r.reply_to_username ? <span className="tmdb-reply__at">@{r.reply_to_username} </span> : null}
+                                    {r.content}
+                                  </div>
+                                  {user && (
+                                    <button
+                                      type="button"
+                                      className="btn btn-outline comment-reply-btn comment-reply-btn--small"
+                                      onClick={() => {
+                                        setReplyDraft({ parentId: c.id, replyToUserId: r.user_id, replyToUsername: r.username });
+                                        setCommentImages([]);
+                                        setReplyOpenById((p) => ({ ...p, [c.id]: true }));
+                                        document.querySelector('.social-form--tmdb textarea')?.focus();
+                                      }}
+                                    >
+                                      回复
+                                    </button>
+                                  )}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              );
+            })()}
+
+            {user && replyDraft.parentId && (
+              <div className="tmdb-reply-draft">
+                正在回复 <b>@{replyDraft.replyToUsername}</b>
+                <button
+                  type="button"
+                  className="tmdb-reply-draft__cancel"
+                  onClick={() => setReplyDraft({ parentId: null, replyToUserId: null, replyToUsername: '' })}
+                >
+                  取消
+                </button>
+              </div>
+            )}
             {comments.length === 0 && !commentsBusy && <p className="empty-hint">暂无评论</p>}
             {commentTotal > comments.length && (
               <div style={{ marginTop: 'var(--space-md)', textAlign: 'center' }}>

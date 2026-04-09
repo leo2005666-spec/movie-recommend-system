@@ -256,6 +256,57 @@ router.post('/threads/:id/replies', authMiddleware, asyncHandler(async (req, res
   res.json({ code: 0, data: { id: row.id } });
 }));
 
+router.delete('/threads/:id', authMiddleware, requireAdmin, asyncHandler(async (req, res) => {
+  const threadId = parseInt(req.params.id, 10);
+  if (!Number.isFinite(threadId) || threadId < 1) {
+    return res.status(400).json({ code: 400, message: '无效帖子 ID' });
+  }
+  const th = await db.prepare('SELECT id, title FROM forum_threads WHERE id = ?').get(threadId);
+  if (!th) return res.status(404).json({ code: 404, message: '帖子不存在' });
+
+  await db.prepare('DELETE FROM forum_replies WHERE thread_id = ?').run(threadId);
+  await db.prepare('DELETE FROM forum_threads WHERE id = ?').run(threadId);
+  await logActivity(req, 'FORUM_THREAD_DELETE', 'forum', threadId, String(th.title || '').slice(0, 80));
+  res.json({ code: 0, message: '帖子已删除' });
+}));
+
+router.delete('/replies/:id', authMiddleware, requireAdmin, asyncHandler(async (req, res) => {
+  const replyId = parseInt(req.params.id, 10);
+  if (!Number.isFinite(replyId) || replyId < 1) {
+    return res.status(400).json({ code: 400, message: '无效回复 ID' });
+  }
+  const root = await db.prepare('SELECT id, thread_id, content FROM forum_replies WHERE id = ?').get(replyId);
+  if (!root) return res.status(404).json({ code: 404, message: '回复不存在' });
+
+  // 删除当前回复及其所有子回复，避免孤儿节点
+  const allRows = await db.prepare('SELECT id, parent_id FROM forum_replies WHERE thread_id = ?').all(root.thread_id);
+  const byParent = new Map();
+  for (const r of allRows || []) {
+    const pid = r.parent_id == null ? 0 : Number(r.parent_id);
+    if (!byParent.has(pid)) byParent.set(pid, []);
+    byParent.get(pid).push(Number(r.id));
+  }
+  const toDelete = new Set([replyId]);
+  const stack = [replyId];
+  while (stack.length) {
+    const cur = stack.pop();
+    const kids = byParent.get(cur) || [];
+    for (const kid of kids) {
+      if (toDelete.has(kid)) continue;
+      toDelete.add(kid);
+      stack.push(kid);
+    }
+  }
+  const ids = [...toDelete];
+  if (ids.length) {
+    const ph = ids.map(() => '?').join(',');
+    await db.prepare(`DELETE FROM forum_replies WHERE id IN (${ph})`).run(...ids);
+  }
+  await db.prepare('UPDATE forum_threads SET updated_at=CURRENT_TIMESTAMP WHERE id=?').run(root.thread_id);
+  await logActivity(req, 'FORUM_REPLY_DELETE', 'forum', root.thread_id, String(root.content || '').slice(0, 80));
+  res.json({ code: 0, data: { deleted: ids.length }, message: '回复已删除' });
+}));
+
 router.post('/seed', authMiddleware, requireAdmin, asyncHandler(async (req, res) => {
   const threadsN = clamp(parseInt(req.body?.threads || '12', 10) || 12, 3, 60);
   const maxReplies = clamp(parseInt(req.body?.maxReplies || '10', 10) || 10, 2, 40);

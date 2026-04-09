@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import { api } from '../api/request';
 import { useAuth } from '../context/AuthContext';
 import UserAvatar from '../components/UserAvatar';
@@ -24,7 +24,7 @@ function buildReplyTree(replies) {
   return roots;
 }
 
-function ReplyNode({ node, onReply }) {
+function ReplyNode({ node, onReply, canDelete, deletingReplyId, onDeleteReply }) {
   return (
     <div className="forum-reply">
       <div className="forum-reply__av">
@@ -43,12 +43,30 @@ function ReplyNode({ node, onReply }) {
           <button type="button" className="forum-reply__btn" onClick={() => onReply(node)}>
             回复
           </button>
+          {canDelete ? (
+            <button
+              type="button"
+              className="forum-reply__btn"
+              style={{ color: 'var(--danger, #dc2626)' }}
+              disabled={deletingReplyId === node.id}
+              onClick={() => onDeleteReply(node)}
+            >
+              {deletingReplyId === node.id ? '删除中…' : '删除'}
+            </button>
+          ) : null}
         </div>
         <div className="forum-reply__text">{node.content}</div>
         {node.children?.length > 0 && (
           <div className="forum-reply__children">
             {node.children.map((c) => (
-              <ReplyNode key={c.id} node={c} onReply={onReply} />
+              <ReplyNode
+                key={c.id}
+                node={c}
+                onReply={onReply}
+                canDelete={canDelete}
+                deletingReplyId={deletingReplyId}
+                onDeleteReply={onDeleteReply}
+              />
             ))}
           </div>
         )}
@@ -59,13 +77,16 @@ function ReplyNode({ node, onReply }) {
 
 export default function ForumThread() {
   const { id } = useParams();
-  const { user } = useAuth();
+  const navigate = useNavigate();
+  const { user, isAdmin } = useAuth();
   const [loading, setLoading] = useState(true);
   const [thread, setThread] = useState(null);
   const [replies, setReplies] = useState([]);
   const [err, setErr] = useState('');
   const [content, setContent] = useState('');
   const [busy, setBusy] = useState(false);
+  const [deletingThread, setDeletingThread] = useState(false);
+  const [deletingReplyId, setDeletingReplyId] = useState(null);
   const [replyTo, setReplyTo] = useState(null);
 
   const load = () => {
@@ -106,6 +127,39 @@ export default function ForumThread() {
     }
   };
 
+  const deleteThread = async () => {
+    if (!isAdmin || !thread?.id) return;
+    const ok = window.confirm('确认删除这个帖子及其全部回复？此操作不可恢复。');
+    if (!ok) return;
+    setDeletingThread(true);
+    setErr('');
+    try {
+      await api.delete(`/forum/threads/${thread.id}`);
+      window.alert('帖子已删除');
+      navigate('/forum');
+    } catch (e2) {
+      setErr(e2.message || '删除帖子失败');
+    } finally {
+      setDeletingThread(false);
+    }
+  };
+
+  const deleteReply = async (node) => {
+    if (!isAdmin || !node?.id) return;
+    const ok = window.confirm('确认删除这条回复及其子回复？此操作不可恢复。');
+    if (!ok) return;
+    setDeletingReplyId(node.id);
+    setErr('');
+    try {
+      await api.delete(`/forum/replies/${node.id}`);
+      load();
+    } catch (e2) {
+      setErr(e2.message || '删除回复失败');
+    } finally {
+      setDeletingReplyId(null);
+    }
+  };
+
   if (loading) return <p className="empty-hint">加载中…</p>;
   if (err || !thread) {
     return (
@@ -121,6 +175,17 @@ export default function ForumThread() {
       <Link to="/forum" className="btn btn-outline" style={{ marginBottom: 'var(--space-md)' }}>
         ← 返回论坛
       </Link>
+      {isAdmin ? (
+        <button
+          type="button"
+          className="btn btn-outline"
+          style={{ marginLeft: '0.6rem', marginBottom: 'var(--space-md)', borderColor: 'rgba(220, 38, 38, 0.35)', color: '#b91c1c' }}
+          onClick={deleteThread}
+          disabled={deletingThread}
+        >
+          {deletingThread ? '删除中…' : '删除帖子'}
+        </button>
+      ) : null}
       <div className="card" style={{ padding: 'var(--space-lg)', marginBottom: 'var(--space-lg)' }}>
         {thread.topic_display ? (
           <div className="forum-thread__topic" style={{ color: 'var(--text-tertiary)', fontSize: 13, fontWeight: 700, marginBottom: 6 }}>
@@ -170,7 +235,14 @@ export default function ForumThread() {
       {tree.length ? (
         <div className="forum-replies">
           {tree.map((n) => (
-            <ReplyNode key={n.id} node={n} onReply={setReplyTo} />
+            <ReplyNode
+              key={n.id}
+              node={n}
+              onReply={setReplyTo}
+              canDelete={isAdmin}
+              deletingReplyId={deletingReplyId}
+              onDeleteReply={deleteReply}
+            />
           ))}
         </div>
       ) : (

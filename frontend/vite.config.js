@@ -5,9 +5,7 @@ export default defineConfig({
   plugins: [react()],
   build: {
     target: 'es2020',
-    cssMinify: 'lightningcss',
     cssCodeSplit: true,
-    minify: 'esbuild',
     rollupOptions: {
       output: {
         manualChunks: {

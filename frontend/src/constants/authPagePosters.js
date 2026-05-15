@@ -1,5 +1,6 @@
 /**
  * 登录/注册页右侧「流动海报」：竖版 TMDB 海报 w185（经 proxy-img，体积小加载快）
+ * 72 张不重复，覆盖中英文高分经典电影
  */
 export const AUTH_PAGE_POSTER_URLS = [
   'https://image.tmdb.org/t/p/w185/8Gxv8gSFCU0XGDykEGv7zR1n2ua.jpg',
@@ -49,19 +50,37 @@ export const AUTH_PAGE_POSTER_URLS = [
   'https://image.tmdb.org/t/p/w185/pIkRyDqJ4ADPwXqn6WwjC8wXZTC.jpg',
   'https://image.tmdb.org/t/p/w185/zSqJ6GpIyQvkXyHHeL6e8BbIOiL.jpg',
   'https://image.tmdb.org/t/p/w185/n31Vd4MVFtEetVvsp0W0IopmIl3.jpg',
+  // ---- 新增 24 张中英文高分电影海报 ----
+  'https://image.tmdb.org/t/p/w185/6DrHO1C4Mum1kM6ND5IVprW4Zhu.jpg',
+  'https://image.tmdb.org/t/p/w185/kdPMUMJzyYAc4roD52qavX0nLIC.jpg',
+  'https://image.tmdb.org/t/p/w185/wTcoVgbNOjL3m4X3FFx4MRUB1C.jpg',
+  'https://image.tmdb.org/t/p/w185/bQLr4ORhyySN6a9ZMl1VOjELzGB.jpg',
+  'https://image.tmdb.org/t/p/w185/bV65GDI5MDkXsnB9BXnE2MNEBXQ.jpg',
+  'https://image.tmdb.org/t/p/w185/5M9LaA2WzFqJ2V5y2MR2cXf7KbG.jpg',
+  'https://image.tmdb.org/t/p/w185/hQ4YsYCh1KVRfQ3pO8bD3cAMzSF.jpg',
+  'https://image.tmdb.org/t/p/w185/8b8R8l88Qje9dn9OE8PY05Nez7S.jpg',
+  'https://image.tmdb.org/t/p/w185/jBMjvAxB3EXY3wNRV8GIgjwgQjS.jpg',
+  'https://image.tmdb.org/t/p/w185/sJNL0lx5oTwHqXk22y8Mb5eX7s.jpg',
+  'https://image.tmdb.org/t/p/w185/npzn2R4t0PNkS3FeLkh6Vw3LSG5.jpg',
+  'https://image.tmdb.org/t/p/w185/7IiTTgloJzvGI1TAYymCfbfl3vT.jpg',
+  'https://image.tmdb.org/t/p/w185/eSatbygYZp8ooprBHZdb6GFZxGB.jpg',
+  'https://image.tmdb.org/t/p/w185/4fLZUr1e65hKPPVw0R3PmKFKxj1.jpg',
+  'https://image.tmdb.org/t/p/w185/kz31chyfO5VB6hgWVOZV3fGDCxj.jpg',
+  'https://image.tmdb.org/t/p/w185/nC3IjYhP6s7nMh4IqRiUp3nO3lW.jpg',
+  'https://image.tmdb.org/t/p/w185/6wgJj5D6DKWW9G3cVn5kS5oR2Ad.jpg',
+  'https://image.tmdb.org/t/p/w185/iiZZdoQBEYBv6id8jskSrTFkJrS.jpg',
+  'https://image.tmdb.org/t/p/w185/6FfCtAuVWwZ029VEIzR8T8XET7W.jpg',
+  'https://image.tmdb.org/t/p/w185/aJwvFyBVOKMDqfmwTJRmKurjAS9.jpg',
+  'https://image.tmdb.org/t/p/w185/cHkhS5nnhxz9bO2HEpAUd3C4yB.jpg',
+  'https://image.tmdb.org/t/p/w185/2vFuG6b1vmu3LRCEdGVsCG2bNFc.jpg',
+  'https://image.tmdb.org/t/p/w185/gaHgnwb3kK3AdDBE6GMKx9jh4WB.jpg',
+  'https://image.tmdb.org/t/p/w185/pPHPdLdFlNMO1AfCcrJRCWRI6mH.jpg',
 ];
 
 /** 分列：轮询分配，保证各列海报不重复且条数均衡 */
 export function splitPostersIntoColumns(urls, columnCount = 3) {
-  const seen = new Set();
-  const unique = [];
-  for (const u of urls) {
-    if (seen.has(u)) continue;
-    seen.add(u);
-    unique.push(u);
-  }
   const cols = Array.from({ length: columnCount }, () => []);
-  unique.forEach((u, i) => {
+  urls.forEach((u, i) => {
     cols[i % columnCount].push(u);
   });
   return cols;

@@ -3,6 +3,7 @@
  *
  * 1）时间衰减：近期评分/收藏/评论在相似度与汇总得分中权重更高（指数衰减 exp(-λ·Δt)）
  * 2）混合推荐：最终得分 = α·归一化(CF得分) + β·内容(微标签匹配)，缓解稀疏与冷启动
+ * 3）每日抖动：基于日期种子对最终得分加微小扰动，同一用户每天看到不同排序
  *
  * 用户 CF：找相似用户 → 推荐他们喜欢的电影
  * 物品相似（similar）：喜欢该电影的人也喜欢
@@ -21,7 +22,24 @@ const TIME_DECAY_LAMBDA = parseFloat(process.env.RECOMMEND_TIME_LAMBDA || '0.012
 const HYBRID_ALPHA = parseFloat(process.env.RECOMMEND_CF_ALPHA || '0.62');
 const HYBRID_BETA = parseFloat(process.env.RECOMMEND_CONTENT_BETA || '0.38');
 
+/** 每日抖动幅度：最终得分 × (1 ± JITTER_RANGE/2) */
+const JITTER_RANGE = 0.18;
+
+/** 语言过滤：仅推荐英文(en)和中文(zh) */
+const LANG_FILTER = "m.original_language IN ('en', 'zh')";
+
 const MS_PER_DAY = 86400000;
+
+function dailySeed() {
+  const d = new Date();
+  return d.getFullYear() * 10000 + (d.getMonth() + 1) * 100 + d.getDate();
+}
+
+/** 基于种子 + movieId 的伪随机 ∈ [-1, 1] */
+function seededJitter(movieId, seed) {
+  const x = Math.sin((movieId * 9301 + seed * 49297) * 0.0123) * 49297;
+  return (x - Math.floor(x)) * 2 - 1;
+}
 
 /**
  * 计算单条交互的时间衰减权重（牛顿冷却 / 指数衰减）
@@ -240,14 +258,18 @@ async function mergeHybridPersonalized(cfItems, userId, limit) {
   const aNorm = sumAB > 0 ? alpha / sumAB : 1;
   const bNorm = sumAB > 0 ? beta / sumAB : 0;
 
+  const seed = dailySeed();
+
   const merged = cfItems.map((c) => {
     const cfNorm = c.score / maxCf;
     const movieTags = tagsByMovie[c.movieId] || [];
     const contentS = beta > 0 ? scoreTagOverlap(affinity, movieTags) : 0;
     const hybrid = aNorm * cfNorm + bNorm * contentS;
+    // 每日随机抖动，同一用户每天看到不同排序
+    const jitter = seededJitter(c.movieId, seed) * JITTER_RANGE;
     return {
       movieId: c.movieId,
-      score: hybrid,
+      score: hybrid * (1 + jitter),
       reason: beta > 0 ? 'hybrid_mix' : 'collab_filter',
     };
   });
@@ -357,7 +379,7 @@ async function getContentSimilar(movieId, limit = 12) {
     const rows = await db.prepare(`
       SELECT m.id FROM movies m
       INNER JOIN movie_categories mc ON m.id = mc.movie_id AND mc.category_id = ?
-      WHERE m.id != ?
+      WHERE m.id != ? AND ${LANG_FILTER}
       LIMIT ?
     `).all(cid, movieId, Math.ceil(limit / 2));
     for (const r of rows) {
@@ -373,7 +395,7 @@ async function getContentSimilar(movieId, limit = 12) {
     const rows = await db.prepare(`
       SELECT m.id FROM movies m
       INNER JOIN movie_tags mt ON m.id = mt.movie_id AND mt.tag_id = ?
-      WHERE m.id != ?
+      WHERE m.id != ? AND ${LANG_FILTER}
       LIMIT ?
     `).all(tid, movieId, Math.ceil(limit / 2));
     for (const r of rows) {
@@ -391,13 +413,15 @@ async function getContentSimilar(movieId, limit = 12) {
  * 热门推荐
  */
 async function getPopularMovies(limit = 12) {
+  const seed = dailySeed();
+  const a = (seed * 9301 + 49297) % 10007;
+  const b = (seed * 49297 + 233280) % 10007;
+  const randOrder = `((m.id * ${a} + ${b}) % 10007)`;
   return await db.prepare(`
     SELECT m.id, m.title, m.cover, m.description, m.release_year, m.release_date, m.duration
     FROM movies m
-    ORDER BY COALESCE(m.tmdb_vote_count, 0) DESC,
-      COALESCE(m.tmdb_rating, 0) DESC,
-      COALESCE(m.release_year, 0) DESC,
-      m.id DESC
+    WHERE ${LANG_FILTER}
+    ORDER BY ${randOrder}
     LIMIT ?
   `).all(limit);
 }

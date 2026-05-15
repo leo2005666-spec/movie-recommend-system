@@ -32,7 +32,7 @@ async function getTasteRecommendations(tasteType, limit = 24) {
   const rows = await db.prepare(`
     SELECT m.id, m.title, m.cover, m.description, m.release_year, m.release_date, m.duration, m.tmdb_vote_count, m.tmdb_rating
     FROM movies m
-    WHERE ${tw.sql}
+    WHERE ${tw.sql} AND m.original_language IN ('en', 'zh')
     ORDER BY ${TASTE_ORDER_BY}
     LIMIT ?
   `).all(...tw.params, limit);

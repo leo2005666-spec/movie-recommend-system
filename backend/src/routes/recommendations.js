@@ -10,18 +10,12 @@ const collabFilter = require('../services/collabFilter');
 const { getPersonalizedRecommendations, getPopularRecommendations, getColdStartRecommendations } = require('../services/recommendFallback');
 const { asyncHandler } = require('../utils/asyncHandler');
 const { reasonToLabel } = require('../utils/recommendLabels');
+const { isAllowedLanguage, dailySeed, seededJitter } = require('../utils/recommendUtils');
 
 const router = express.Router();
 
-function dailySeed() {
-  const d = new Date();
-  return d.getFullYear() * 10000 + (d.getMonth() + 1) * 100 + d.getDate();
-}
-
-function seededJitter(movieId, seed) {
-  const x = Math.sin((movieId * 9301 + seed * 49297) * 0.0123) * 49297;
-  return (x - Math.floor(x)) * 2 - 1;
-}
+/** rankCfMovies 的抖动幅度 */
+const RANK_JITTER_RANGE = 0.12;
 
 /**
  * 根据 movieId 列表查询完整电影信息，保持顺序
@@ -50,7 +44,7 @@ function rankCfMovies(cfItems, enrichedList) {
       if (!m) return null;
       const votes = Math.max(0, m.tmdb_vote_count || 0);
       const boost = 0.35 + 0.65 * (Math.log1p(votes) / Math.log1p(50000));
-      const jitter = seededJitter(c.movieId, seed) * 0.12;
+      const jitter = seededJitter(c.movieId, seed) * RANK_JITTER_RANGE;
       return { ...m, _rank: (c.score || 0) * boost * (1 + jitter) };
     })
     .filter(Boolean);
@@ -74,7 +68,7 @@ async function handleHomePersonalized(userId, limit) {
   if (cf && cf.length > 0) {
     const raw = await enrichMovies(cf.map((r) => r.movieId));
     // 仅保留中英文电影
-    const filtered = raw.filter((m) => m.original_language === 'en' || m.original_language === 'zh');
+    const filtered = raw.filter((m) => isAllowedLanguage(m.original_language));
     const movies = rankCfMovies(cf, filtered).slice(0, limit);
     const reasonById = Object.fromEntries(cf.map((c) => [c.movieId, reasonToLabel(c.reason)]));
     const withLabels = movies.map((m) => ({
@@ -109,7 +103,7 @@ async function handleSimilar(movieId, userId, limit) {
   const reasonById = Object.fromEntries(items.map((i) => [i.movieId, reasonToLabel(i.reason)]));
   const movies = await enrichMovies(items.map((r) => r.movieId));
   // 仅保留中英文电影
-  const filtered = movies.filter((m) => m.original_language === 'en' || m.original_language === 'zh').slice(0, limit);
+  const filtered = movies.filter((m) => isAllowedLanguage(m.original_language)).slice(0, limit);
   return {
     list: filtered.map((m) => ({ ...m, recommendReason: reasonById[m.id] || '推荐' })),
     source: items[0]?.reason || 'fallback',

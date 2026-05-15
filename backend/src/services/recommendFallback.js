@@ -1,53 +1,11 @@
 /**
  * 推荐 Fallback：原有个性化/热门逻辑，供 CF 冷启动或结果为空时使用
- * 新增：根据用户性别、年龄等画像进行 demographic 推荐
- *
- * 「热门」排序与 TMDB 一致：优先投票数、再评分、再年份，避免仅按 id 新排到冷门老片
  *
  * 语言过滤：仅推荐英文(en)和中文(zh)电影，排除印度/日韩/其他语种
- * 每日刷新：基于日期种子的伪随机抖动，同一用户不同天访问看到不同推荐
+ * 每日刷新：基于日期种子的伪随机排序，同一用户不同天访问看到不同推荐
  */
 const db = require('../db/db');
-
-/** 仅推荐中英文电影 */
-const LANG_FILTER = "m.original_language IN ('en', 'zh')";
-const LANG_FILTER_AND = `AND ${LANG_FILTER}`;
-
-const ORDER_BY_TMDB_POPULAR = `
-  COALESCE(m.tmdb_vote_count, 0) DESC,
-  COALESCE(m.tmdb_rating, 0) DESC,
-  COALESCE(m.release_year, 0) DESC,
-  m.id DESC
-`;
-
-/** 基于日期的种子值（每天变化），用于 ORDER BY 注入随机性 */
-function dailySeed() {
-  const d = new Date();
-  return d.getFullYear() * 10000 + (d.getMonth() + 1) * 100 + d.getDate();
-}
-
-/**
- * 基于种子 + movie id 的确定性伪随机数 ∈ [0, 1)
- * 同一用户同一天看到相同排序，不同天看到不同排序
- */
-function seededRandom(movieId, seed) {
-  const x = Math.sin((movieId * 9301 + seed * 49297) * 0.0123) * 49297;
-  return x - Math.floor(x);
-}
-
-/** 每日随机排序 SQL 片段（用于 ORDER BY） */
-function dailyRandomOrder(seed) {
-  const a = (seed * 9301 + 49297) % 10007;
-  const b = (seed * 49297 + 233280) % 10007;
-  return `((m.id * ${a} + ${b}) % 10007)`;
-}
-
-/**
- * 根据用户画像推荐（已移除性别、年龄，直接走个性化/热门）
- */
-function getDemographicRecommendations(userId, limit = 12) {
-  return null;
-}
+const { LANG_FILTER, dailySeed, seededRandom, dailyRandomOrder } = require('../utils/recommendUtils');
 
 async function getPersonalizedRecommendations(userId, limit = 12) {
   const seed = dailySeed();
@@ -154,8 +112,6 @@ async function getPersonalizedRecommendations(userId, limit = 12) {
  * 冷启动推荐：优先画像推荐，再个性化，最后热门
  */
 async function getColdStartRecommendations(userId, limit = 12) {
-  const demographic = getDemographicRecommendations(userId, limit);
-  if (demographic && demographic.length > 0) return demographic;
   return getPersonalizedRecommendations(userId, limit);
 }
 
@@ -174,6 +130,5 @@ async function getPopularRecommendations(limit = 12) {
 module.exports = {
   getPersonalizedRecommendations,
   getPopularRecommendations,
-  getDemographicRecommendations,
   getColdStartRecommendations,
 };

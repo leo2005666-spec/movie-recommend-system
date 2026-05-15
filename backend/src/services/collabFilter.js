@@ -10,6 +10,7 @@
  * 冷启动：交互 < 3 时由 recommendFallback 处理
  */
 const db = require('../db/db');
+const { LANG_FILTER, dailySeed, seededJitter, dailyRandomOrder } = require('../utils/recommendUtils');
 
 const MIN_INTERACTIONS_FOR_CF = 3;
 const MIN_SIMILAR_USERS = 2;
@@ -22,24 +23,10 @@ const TIME_DECAY_LAMBDA = parseFloat(process.env.RECOMMEND_TIME_LAMBDA || '0.012
 const HYBRID_ALPHA = parseFloat(process.env.RECOMMEND_CF_ALPHA || '0.62');
 const HYBRID_BETA = parseFloat(process.env.RECOMMEND_CONTENT_BETA || '0.38');
 
-/** 每日抖动幅度：最终得分 × (1 ± JITTER_RANGE/2) */
-const JITTER_RANGE = 0.18;
-
-/** 语言过滤：仅推荐英文(en)和中文(zh) */
-const LANG_FILTER = "m.original_language IN ('en', 'zh')";
+/** CF 混合推荐最终得分的抖动幅度 */
+const HYBRID_JITTER_RANGE = 0.18;
 
 const MS_PER_DAY = 86400000;
-
-function dailySeed() {
-  const d = new Date();
-  return d.getFullYear() * 10000 + (d.getMonth() + 1) * 100 + d.getDate();
-}
-
-/** 基于种子 + movieId 的伪随机 ∈ [-1, 1] */
-function seededJitter(movieId, seed) {
-  const x = Math.sin((movieId * 9301 + seed * 49297) * 0.0123) * 49297;
-  return (x - Math.floor(x)) * 2 - 1;
-}
 
 /**
  * 计算单条交互的时间衰减权重（牛顿冷却 / 指数衰减）
@@ -266,7 +253,7 @@ async function mergeHybridPersonalized(cfItems, userId, limit) {
     const contentS = beta > 0 ? scoreTagOverlap(affinity, movieTags) : 0;
     const hybrid = aNorm * cfNorm + bNorm * contentS;
     // 每日随机抖动，同一用户每天看到不同排序
-    const jitter = seededJitter(c.movieId, seed) * JITTER_RANGE;
+    const jitter = seededJitter(c.movieId, seed) * HYBRID_JITTER_RANGE;
     return {
       movieId: c.movieId,
       score: hybrid * (1 + jitter),
@@ -413,10 +400,7 @@ async function getContentSimilar(movieId, limit = 12) {
  * 热门推荐
  */
 async function getPopularMovies(limit = 12) {
-  const seed = dailySeed();
-  const a = (seed * 9301 + 49297) % 10007;
-  const b = (seed * 49297 + 233280) % 10007;
-  const randOrder = `((m.id * ${a} + ${b}) % 10007)`;
+  const randOrder = dailyRandomOrder(dailySeed());
   return await db.prepare(`
     SELECT m.id, m.title, m.cover, m.description, m.release_year, m.release_date, m.duration
     FROM movies m

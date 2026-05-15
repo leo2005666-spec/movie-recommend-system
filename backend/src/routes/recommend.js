@@ -10,6 +10,7 @@ const { optionalAuth } = require('../middleware/auth');
 const { TASTE_PRESETS, buildTasteWhereSql, TASTE_ORDER_BY } = require('../utils/taste-presets');
 const { getColdStartRecommendations, getPopularRecommendations: getPop } = require('../services/recommendFallback');
 const { asyncHandler } = require('../utils/asyncHandler');
+const { LANG_FILTER } = require('../utils/recommendUtils');
 
 const router = express.Router();
 const HIDDEN_TASTE_KEYS = new Set(['couple', 'buff']);
@@ -32,7 +33,7 @@ async function getTasteRecommendations(tasteType, limit = 24) {
   const rows = await db.prepare(`
     SELECT m.id, m.title, m.cover, m.description, m.release_year, m.release_date, m.duration, m.tmdb_vote_count, m.tmdb_rating
     FROM movies m
-    WHERE ${tw.sql} AND m.original_language IN ('en', 'zh')
+    WHERE ${tw.sql} AND ${LANG_FILTER}
     ORDER BY ${TASTE_ORDER_BY}
     LIMIT ?
   `).all(...tw.params, limit);

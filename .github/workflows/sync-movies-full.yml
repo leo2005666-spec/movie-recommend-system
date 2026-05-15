@@ -1,0 +1,37 @@
+# 每天一次全量深同步（多页），补全电影数据
+name: Sync Movies Full (Daily Deep)
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '37 3 * * *'  # 每天凌晨 3:37 UTC
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install
+        run: cd backend && npm install
+
+      - name: Check secrets
+        run: |
+          if [ -z "${{ secrets.TMDB_API_KEY }}" ]; then echo "::error::TMDB_API_KEY 未配置"; exit 1; fi
+          if [ -z "${{ secrets.TURSO_DATABASE_URL }}" ]; then echo "::error::TURSO_DATABASE_URL 未配置"; exit 1; fi
+          if [ -z "${{ secrets.TURSO_AUTH_TOKEN }}" ]; then echo "::error::TURSO_AUTH_TOKEN 未配置"; exit 1; fi
+          echo "Secrets OK"
+
+      - name: Sync TMDB (full)
+        env:
+          TMDB_API_KEY: ${{ secrets.TMDB_API_KEY }}
+          TURSO_DATABASE_URL: ${{ secrets.TURSO_DATABASE_URL }}
+          TURSO_AUTH_TOKEN: ${{ secrets.TURSO_AUTH_TOKEN }}
+        run: |
+          cd backend && node scripts/movie-crawler-tmdb.js

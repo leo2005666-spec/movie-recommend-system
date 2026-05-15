@@ -17,10 +17,10 @@ const API_KEY = process.env.TMDB_API_KEY;
 const POSTER_BASE = 'https://image.tmdb.org/t/p/w500';
 const HTTPS_PROXY = process.env.HTTPS_PROXY || process.env.HTTP_PROXY;
 
-// 请求间隔（毫秒），TMDB 免费版约 40 次/10 秒；略调低可加快整轮同步
+// 请求间隔（毫秒），TMDB 免费版约 50 次/秒；调低加快整轮同步，保守值 160ms
 const REQUEST_DELAY = Math.max(
-  150,
-  parseInt(process.env.TMDB_CRAWLER_DELAY_MS || '220', 10) || 220,
+  130,
+  parseInt(process.env.TMDB_CRAWLER_DELAY_MS || '160', 10) || 160,
 );
 
 // 数据源：热门、高分、正在上映、即将上映

@@ -3,7 +3,7 @@
 name: Sync Movies from TMDB
 
 on:
-  workflow_dispatch:  # 手动触发，可选“替换模式”清空旧 OMDb 数据
+  workflow_dispatch:  # 手动触发，可选”替换模式”清空旧 OMDb 数据
     inputs:
       replace:
         description: '清空旧数据仅保留 TMDB（勾选=替换）'
@@ -11,7 +11,7 @@ on:
         default: false
         type: boolean
   schedule:
-    - cron: '0 */6 * * *'  # 每 6 小时（快速增量，与本地 crawler:cron 类似）
+    - cron: '17 */2 * * *'  # 每 2 小时快速增量（新片信息及时入库）
 
 jobs:
   sync:

@@ -90,8 +90,29 @@ function resolvePosterSrc(raw) {
 
 function pickVisibleUnique(pool, count) {
   if (!Array.isArray(pool) || pool.length === 0) return [];
-  const start = Math.floor(Math.random() * pool.length);
-  const rotated = [...pool.slice(start), ...pool.slice(0, start)];
+  const uniq = [];
+  const seen = new Set();
+  for (const u of pool) {
+    const t = posterPathToken(u);
+    if (t && !seen.has(t)) {
+      seen.add(t);
+      uniq.push(u);
+    }
+  }
+  if (uniq.length < count) {
+    const extras = shuffle([...AUTH_PAGE_POSTER_URLS]).filter((u) => {
+      const t = posterPathToken(u);
+      return t && !seen.has(t);
+    });
+    for (const u of extras) {
+      const t = posterPathToken(u);
+      if (t) seen.add(t);
+      uniq.push(u);
+      if (uniq.length >= count) break;
+    }
+  }
+  const start = Math.floor(Math.random() * uniq.length);
+  const rotated = [...uniq.slice(start), ...uniq.slice(0, start)];
   return rotated.slice(0, Math.min(count, rotated.length));
 }
 

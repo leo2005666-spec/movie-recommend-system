@@ -4,14 +4,14 @@ import { AUTH_PAGE_POSTER_URLS, splitPostersIntoColumns } from '../constants/aut
 
 /** 3 列固定宫格 */
 const COLS = 3;
-/** 每列 4 行：总计 12 张，视觉稳定 */
+/** 每列 4 行：总计 12 张 */
 const ROWS = 4;
 const VISIBLE_COUNT = COLS * ROWS;
-/** 控制总图数量，避免一次并发过多 */
-const MAX_POSTERS = 24;
-/** 封面宽度：登录侧卡片不大，略小像素加快首包 */
+/** 池子容量：多拉一些电影确保有足够不重复封面 */
+const FETCH_LIMIT = 120;
+/** 封面宽度 */
 const COVER_W = 220;
-/** 低频更新：默认 1 小时；可通过 VITE_AUTH_FILMFLOW_REFRESH_MS 调整（建议 1 天：86400000） */
+/** 低频整体刷新：默认 1 小时 */
 const REFRESH_MS = Math.max(
   60 * 60 * 1000,
   Number(import.meta.env.VITE_AUTH_FILMFLOW_REFRESH_MS || 60 * 60 * 1000)
@@ -26,31 +26,27 @@ function shuffle(arr) {
   return a;
 }
 
-function normTitle(t) {
-  return String(t || '')
-    .trim()
-    .toLowerCase()
-    .replace(/\s+/g, '');
-}
-
-/** TMDB 路径最后一段，避免同一图不同尺寸被当成多部 */
+/** TMDB 图片 URL 路径最后一段，用于识别同图不同尺寸 */
 function posterPathToken(url) {
   if (!url || typeof url !== 'string') return '';
+  // 只对 TMDB 图片 URL 生效
+  if (!/themoviedb\.org/i.test(url)) return '';
   const s = url.split('?')[0];
   const seg = s.split('/').filter(Boolean).pop();
-  return seg || s;
+  return seg || '';
 }
 
 /**
- * 同一影片只保留一条：本地 id、tmdb_id、规范化标题、封面 URL、海报文件 token 任一重复则丢弃
+ * 从电影列表提取不重复封面。
+ * 去重依据：本地 id、tmdb_id、标题规范化、TMDB 海报 token
+ * 修复：posterPathToken 只对 TMDB 原始 URL 生效，跳过代理 URL
  */
 function uniqueCoverUrlsFromMovies(movies) {
   const out = [];
   const seenId = new Set();
   const seenTmdb = new Set();
   const seenTitle = new Set();
-  const seenCover = new Set();
-  const seenToken = new Set();
+  const seenPosterToken = new Set();
 
   for (const m of movies) {
     if (!m || m.id == null) continue;
@@ -63,21 +59,22 @@ function uniqueCoverUrlsFromMovies(movies) {
       if (seenTmdb.has(tid)) continue;
     }
 
-    const tkey = normTitle(m.title);
+    // 标题去重：名同内容大概率同
+    const tkey = String(m.title || '').trim().toLowerCase().replace(/\s+/g, '');
     if (tkey && seenTitle.has(tkey)) continue;
 
-    const u = getCoverUrl(m, { w: COVER_W });
-    if (!u || seenCover.has(u)) continue;
-
-    const ftoken = posterPathToken(u);
-    if (ftoken && seenToken.has(ftoken)) continue;
+    // 用 TMDB 原始封面 URL 做海报级别的去重（原始 cover 字段，非代理 URL）
+    const rawCover = m.cover;
+    const pt = posterPathToken(rawCover);
+    if (pt && seenPosterToken.has(pt)) continue;
 
     seenId.add(id);
     if (tid != null && Number.isFinite(tid) && tid > 0) seenTmdb.add(tid);
     if (tkey) seenTitle.add(tkey);
-    seenCover.add(u);
-    if (ftoken) seenToken.add(ftoken);
-    out.push(u);
+    if (pt) seenPosterToken.add(pt);
+
+    // 最终展示用代理 URL
+    out.push(getCoverUrl(m, { w: COVER_W }));
   }
   return out;
 }
@@ -88,24 +85,28 @@ function resolvePosterSrc(raw) {
   return raw;
 }
 
+/**
+ * 从池中选 count 张不重复的，以 token 去重
+ */
 function pickVisibleUnique(pool, count) {
   if (!Array.isArray(pool) || pool.length === 0) return [];
   const uniq = [];
   const seen = new Set();
   for (const u of pool) {
-    const t = posterPathToken(u);
+    const t = posterPathToken(u) || u; // 非 TMDB URL 用自身做 key
     if (t && !seen.has(t)) {
       seen.add(t);
       uniq.push(u);
     }
   }
+  // 不足时用静态海报池补齐
   if (uniq.length < count) {
     const extras = shuffle([...AUTH_PAGE_POSTER_URLS]).filter((u) => {
-      const t = posterPathToken(u);
+      const t = posterPathToken(u) || u;
       return t && !seen.has(t);
     });
     for (const u of extras) {
-      const t = posterPathToken(u);
+      const t = posterPathToken(u) || u;
       if (t) seen.add(t);
       uniq.push(u);
       if (uniq.length >= count) break;
@@ -113,10 +114,9 @@ function pickVisibleUnique(pool, count) {
   }
   const start = Math.floor(Math.random() * uniq.length);
   const rotated = [...uniq.slice(start), ...uniq.slice(0, start)];
-  return rotated.slice(0, Math.min(count, rotated.length));
+  return rotated.slice(0, count);
 }
 
-/** 条带在 overflow 内滚动，lazy 常导致解码很晚；首若干张优先加载 */
 function FlowPoster({ posterUrl, fallbackPool, priority }) {
   const [attempt, setAttempt] = useState(0);
   const chain = useMemo(() => {
@@ -152,40 +152,44 @@ function FlowPoster({ posterUrl, fallbackPool, priority }) {
 
 export default function AuthFilmflow() {
   const [posterPool, setPosterPool] = useState(() => shuffle([...AUTH_PAGE_POSTER_URLS]));
-  const [visiblePosters, setVisiblePosters] = useState(() => pickVisibleUnique(shuffle([...AUTH_PAGE_POSTER_URLS]), VISIBLE_COUNT));
+  const [visiblePosters, setVisiblePosters] = useState(() =>
+    pickVisibleUnique(shuffle([...AUTH_PAGE_POSTER_URLS]), VISIBLE_COUNT)
+  );
 
+  // 首次挂载从后端拉取真实电影封面，尽量用不同的排序维度拉更多样
   useEffect(() => {
     let cancelled = false;
     (async () => {
       try {
-        const [r1, r2] = await Promise.all([
-          api.get('/movies', { page: 1, limit: 80, orderBy: 'rating_desc' }),
-          api.get('/movies', { page: 2, limit: 80, orderBy: 'release_desc' }),
+        const [r1, r2, r3] = await Promise.all([
+          api.get('/movies', { page: 1, limit: FETCH_LIMIT, orderBy: 'popular' }),
+          api.get('/movies', { page: 1, limit: FETCH_LIMIT, orderBy: 'top_rated' }),
+          api.get('/movies', { page: 1, limit: FETCH_LIMIT, orderBy: 'release_desc' }),
         ]);
         const list = [
           ...(Array.isArray(r1?.data?.list) ? r1.data.list : []),
           ...(Array.isArray(r2?.data?.list) ? r2.data.list : []),
+          ...(Array.isArray(r3?.data?.list) ? r3.data.list : []),
         ];
         let covers = uniqueCoverUrlsFromMovies(list);
-        covers = shuffle(covers).slice(0, MAX_POSTERS);
+        covers = shuffle(covers);
         if (!cancelled && covers.length >= 12) {
           setPosterPool(covers);
         }
       } catch {
-        /* 保持初始 TMDB 池 */
+        /* 保持初始静态池 */
       }
     })();
-    return () => {
-      cancelled = true;
-    };
+    return () => { cancelled = true; };
   }, []);
 
+  // fallbackPool：去重后的可用池
   const fallbackPool = useMemo(() => {
     const raw = posterPool.length ? posterPool : AUTH_PAGE_POSTER_URLS;
     const uniq = [];
     const seen = new Set();
     for (const u of raw) {
-      const t = posterPathToken(u);
+      const t = posterPathToken(u) || u;
       if (!u || seen.has(t)) continue;
       seen.add(t);
       uniq.push(u);
@@ -193,10 +197,12 @@ export default function AuthFilmflow() {
     return uniq;
   }, [posterPool]);
 
+  // 池子变化时刷新可见选择
   useEffect(() => {
     setVisiblePosters(pickVisibleUnique(fallbackPool, VISIBLE_COUNT));
   }, [fallbackPool]);
 
+  // 定时低频整体刷新（避免同一组图永远显示）
   useEffect(() => {
     if (!fallbackPool.length) return undefined;
     const timer = setInterval(() => {
@@ -213,23 +219,21 @@ export default function AuthFilmflow() {
 
   return (
     <div className="auth-split__filmflow" aria-hidden>
-      {columns.map((urls, colIdx) => {
-        return (
-          <div key={colIdx} className="auth-split__filmflow-col">
-            <div className="auth-split__filmflow-stack">
-              {urls.map((url, i) => (
-                <div key={`${colIdx}-${i}-${url}`} className="auth-split__filmflow-cell">
-                  <FlowPoster
-                    posterUrl={url}
-                    fallbackPool={fallbackPool}
-                    priority={i < 4}
-                  />
-                </div>
-              ))}
-            </div>
+      {columns.map((urls, colIdx) => (
+        <div key={colIdx} className="auth-split__filmflow-col">
+          <div className="auth-split__filmflow-stack">
+            {urls.map((url, i) => (
+              <div key={`${colIdx}-${i}-${url}`} className="auth-split__filmflow-cell">
+                <FlowPoster
+                  posterUrl={url}
+                  fallbackPool={fallbackPool}
+                  priority={i < 4}
+                />
+              </div>
+            ))}
           </div>
-        );
-      })}
+        </div>
+      ))}
     </div>
   );
 }

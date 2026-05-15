@@ -317,133 +317,260 @@ router.post('/seed', authMiddleware, requireAdmin, asyncHandler(async (req, res)
   const userIds = (users || []).map((u) => u.id).filter((n) => Number.isFinite(n) && n > 0);
   if (!userIds.length) return res.status(400).json({ code: 400, message: '无可用用户' });
 
-  const hotMovieTopic = TOPICS.find((t) => String(t.key).startsWith('movie:'))?.label?.replace(/^电影：/, '') || '这部电影';
-  const hotDirectorTopic = TOPICS.find((t) => String(t.key).startsWith('director:'))?.label?.replace(/^导演：/, '') || '这位导演';
+  // 从数据库取真实电影名、导演名、演员名，确保讨论有具体内容
+  const realMovies = await db.prepare(`
+    SELECT id, title, director, actors, release_year
+    FROM movies WHERE title IS NOT NULL AND TRIM(title) <> ''
+    ORDER BY COALESCE(tmdb_vote_count, 0) DESC LIMIT 30
+  `).all();
+  const movieNames = (realMovies || []).map((m) => m.title).filter(Boolean);
+  const directorNames = [...new Set((realMovies || []).map((m) => m.director).filter(Boolean))];
+  const allActorNames = [...new Set(
+    (realMovies || []).flatMap((m) => (m.actors || '').split(',').map((s) => s.trim()).filter(Boolean))
+  )];
 
-  const titlePoolByKind = {
+  function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+  function mname() { return movieNames.length ? pick(movieNames) : '那部电影'; }
+  function dname() { return directorNames.length ? pick(directorNames) : '那位导演'; }
+  function aname() { return allActorNames.length ? pick(allActorNames) : '那位演员'; }
+
+  // —— 标题池：每种话题 10+ 模板，嵌入真实片名/导演/演员 ——
+  const _m = () => mname(); const _d = () => dname(); const _a = () => aname();
+
+  const titlePool = {
     movie: [
-      `《${hotMovieTopic}》结局你们怎么理解？`,
-      `《${hotMovieTopic}》最打动你的是哪一段？`,
-      `《${hotMovieTopic}》有哪些细节二刷才懂？`,
-      `《${hotMovieTopic}》如果删掉一个情节会更好吗？`,
+      `《${_m()}》结局那段你们怎么看？`,
+      `刚看完《${_m()}》，有点没缓过来`,
+      `《${_m()}》是不是被低估了？`,
+      `二刷《${_m()}》才发现好多细节`,
+      `《${_m()}》和《${_m()}》哪个更值得看？`,
+      `有没有人觉得《${_m()}》后劲特别大`,
+      `《${_m()}》里最出彩的角色是谁？`,
+      `聊一聊《${_m()}》的摄影和色调`,
+      `《${_m()}》删减片段听说很关键`,
+      `《${_m()}》的配乐真的绝了`,
+      `为什么《${_m()}》评分两极分化？`,
+      `《${_m()}》让我想起了另一部片`,
     ],
     director: [
-      `${hotDirectorTopic} 的入坑顺序怎么排？`,
-      `${hotDirectorTopic} 最强的一部是哪部？`,
-      `${hotDirectorTopic} 的风格你更喜欢哪一面？`,
+      `${_d()} 的片子你们最喜欢哪部？`,
+      `${_d()} 和 ${_d()} 的风格差异好大`,
+      `入坑 ${_d()} 从哪部开始比较好？`,
+      `${_d()} 的新片大家期待吗`,
+      `有没有人觉得 ${_d()} 被过誉了？`,
+      `${_d()} 的镜头语言真的很特别`,
+      `聊聊 ${_d()} 的御用班底`,
+      `${_d()} 早期的作品和现在差别好大`,
     ],
     recommend: [
-      '大家最近看了什么？求推荐',
-      '想找一部不太烧脑但有反转的片子，有吗？',
-      '有没有节奏舒服、后劲很大的电影？',
+      '剧荒了，求推荐几部不踩雷的',
+      '有没有类似《'+_m()+'》这种风格的？',
+      '想找一部节奏慢但后劲大的片',
+      '周末宅家适合看什么？求安利',
+      '最近有什么冷门但好看的片吗',
+      '求推荐适合一个人安静看的电影',
+      '有没有不恐怖但有反转的悬疑片？',
+      '想找一部看完会觉得”活着真好”的电影',
+      '最近片荒到刷老片了，救救我',
+      '有没有笑中带泪的喜剧推荐？',
     ],
     review: [
-      '评分高但我没看懂，是我问题吗？',
-      '这部片的主题到底是什么？我有点纠结',
-      '来聊聊你最喜欢的角色',
+      '高评分但我看完有点失望，有人同感吗',
+      '大家都在夸的片我却get不到',
+      '有些电影第一遍看不懂，第二遍才通',
+      '你们会因为一个镜头爱上一部电影吗',
+      '配乐对一部电影的影响到底多大？',
+      '有没有哪部电影改变了你的想法？',
+      '电影里的”留白”和”说不清”，你更喜欢哪种？',
+      '你心中”完美的结局”是什么样的？',
+      '为什么有些烂片反而反复看？',
+      '看过最多次的电影是哪部？看了几遍？',
     ],
     actor: [
-      '这位演员的演技巅峰是哪部？',
-      '同一个演员在不同作品里差别太大了',
+      `${_a()} 的演技真的好细腻`,
+      `${_a()} 和 ${_a()} 对戏太精彩了`,
+      '有没有演员让你因为TA去看一部片？',
+      `${_a()} 最近几年的选片眼光怎么样？`,
+      '同一个演员，哪部作品反差最大？',
+      `${_a()} 的台词功底真的好`,
+      '你们会因为讨厌一个演员而弃片吗',
+      `${_a()} 拿奖那部实至名归吗？`,
     ],
     list: [
-      '想做一个“周末轻松片单”，你会放哪些？',
-      '年度十佳怎么选？欢迎互相安利',
+      '分享我的年度十佳，欢迎补充',
+      '如果能回到过去，你会推荐哪10部给20岁的自己？',
+      '一人推荐一部”改变你人生”的电影',
+      '最适合下雨天看的片单',
+      '”第一次看惊为天人，再看依然好”的片单',
+      '你的”深夜emo必看”片单是什么？',
+      '适合和爸妈一起看的电影有哪些？',
+      '来互相安利：一人一部，不许重复',
     ],
   };
 
-  const bodyPoolByKind = {
+  // —— 正文池：更口语化、更有个人色彩 ——
+  const bodyPool = {
     movie: [
-      `我想认真聊聊《${hotMovieTopic}》。我最在意的是“动机”那块：前面铺垫很多，但最后的选择让我有点纠结。`,
-      `《${hotMovieTopic}》我看完后劲很大。不是爽片那种，是会反复回想一些台词和镜头。`,
-      `我觉得《${hotMovieTopic}》最强的是节奏：前半段像在慢慢把你带进去，后半段情绪一下子拉满。`,
+      `刚刷完《${_m()}》，说真的，前半段我差点弃了，但后半段直接封神。那个镜头切换的节奏太舒服了，特别是结尾那段，我反复拉了三遍。有没有人跟我一样觉得最后的台词是精心设计的双关？`,
+      `其实我一直想聊《${_m()}》。最大的感受是它没有把观众当傻子，很多情节留白让你自己去想。特别是关于选择的那场戏，主角什么都没说但什么都表达了。`,
+      `看《${_m()}》的时候我一直在想：如果我是主角，我会做同样的选择吗？越想越觉得这个本子写得真好，没有绝对的对错，就是把人放在两难里。`,
+      `不吐不快：《${_m()}》的配乐到底是谁做的？我从头听到尾，有几段直接起鸡皮疙瘩。感觉这片子一半的情绪是音乐带出来的。有没有人知道这个配乐团队还做过哪些片子？`,
+      `昨天带朋友去看了《${_m()}》，他出来第一句话是”这什么玩意”，我差点跟他吵起来哈哈。但后来聊着聊着，他居然说想二刷了。这片子就是这种类型：第一遍可能get不到，越品越有味道。`,
+      `《${_m()}》里面有个细节我太喜欢了：主角进房间之前看了一眼桌上照片，那一秒就交代了太多背景。现在的电影很少用这种方式讲故事了，都是直接旁白灌你一脸。`,
+      `有没有人看了《${_m()}》之后去查了相关的真实事件/原著？我发现改编其实改了不少，但改得都挺合理。原著粉可能不太开心，但作为电影来说节奏确实更紧凑了。`,
+      `可能是我过度解读了，但《${_m()}》里的颜色用得也太讲究了吧。开头冷色调，中间暖了一下，结尾又偏冷。我截了好多图当壁纸，这片子的摄影真的可以。`,
+      `《${_m()}》里演员的微表情太强了。有一个镜头就两秒，但那个眼神直接让我破防了。很多人说这个演员只会一种演法，我觉得不是，这部里面明显跟之前的角色完全不一样。`,
+      `关于《${_m()}》的结局，我看到网上至少三种解读。我觉得导演是故意的，留了一个开放式的结尾让你自己去选。这种处理方式比直接给答案高级太多了。`,
     ],
     director: [
-      `${hotDirectorTopic} 的片子我感觉都有一种共同气质：看似冷静，但情绪很克制地往里走。`,
-      `想问问大家：${hotDirectorTopic} 如果只看一部入坑，选哪部最合适？`,
+      `最近重新按时间顺序看了一遍 ${_d()} 的作品，发现一个很有意思的点：早期的片子更注重故事，后期的片子更注重氛围。其实说不上哪个更好，就是风格在变。大家更喜欢哪个时期的TA？`,
+      `${_d()} 给我最大的感觉是”克制”。很多导演特别喜欢用大特写、大配乐来煽情，但TA不一样，该收的时候就收，反而更有力量。有部片子里一个长镜头就拍主角的背影，走了快两分钟，但一点都不闷。`,
+      `我觉得 ${_d()} 最被忽视的一部是早期的那部小成本。虽然制作糙了点，但故事的核特别硬，后来的几部大制作反而有点为了市场妥协了。有没有看过TA早期作品的朋友？`,
+      `说真的，${_d()} 和 ${_d()} 虽然经常被拿来比较，但根本不是一个赛道的。前者更擅长人物刻画，后者的强项是叙事结构。非要比的话，看你想看什么类型的了。你们觉得呢？`,
     ],
     recommend: [
-      '我最近片荒了，想找点不踩雷的。最好节奏舒服一点、情绪到位一点。',
-      '不想看太烧脑的，但也不想太平。有没有“好看又不累”的推荐？',
+      '最近片荒了，翻了半天片库都找不到想看的。我喜欢那种节奏不赶、情绪细腻的片子，但也不能太闷。求推荐！最好能告诉我为什么推荐这部。',
+      '刚看完一部，后劲太大了睡不着。需要一部轻松点的洗洗眼睛。有没有那种笑中带泪的喜剧？不要纯搞笑的，要有点内核的那种。',
+      '最近心态有点崩，想看一部温暖治愈的片子缓一缓。不要鸡汤，要那种看完觉得生活还是很美好、但又不刻意的感觉。有没有推荐？',
+      '跟朋友打赌输了要推荐一部片给他，他说要”看了觉得智商受到尊重但又不至于太累”的。这要求也太刁钻了吧…大家帮忙想想？',
     ],
     review: [
-      '我有点两极分化：很多地方喜欢，但也有些地方觉得解释不够清楚。想听听你们的理解。',
-      '我更关心它想表达什么，而不是情节本身。大家觉得它的核心是什么？',
+      '你们有没有那种体验：一部电影第一次看觉得一般，过了几年再看突然就懂了？我最近重看了几部以前不喜欢的片子，发现是我当时太年轻了。有些东西真的要经历点什么才能理解。',
+      '其实我最喜欢聊的不是那些公认的神作，而是那些有争议的片子。因为大家的看法不一样才有的聊啊。如果所有人都说好，反而不想讨论了。你们有没有那种”我觉得很好但周围人都不喜欢”的片子？',
+      '我看电影有一个习惯：好片子会故意隔一段时间再看第二遍。因为有些片子的味道需要沉淀，连续看反而会腻。你们一般怎么决定要不要二刷？',
+      '你们会因为评分低而跳过一部片吗？我觉得影评和观众分有时候差距挺大的。有些片影评人很爱但观众不买账，有些反过来。你们更信影评还是观众评分？',
     ],
     actor: [
-      '这位演员的表演细节很厉害，你们有哪部印象最深？',
-      '同一个演员在不同作品里的气质差别很大，怎么做到的？',
+      `最近看了 ${_a()} 的几部片，发现TA在每个角色里的走路姿势都不一样。这种细节能做到的演员真不多。很多人只关注台词和表情，其实肢体语言才是最见功底的。大家有没有注意过这类细节？`,
+      `我觉得 ${_a()} 最厉害的不是爆发戏，而是安静的戏。那种不说话但眼睛里全是戏的状态，真的需要很深的功底。最近一部里面TA坐在车里看着窗外，什么都没说，但那一幕我看哭了。`,
+      `关于 ${_a()}，其实TA早期有一部被严重低估的作品。当时可能因为题材比较冷门或者宣传不够，票房一般，但表演是真的在线。有没有TA的老粉来聊聊？`,
     ],
     list: [
-      '想整理一个片单：适合周末晚上放松的那种。你会推荐哪些？',
-      '如果只能给朋友推荐 3 部不踩雷的，你会选什么？',
+      '想跟大家一起建一个”适合下雨天窝在沙发上看”的片单。我先来：要那种色调偏暖、节奏不紧不慢、看完心里暖暖的类型。每人推一部吧，我整理起来！',
+      '突发奇想：如果能给10年前的自己推荐10部电影，你会选哪些？不是为了装B或者显得有品位，而是真觉得那些电影改变了你、让你成为了现在的自己。',
+      '你们有没有那种”每次别人问推荐电影都会脱口而出”的片子？就是那种不需要多想、第一反应就是它、而且推荐之后从来没被朋友吐槽过的。我有三部，等下写在评论区。',
     ],
   };
 
-  const replyPoolByKind = {
-    movie: [
-      `我也在聊《${hotMovieTopic}》。我更站“主题”这一边，结局其实是为了把主题推到极致。`,
-      `关于《${hotMovieTopic}》我同意你说的节奏，后半段那个点一下就把前面都串起来了。`,
-      `我觉得《${hotMovieTopic}》留白是优点，不解释太死反而更真实。`,
+  // —— 回复池：不同风格，避免全是”同感” ——
+  const replyPool = {
+    agree_long: [
+      `说的太好了。我也是这种感觉——这片子后劲真的大，看完之后好几天脑子里都是那些画面。特别是你提到的那个细节，我去翻了一下别人的解析，发现还有好多我没注意到的点。`,
+      `完全同意！而且我觉得还有一个点：这种处理方式其实是在尊重观众的智商。现在太多电影把什么都说得明明白白，反而少了想象的空间。`,
+      `对对对，终于有人说这个了！我一直在跟朋友安利这部，但他们都说太闷了。我也不知道怎么解释，就是你得静下心来看，它不是那种爆米花爽片。`,
+      `握手🤝 我看的时候也是这个感受。而且你有没有注意到色调的变化？开头偏冷，越往后越暖。不是偶然的，应该是刻意设计的。`,
+      `+1 但我补充一点：这种风格实际上对演员要求特别高。因为没有花里胡哨的特效和剪辑，观众注意力全在演员身上，演得稍微差一点就会被看出来。`,
     ],
-    director: [
-      `如果聊 ${hotDirectorTopic}，我建议先看他/她更“好入口”的那部，再看更实验的。`,
-      `${hotDirectorTopic} 的强项是气氛营造和细节，很多镜头不是为了推进情节，而是为了情绪。`,
+    disagree_mild: [
+      `我理解你的感受，但说实话我看完感觉不太一样。可能是我期待的方向不一样吧。我不是说这片子不好，就是觉得它想表达的跟我期待的不是一回事。`,
+      `你说的有道理，但我有个不同的角度。我觉得这片子的问题可能不是节奏慢，而是它在前半段给了观众一个错误预期。如果你是冲着XXX去看的，可能会有点落差。`,
+      `嗯…我持保留意见。不过你让我想重看一遍了。有时候第一遍会被某个细节影响整体感受，第二遍可能更客观。`,
+      `我其实觉得一般般，但你的分析挺有意思。可能是我太在意剧情逻辑了，忽略了视觉语言的部分。周末重新看一遍再来说。`,
     ],
-    generic: [
-      '同感！我也是这样想的。',
-      '我不太同意，不过你的角度挺有意思。',
-      '这个点我之前没注意到，准备二刷。',
-      '我更喜欢它的配乐和氛围，真的加分。',
+    question: [
+      `好奇问一下：你说的那个情节，在原著/真实事件里是怎么处理的？改编和原版哪个更好？`,
+      `那你觉得如果换个导演来拍这个故事，会是什么样的？我脑补了一下如果是 ${_d()} 来拍，感觉完全不一样。`,
+      `问个题外话：你们看电影一般会提前看影评和剧透吗？还是完全空白的去看？我两种都试过，感觉体验差别挺大的。`,
+      `补充一个问题：这部片子的配乐是不是原创的？有几段我感觉在哪听过但想不起来。配乐团队好像跟 ${_d()} 合作过好几次？`,
+    ],
+    shift_topic: [
+      `说起来，这让我想到另一部题材类似的片子。虽然风格完全不同，但核心想表达的东西挺像的。你们觉得同一主题用不同风格来拍，效果会差很多吗？`,
+      `歪个楼，你们觉不觉得近几年的电影在摄影方面越来越讲究了？画面都很好看，但有时候感觉故事反而弱了。画面和剧情，你们更看重哪个？`,
+      `这让我想起前阵子跟朋友讨论的一个话题：看电影到底是看故事还是看情绪？有些片子没什么剧情但情绪做到了极致，一样能打动我。你们怎么看？`,
+      `聊这么细真的让我又想去看一遍了。我觉得好片子就是这样，每次看都能发现新的东西。你们有没有看过十遍以上的电影？是啥？`,
+    ],
+    recommend_inline: [
+      `推荐一部风格类似的：《${_m()}》。虽然题材不一样，但给我的感觉挺像的，都是有质感的慢片。如果你喜欢这种类型的，应该也会喜欢这部。`,
+      `插一句，如果你喜欢这个导演/演员，一定要去看TA那部《${_m()}》。虽然比较冷门，但我觉得是TA最好的作品之一。`,
+      `推荐一部冷门但是神作级别的：《${_m()}》。跟这部其实有种呼应的感觉，但表达方式完全不同。有空的话建议找来看看。`,
     ],
   };
 
   const existing = await db.prepare('SELECT topic_key, title FROM forum_threads ORDER BY id DESC LIMIT 400').all();
   const existsSet = new Set((existing || []).map((r) => `${String(r.topic_key || '')}||${String(r.title || '')}`));
 
+  // 给每个话题分配权重：电影和推荐类更多（更活跃）
+  const weightedKind = () => {
+    const r = Math.random();
+    if (r < 0.30) return 'movie';
+    if (r < 0.50) return 'recommend';
+    if (r < 0.65) return 'review';
+    if (r < 0.78) return 'director';
+    if (r < 0.88) return 'actor';
+    return 'list';
+  };
+
   let createdThreads = 0;
   for (let i = 0; i < threadsN; i += 1) {
     const uid = userIds[i % userIds.length];
-    const topicKey = TOPICS[i % TOPICS.length].key;
-    const kind = String(topicKey).startsWith('movie:') ? 'movie'
-      : String(topicKey).startsWith('director:') ? 'director'
-        : (BASE_TOPICS.find((t) => t.key === topicKey)?.key || 'review');
-    const titlePool = titlePoolByKind[kind] || titlePoolByKind.review;
-    const bodyPool = bodyPoolByKind[kind] || bodyPoolByKind.review;
-    let title = titlePool[i % titlePool.length];
-    const content = bodyPool[(i * 3) % bodyPool.length] + '\n\n' + bodyPool[(i * 5 + 1) % bodyPool.length];
+    const kind = weightedKind();
+    const topicKey = (() => {
+      if (kind === 'movie') {
+        const m = realMovies?.[i % realMovies.length];
+        return m?.id ? `movie:${m.id}` : TOPICS[i % TOPICS.length].key;
+      }
+      if (kind === 'director') {
+        const dn = directorNames[i % directorNames.length] || '热门导演';
+        return `director:${dn}`;
+      }
+      return (BASE_TOPICS.find((t) => t.key === kind) || BASE_TOPICS[0]).key;
+    })();
 
-    // 避免重复标题：如已存在则加后缀
-    const baseKey = `${topicKey}||${title}`;
+    // 动态生成标题：每次取新的电影名/导演名/演员名
+    const titleTemplates = titlePool[kind] || titlePool.review;
+    const title = titleTemplates[i % titleTemplates.length];
+
+    // 动态生成正文：正文池 + 适当的换行分段
+    const bodyTemplates = bodyPool[kind] || bodyPool.review;
+    const p1 = bodyTemplates[i % bodyTemplates.length];
+    const p2 = bodyTemplates[(i * 3 + 2) % bodyTemplates.length];
+    const content = p1 !== p2 ? p1 + '\n\n' + p2 : p1;
+
+    // 避免标题完全重复
+    let finalTitle = title;
+    const baseKey = `${topicKey}||${finalTitle}`;
     if (existsSet.has(baseKey)) {
-      title = `${title}（第${(i % 9) + 2}聊）`;
+      finalTitle = title + `（续）`;
     }
-    existsSet.add(`${topicKey}||${title}`);
+    existsSet.add(`${topicKey}||${finalTitle}`);
 
-    await db.prepare('INSERT INTO forum_threads (user_id, topic_key, title, content) VALUES (?, ?, ?, ?)').run(uid, topicKey, title, content);
+    await db.prepare('INSERT INTO forum_threads (user_id, topic_key, title, content) VALUES (?, ?, ?, ?)').run(uid, topicKey, finalTitle, content);
     const tidRow = await db.prepare('SELECT last_insert_rowid() as id').get();
     const tid = tidRow?.id;
     if (!tid) continue;
 
-    const repliesN = 3 + (i % Math.min(7, maxReplies));
+    // 生成回复链：3~8条，混合不同风格
+    const repliesN = 3 + Math.floor(Math.random() * Math.min(6, maxReplies - 2));
     let lastParent = null;
     for (let j = 0; j < repliesN; j += 1) {
       const ruid = userIds[(i + j + 1) % userIds.length];
-      const pool = kind === 'movie'
-        ? [...replyPoolByKind.movie, ...replyPoolByKind.generic]
-        : kind === 'director'
-          ? [...replyPoolByKind.director, ...replyPoolByKind.generic]
-          : replyPoolByKind.generic;
-      const body = pool[(i + j) % pool.length];
-      const parentId = j % 4 === 3 ? lastParent : null;
+
+      // 混合回复风格：60% 长回复，20% 温和反对，10% 提问，5% 推荐，5% 歪楼
+      const rTypeRand = Math.random();
+      let pool;
+      if (rTypeRand < 0.55) {
+        pool = replyPool.agree_long;
+      } else if (rTypeRand < 0.75) {
+        pool = replyPool.disagree_mild;
+      } else if (rTypeRand < 0.88) {
+        pool = replyPool.question;
+      } else if (rTypeRand < 0.95) {
+        pool = replyPool.recommend_inline;
+      } else {
+        pool = replyPool.shift_topic;
+      }
+
+      const body = pool[(i * 3 + j * 7) % pool.length];
+      // 约 1/3 的回复是楼中楼
+      const parentId = j > 0 && Math.random() < 0.35 ? lastParent : null;
       await db.prepare('INSERT INTO forum_replies (thread_id, user_id, parent_id, content) VALUES (?, ?, ?, ?)').run(tid, ruid, parentId, body);
       const ridRow = await db.prepare('SELECT last_insert_rowid() as id').get();
-      lastParent = ridRow?.id ?? lastParent;
+      if (parentId == null) lastParent = ridRow?.id ?? lastParent;
     }
     createdThreads += 1;
   }
 
-  res.json({ code: 0, data: { createdThreads }, message: '已生成论坛虚拟对话' });
+  res.json({ code: 0, data: { createdThreads }, message: '已生成论坛对话' });
 }));
 
 module.exports = router;

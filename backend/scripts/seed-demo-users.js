@@ -9,6 +9,16 @@ require('dotenv').config();
 const path = require('path');
 const bcrypt = require('bcryptjs');
 
+const AVATAR_FETCH_TIMEOUT_MS = 8000;
+const AVATAR_STYLE_COUNT = 12;
+const COLOR_SEED_PRIME = 17;
+
+const AVATAR_COLORS = [
+  '#6366f1', '#0ea5e9', '#f59e0b', '#10b981', '#ec4899',
+  '#14b8a6', '#d946ef', '#f97316', '#22c55e', '#3b82f6',
+  '#a855f7', '#ef4444', '#8b5cf6', '#06b6d4', '#84cc16',
+];
+
 const DEMO_USERS = [
   { username: 'zhangwei', nickname: '影迷阿哲', gender: 'male', age: 25 },
   { username: 'lina', nickname: '糖炒栗子', gender: 'female', age: 22 },
@@ -27,40 +37,29 @@ const DEMO_USERS = [
   { username: 'directorcut', nickname: '导演剪辑版', gender: 'male', age: 33 },
 ];
 
-/**
- * 生成本地 SVG 头像（彩色圆形 + 首字，兜底方案）
- */
+function svgToDataUri(svg) {
+  return `data:image/svg+xml;base64,${Buffer.from(svg).toString('base64')}`;
+}
+
 function generateLocalAvatar(username) {
-  const colors = [
-    '#6366f1', '#0ea5e9', '#f59e0b', '#10b981', '#ec4899',
-    '#14b8a6', '#d946ef', '#f97316', '#22c55e', '#3b82f6',
-    '#a855f7', '#ef4444', '#8b5cf6', '#06b6d4', '#84cc16',
-  ];
-  const idx = username.length * 17 % colors.length;
-  const bg = colors[idx];
+  const idx = username.length * COLOR_SEED_PRIME % AVATAR_COLORS.length;
+  const bg = AVATAR_COLORS[idx];
   const letter = (username[0] || '?').toUpperCase();
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
   <rect width="128" height="128" rx="64" fill="${bg}"/>
   <text x="64" y="64" text-anchor="middle" dominant-baseline="central" font-family="sans-serif" font-size="56" font-weight="bold" fill="#fff">${letter}</text>
 </svg>`;
-  const b64 = Buffer.from(svg).toString('base64');
-  return `data:image/svg+xml;base64,${b64}`;
+  return svgToDataUri(svg);
 }
 
-/**
- * 用 DiceBear API 生成 SVG 头像，转换为 Base64 data URI
- * 网络不可达时降级为本地生成的头像
- */
 async function fetchAvatarBase64(username) {
   const seed = encodeURIComponent(username);
   try {
     const res = await fetch(`https://api.dicebear.com/9.x/bottts-neutral/svg?seed=${seed}&size=128`, {
-      signal: AbortSignal.timeout(8000),
+      signal: AbortSignal.timeout(AVATAR_FETCH_TIMEOUT_MS),
     });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const svg = await res.text();
-    const b64 = Buffer.from(svg).toString('base64');
-    return `data:image/svg+xml;base64,${b64}`;
+    return svgToDataUri(await res.text());
   } catch (e) {
     console.warn(`  ⚠️ DiceBear 不可达 (${username})，使用本地头像: ${e.message}`);
     return generateLocalAvatar(username);
@@ -72,34 +71,36 @@ async function main() {
   await init();
   const db = getDb();
 
-  const defaultPass = bcrypt.hashSync('user123', 10);
+  const defaultPass = await bcrypt.hash('user123', 10);
   let created = 0;
   let skipped = 0;
 
   console.log('👥 创建演示用户并获取头像...\n');
 
-  for (const u of DEMO_USERS) {
-    const existing = await db.prepare('SELECT id FROM users WHERE LOWER(username) = LOWER(?)').get(u.username);
+  // 并行获取所有头像（15 个用户从 120s → 8s）
+  const avatarResults = await Promise.all(
+    DEMO_USERS.map(u => fetchAvatarBase64(u.username))
+  );
+
+  for (let i = 0; i < DEMO_USERS.length; i++) {
+    const u = DEMO_USERS[i];
+    const avatar = avatarResults[i];
+    const existing = db.prepare(
+      'SELECT id, avatar_data IS NOT NULL AS has_avatar FROM users WHERE LOWER(username) = LOWER(?)'
+    ).get(u.username);
+
     if (existing) {
-      // 已有用户：补充头像和基本信息
-      const avatar = await fetchAvatarBase64(u.username);
-      if (avatar) {
-        await db.prepare(
+      if (!existing.has_avatar) {
+        db.prepare(
           'UPDATE users SET avatar_data = ?, nickname = ?, gender = ?, age = ? WHERE id = ?'
         ).run(avatar, u.nickname, u.gender, u.age, existing.id);
         console.log(`  ✅ ${u.username} (${u.nickname}) 头像已更新`);
-      } else {
-        await db.prepare(
-          'UPDATE users SET nickname = ?, gender = ?, age = ? WHERE id = ?'
-        ).run(u.nickname, u.gender, u.age, existing.id);
-        console.log(`  🔄 ${u.username} 信息已更新（无头像）`);
       }
       skipped += 1;
       continue;
     }
 
-    const avatar = await fetchAvatarBase64(u.username);
-    await db.prepare(
+    db.prepare(
       `INSERT INTO users (username, password, nickname, gender, age, role, avatar_data, avatar_style)
        VALUES (?, ?, ?, ?, ?, 'user', ?, ?)`
     ).run(
@@ -109,10 +110,10 @@ async function main() {
       u.gender,
       u.age,
       avatar,
-      Math.abs(u.username.length * 17 + u.age) % 12
+      Math.abs(u.username.length * COLOR_SEED_PRIME + u.age) % AVATAR_STYLE_COUNT
     );
     created += 1;
-    console.log(`  ✨ ${u.username} (${u.nickname}) 已创建${avatar ? ' + 头像' : ''}`);
+    console.log(`  ✨ ${u.username} (${u.nickname}) 已创建 + 头像`);
   }
 
   save();

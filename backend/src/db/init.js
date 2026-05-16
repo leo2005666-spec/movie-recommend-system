@@ -362,6 +362,204 @@ async function run() {
     console.log('已插入示例影视数据');
   }
 
+  // ============================================================
+  // 演示用户 + 头像（本地生成 SVG，无需外部 API）
+  // ============================================================
+  const demoUserCount = (await db.prepare(
+    "SELECT COUNT(*) as n FROM users WHERE role != 'admin'"
+  ).get()).n;
+
+  if (demoUserCount < 3) {
+    const avatarColors = [
+      '#6366f1', '#0ea5e9', '#f59e0b', '#10b981', '#ec4899',
+      '#14b8a6', '#d946ef', '#f97316', '#22c55e', '#3b82f6',
+      '#a855f7', '#ef4444', '#8b5cf6', '#06b6d4', '#84cc16',
+    ];
+    const genAvatar = (username) => {
+      const idx = (username.length * 17) % avatarColors.length;
+      const bg = avatarColors[idx];
+      const letter = (username[0] || '?').toUpperCase();
+      const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128"><rect width="128" height="128" rx="64" fill="${bg}"/><text x="64" y="64" text-anchor="middle" dominant-baseline="central" font-family="sans-serif" font-size="56" font-weight="bold" fill="#fff">${letter}</text></svg>`;
+      return 'data:image/svg+xml;base64,' + Buffer.from(svg).toString('base64');
+    };
+
+    const demoUsers = [
+      { username: 'zhangwei', nickname: '影迷阿哲', gender: 'male', age: 25 },
+      { username: 'lina', nickname: '糖炒栗子', gender: 'female', age: 22 },
+      { username: 'wangqiang', nickname: 'NightOwl', gender: 'male', age: 30 },
+      { username: 'xiaochen', nickname: '小陈不沉', gender: 'male', age: 20 },
+      { username: 'seabreeze', nickname: 'SeaBreeze', gender: 'female', age: 27 },
+      { username: 'muzi', nickname: '木子李', gender: 'female', age: 24 },
+      { username: 'moviefan_wang', nickname: '电影民工小王', gender: 'male', age: 28 },
+      { username: 'popcorntime', nickname: 'PopcornTime', gender: 'female', age: 23 },
+      { username: 'filmgeek_liu', nickname: '胶片大叔', gender: 'male', age: 35 },
+      { username: 'cinephile_chen', nickname: '文艺片控', gender: 'female', age: 26 },
+      { username: 'dapeng', nickname: '大鹏看电影', gender: 'male', age: 32 },
+      { username: 'xinyi', nickname: '心怡爱追剧', gender: 'female', age: 21 },
+      { username: 'moviebuff_zhou', nickname: '周周影评', gender: 'male', age: 29 },
+      { username: 'catlover_movie', nickname: '猫猫头', gender: 'female', age: 25 },
+      { username: 'directorcut', nickname: '导演剪辑版', gender: 'male', age: 33 },
+    ];
+
+    const demoPass = bcrypt.hashSync('user123', 10);
+    for (const u of demoUsers) {
+      const exist = await db.prepare(
+        'SELECT id FROM users WHERE LOWER(username) = LOWER(?)'
+      ).get(u.username);
+      if (!exist) {
+        await db.prepare(
+          `INSERT INTO users (username, password, nickname, gender, age, role, avatar_data, avatar_style)
+           VALUES (?, ?, ?, ?, ?, 'user', ?, ?)`
+        ).run(
+          u.username, demoPass, u.nickname, u.gender, u.age,
+          genAvatar(u.username),
+          Math.abs(u.username.length * 17 + u.age) % 12
+        );
+      }
+    }
+    console.log('已创建演示用户（含头像）');
+  }
+
+  // ============================================================
+  // 演示评分/收藏数据：让推荐系统有行为数据可分析
+  // ============================================================
+  const ratingCount = (await db.prepare('SELECT COUNT(*) as n FROM ratings').get()).n;
+  if (ratingCount < 10) {
+    const allMovies = await db.prepare('SELECT id, title FROM movies').all();
+    const allUsers = await db.prepare("SELECT id, username FROM users WHERE role != 'admin'").all();
+    if (allMovies.length > 0 && allUsers.length >= 2) {
+      // 为用户分配偏好类型，让推荐更有多样性
+      const preferences = [
+        { name: '科幻迷', movieFilter: /星际|盗梦|沙丘|蝙蝠|蜘蛛|复仇|阿凡达|黑客|明日|降临|银翼|火星|地心/ },
+        { name: '文艺控', movieFilter: /肖申克|楚门|霸王|花样|钢琴|杀手|阿甘|千与千寻|龙猫|怦然|天堂|放牛|海上/ },
+        { name: '动作粉', movieFilter: /药神|绿皮|绿里|搏击|搏斗|教父|辛德勒|拯救|勇敢|角斗|速度|疾速/ },
+        { name: '日漫迷', movieFilter: /千与千寻|龙猫|哈尔|天空|风之|幽灵|魔法|你的名|天气|声之形|萤火/ },
+      ];
+      let rCount = 0;
+      for (const u of allUsers.slice(0, 15)) {
+        const pref = preferences[u.id % preferences.length];
+        const candidates = allMovies.filter(m => pref.movieFilter.test(m.title));
+        const toRate = candidates.length >= 5 ? candidates : allMovies;
+        const shuffled = [...toRate].sort(() => Math.random() - 0.5).slice(0, 15 + (u.id % 15));
+        for (const m of shuffled) {
+          // 偏好电影给高分，其他随机
+          const isPreferred = pref.movieFilter.test(m.title);
+          const score = isPreferred
+            ? 3.5 + Math.random() * 1.5 // 3.5-5.0
+            : 2 + Math.random() * 3;     // 2.0-5.0
+          await db.prepare(
+            'INSERT OR IGNORE INTO ratings (user_id, movie_id, score) VALUES (?, ?, ?)'
+          ).run(u.id, m.id, Math.round(score * 10) / 10);
+          rCount += 1;
+          // 高分 → 收藏
+          if (score >= 4) {
+            await db.prepare(
+              'INSERT OR IGNORE INTO favorites (user_id, movie_id) VALUES (?, ?)'
+            ).run(u.id, m.id);
+          }
+        }
+      }
+      console.log(`已生成 ${rCount} 条评分 + 收藏数据`);
+    }
+  }
+
+  // ============================================================
+  // 丰富评论：为热门电影生成引用具体演员/导演/剧情的影评
+  // ============================================================
+  const commentCount = (await db.prepare('SELECT COUNT(*) as n FROM comments').get()).n;
+  if (commentCount < 10) {
+    const movieReviews = [
+      { kw: '肖申克', reviews: [
+        "摩根·弗里曼的旁白像一壶陈年老酒，蒂姆·罗宾斯把安迪的隐忍和坚定演到了骨髓里。雨中张开双臂那一幕是影史永恒的经典。",
+        "'有些鸟是关不住的，它们的羽毛太亮了。'这句台词我记了二十年。安迪在广播室放《费加罗的婚礼》那段，所有人的仰望，是影史最动人的瞬间。",
+        "弗兰克·德拉邦特的导演处女作就如此惊艳，把斯蒂芬·金的短篇改编得恰到好处。布鲁克斯出狱后自杀那段太扎心了，体制化不仅是监狱里的命题。",
+      ]},
+      { kw: '阿甘', reviews: [
+        "汤姆·汉克斯演出了阿甘的纯真和执着，换任何一个演员都演不出这种感觉。Gary Sinise 演的丹中尉也非常出彩，从愤怒到和解的转变让人泪目。",
+        "罗伯特·泽米吉斯用一个人的视角串联了整个美国现代史，这种叙事太巧妙了。Alan Silvestri 的配乐与那片飘落的羽毛一起成为经典。",
+      ]},
+      { kw: '盗梦', reviews: [
+        "诺兰用建筑来隐喻梦境的结构，层层套叠的叙事让人目不暇接。莱昂纳多演的柯布比《泰坦尼克号》时期深沉太多了，对亡妻的愧疚贯穿始终。",
+        "汉斯·季默的配乐是这部电影的另一半灵魂，尤其是那首 Time，层层递进的情感张力跟多层梦境的崩塌完美对应。",
+        "约瑟夫·高登-莱维特在旋转走廊那场戏是实拍的！诺兰对实拍的执念让人敬佩，这在 CG 泛滥的好莱坞太难得了。",
+      ]},
+      { kw: '星际', reviews: [
+        "诺兰用相对论来讲父女情，马修·麦康纳看女儿传来的视频、二十三年弹指一挥间那场戏，哭到停不下来。汉斯·季默的管风琴配乐把宇宙的浩瀚和人性的渺小都写出来了。",
+        "安妮·海瑟薇有一段'爱是超越维度的力量'的独白，当时觉得有点矫情，但看完结局回头看，诺兰其实在铺垫整个故事的底层逻辑——爱就是引力。",
+      ]},
+      { kw: '药神', reviews: [
+        "徐峥贡献了生涯最佳表演，从油腻市侩到'就当是我还给他们的'那个转变完全不突兀。王传君演的吕受益把一个白血病人的绝望和求生欲都写在了脸上。",
+        "文牧野的处女作就敢拍医疗体制这个题材，而且既商业又深刻。周一围演的警察说'这个案子我不查了'那段，把体制内个人的无力感演到了骨髓里。",
+      ]},
+      { kw: '霸王', reviews: [
+        "张国荣的程蝶衣是华语电影史上不可超越的角色，'不疯魔不成活'被他演到了骨子里。陈凯歌用五十年的时间跨度拍了一个关于执念与背叛的故事。",
+        "张丰毅演的段小楼是个'明白人'，他知道戏不是人生，但正是这种'明白'让他在文革中背叛了所有人。巩俐演的菊仙穿着红嫁衣上吊那一幕太震撼了。",
+      ]},
+      { kw: '千与千寻', reviews: [
+        "宫崎骏创造了一个让人不想醒来的世界。无脸男是我们内心的孤独，白龙是被遗忘的自然的化身。久石让的配乐尤其是海上列车那段，每次听都起鸡皮疙瘩。",
+        "宫崎骏说这是拍给十岁女孩看的，但成年人看了感触更深。油屋里的规矩就像职场规则，千寻从不适应到找到自己的位置，简直就是社畜隐喻。",
+      ]},
+      { kw: '楚门', reviews: [
+        "金·凯瑞用一张喜剧脸演了一出悲剧，彼得·威尔用'真人秀'这个超前概念预言了社交媒体时代。楚门最后鞠躬说'祝你们早安午安晚安'，是电影史上最动人的告别之一。",
+        "艾德·哈里斯演的导演克里斯托夫不是纯粹的反派，他是创造者也是囚禁者，那句'外面的世界比我虚构的世界更虚伪'道出了故事的黑色内核。",
+      ]},
+      { kw: '杀手', reviews: [
+        "让·雷诺演的莱昂是全片最温柔的角色，他和娜塔莉·波特曼之间那种超越年龄的情感，吕克·贝松处理得非常细腻。加里·奥德曼的反派演出是教科书级别的。",
+        "12岁的娜塔莉·波特曼在这部处女作中令人惊艳。那句'人生是一直辛苦，还是只有童年如此？''一直如此。'我永远记得。",
+      ]},
+      { kw: '绿皮书', reviews: [
+        "维果·莫腾森为演托尼增重了20公斤，马赫沙拉·阿里演的唐·谢利在两个世界都被排挤。吃炸鸡那场戏把两个阶层的距离和逐渐靠近写得轻松又动人。",
+      ]},
+      { kw: '泰坦尼克', reviews: [
+        "詹姆斯·卡梅隆用爱情故事包裹了阶级寓言。莱昂纳多那时候帅得惊天动地，凯特·温斯莱特把贵族少女的叛逆灵魂演活了。沉船时选择体面赴死的人们比爱情线更让我动容。",
+      ]},
+      { kw: '龙猫', reviews: [
+        "宫崎骏和久石让的王炸组合永远不会让人失望。猫巴士的设计太有想象力了，龙猫带着姐妹俩在树顶吹埙的画面是动画史上最治愈的场景之一。",
+      ]},
+      { kw: '绿里|绿书', reviews: [
+        "彼得·法雷里从一个无厘头喜剧导演转型拍出了如此沉稳有力的作品，维果·莫腾森和马赫沙拉·阿里的化学反应绝了。",
+      ]},
+    ];
+
+    const allUsers = await db.prepare('SELECT id, username FROM users').all();
+    const userIds = allUsers.map(u => u.id);
+    if (userIds.length >= 2) {
+      let cCreated = 0, rCreated = 0;
+      for (const mr of movieReviews) {
+        const movies = await db.prepare(
+          `SELECT id, title FROM movies WHERE title LIKE '%' || ? || '%'`
+        ).all(mr.kw);
+        if (!movies.length) continue;
+        const movieId = movies[0].id;
+        for (let i = 0; i < mr.reviews.length && i < 4; i++) {
+          const uid = userIds[i % userIds.length];
+          await db.prepare(
+            'INSERT INTO comments (user_id, movie_id, content) VALUES (?, ?, ?)'
+          ).run(uid, movieId, mr.reviews[i]);
+          cCreated += 1;
+          // 20% 的评论有回复
+          if (Math.random() < 0.3) {
+            const ridRow = await db.prepare('SELECT last_insert_rowid() as id').get();
+            if (ridRow?.id) {
+              const replyUid = userIds[(i + 1) % userIds.length];
+              const replies = [
+                '同感！你说得太好了，完全说出了我的感受。',
+                '我看的时候也有类似的感觉，握手！',
+                '这个解读角度很新颖，我之前没想到。',
+                '细节控+1，我也注意到了你说的这点。',
+              ];
+              await db.prepare(
+                'INSERT INTO comments (user_id, movie_id, parent_id, content) VALUES (?, ?, ?, ?)'
+              ).run(replyUid, movieId, ridRow.id, replies[i % replies.length]);
+              rCreated += 1;
+            }
+          }
+        }
+      }
+      console.log(`已生成 ${cCreated} 条影评 + ${rCreated} 条回复`);
+    }
+  }
+
   // 展示名统一为「用户名」：保留 nickname 列兼容旧库，内容与 username 对齐
   await db.exec(`UPDATE users SET nickname = username`);
 

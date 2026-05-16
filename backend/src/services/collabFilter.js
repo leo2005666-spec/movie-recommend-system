@@ -397,15 +397,22 @@ async function getContentSimilar(movieId, limit = 12) {
 }
 
 /**
- * 热门推荐
+ * 热门推荐：综合 TMDB 热度 + 新片 + 评分，每日抖动
  */
 async function getPopularMovies(limit = 12) {
-  const randOrder = dailyRandomOrder(dailySeed());
+  const seed = dailySeed();
+  const jitterA = (seed * 9301 + 49297) % 10007;
+  const jitterB = (seed * 49297 + 233280) % 10007;
   return await db.prepare(`
     SELECT m.id, m.title, m.cover, m.description, m.release_year, m.release_date, m.duration
     FROM movies m
     WHERE ${LANG_FILTER}
-    ORDER BY ${randOrder}
+    ORDER BY (
+      (COALESCE(m.tmdb_vote_count, 0) * 1.0 / (COALESCE(m.tmdb_vote_count, 0) + 5000.0)) * 5.0
+      + (m.release_year - 2000) * 0.35
+      + (m.tmdb_rating * 0.6)
+      + ((m.id * ${jitterA} + ${jitterB}) % 10007) / 10007.0 * 1.2
+    ) DESC
     LIMIT ?
   `).all(limit);
 }

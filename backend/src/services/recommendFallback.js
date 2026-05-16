@@ -117,12 +117,21 @@ async function getColdStartRecommendations(userId, limit = 12) {
 
 async function getPopularRecommendations(limit = 12) {
   const seed = dailySeed();
-  const randOrder = dailyRandomOrder(seed);
+  // 每日抖动参数：让同一天内排序稳定，不同天的排序有变化
+  const jitterA = (seed * 9301 + 49297) % 10007;
+  const jitterB = (seed * 49297 + 233280) % 10007;
+  // 综合热度排序：TMDB 投票数(对数平滑) + 新片加权 + 评分 + 每日抖动
+  // 这样热门电影和新片优先展示，老片和小众片排后，同时每天仍有微调
   return await db.prepare(`
     SELECT m.id, m.title, m.cover, m.description, m.release_year, m.release_date, m.duration, m.tmdb_vote_count, m.tmdb_rating
     FROM movies m
     WHERE ${LANG_FILTER}
-    ORDER BY ${randOrder}
+    ORDER BY (
+      (COALESCE(m.tmdb_vote_count, 0) * 1.0 / (COALESCE(m.tmdb_vote_count, 0) + 5000.0)) * 5.0
+      + (m.release_year - 2000) * 0.35
+      + (m.tmdb_rating * 0.6)
+      + ((m.id * ${jitterA} + ${jitterB}) % 10007) / 10007.0 * 1.2
+    ) DESC
     LIMIT ?
   `).all(limit);
 }

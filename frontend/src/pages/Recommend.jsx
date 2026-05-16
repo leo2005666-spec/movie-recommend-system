@@ -19,9 +19,24 @@ export default function Recommend() {
   const [loading, setLoading] = useState(true);
 
   const backfillFromTmdbIfNeeded = async () => {
-    const hot = await api.get('/tmdb/lists', { kind: 'popular', region: 'CN' }).catch(() => null);
-    const rows = Array.isArray(hot?.data?.list) ? hot.data.list : [];
-    const ids = rows.map((x) => Number(x?.tmdb_id)).filter((n) => Number.isFinite(n) && n > 0).slice(0, 10);
+    // 拉取 TMDB 热门 + 正在上映，补足本地库
+    const [hot, nowPlaying] = await Promise.all([
+      api.get('/tmdb/lists', { kind: 'popular', region: 'CN' }).catch(() => null),
+      api.get('/tmdb/lists', { kind: 'now_playing', region: 'CN' }).catch(() => null),
+    ]);
+    const rows = [
+      ...(Array.isArray(hot?.data?.list) ? hot.data.list : []),
+      ...(Array.isArray(nowPlaying?.data?.list) ? nowPlaying.data.list : []),
+    ];
+    const seen = new Set();
+    const ids = rows
+      .map((x) => Number(x?.tmdb_id))
+      .filter((n) => {
+        if (!Number.isFinite(n) || n <= 0 || seen.has(n)) return false;
+        seen.add(n);
+        return true;
+      })
+      .slice(0, 20);
     if (!ids.length) return;
     await Promise.all(ids.map((tid) => api.post(`/movies/from-tmdb/${tid}`).catch(() => null)));
   };
@@ -39,7 +54,7 @@ export default function Recommend() {
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
-    const params = { limit: 48 };
+    const params = { limit: 60 };
 
     if (tasteType) {
       api

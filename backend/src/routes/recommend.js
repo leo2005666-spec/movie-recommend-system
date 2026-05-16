@@ -18,7 +18,7 @@ const HIDDEN_TASTE_KEYS = new Set(['couple', 'buff']);
 /**
  * 按人群口味推荐：与影视库相同条件（分类∩标签）+ 偏经典/高分的排序，与「仅按 id 新」区分
  */
-async function getTasteRecommendations(tasteType, limit = 24) {
+async function getTasteRecommendations(tasteType, limit = 48) {
   if (!TASTE_PRESETS[tasteType]) {
     const pop = await getPop(limit);
     return pop.map((m) => ({ ...m, recommendReason: '热门推荐' }));
@@ -86,7 +86,7 @@ router.get('/tastes', asyncHandler(async (req, res) => {
 
 /** 获取推荐列表：支持 tasteType 人群口味、limit 控制数量 */
 router.get('/', optionalAuth, asyncHandler(async (req, res) => {
-  const limit = Math.min(80, Math.max(6, parseInt(req.query.limit) || 36));
+  const limit = Math.min(100, Math.max(6, parseInt(req.query.limit) || 48));
   const tasteType = (req.query.tasteType || '').trim();
   /** 首页轮播等场景固定要「大众热门」时传 prefer=popular（不按登录态走冷启动） */
   const preferPopular = (req.query.prefer || '').trim().toLowerCase() === 'popular';

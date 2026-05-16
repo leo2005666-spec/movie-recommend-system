@@ -112,7 +112,7 @@ async function handleSimilar(movieId, userId, limit) {
 
 router.get('/', optionalAuth, asyncHandler(async (req, res) => {
   const scene = (req.query.scene || 'home_personalized').toLowerCase();
-  const limit = Math.min(80, Math.max(6, parseInt(req.query.limit) || 12));
+  const limit = Math.min(100, Math.max(6, parseInt(req.query.limit) || 36));
   const userId = req.query.userId ? parseInt(req.query.userId) : (req.user?.id ?? null);
   const movieId = req.query.movieId ? parseInt(req.query.movieId) : null;
 

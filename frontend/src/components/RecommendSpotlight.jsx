@@ -10,14 +10,14 @@ import {
 } from '../constants/recommendSpotlightAds';
 
 function buildStripItems(movies, ads, positions) {
-  const m = Array.isArray(movies) ? movies.slice(0, 14) : [];
+  const m = Array.isArray(movies) ? movies.slice(0, 20) : [];
   const a = Array.isArray(ads) ? ads : [];
   const posSet = new Set(positions || []);
   const items = [];
   let mi = 0;
   let ai = 0;
   let slot = 0;
-  const maxSlots = Math.min(12, m.length + a.length + 4);
+  const maxSlots = Math.min(18, m.length + a.length + 4);
 
   while (slot < maxSlots && (mi < m.length || ai < a.length)) {
     if (posSet.has(slot) && ai < a.length) {

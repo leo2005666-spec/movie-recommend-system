@@ -1,3 +1,42 @@
 {
-  "permissionMode": "acceptEdits"
+  "permissionMode": "acceptEdits",
+  "permissions": {
+    "allow": [
+      "Bash(git *)",
+      "Bash(gh *)",
+      "Bash(npm *)",
+      "Bash(npx *)",
+      "Bash(curl *)",
+      "Bash(python3 *)",
+      "Bash(mkdir *)"
+    ],
+    "additionalDirectories": [
+      "/Users/lym/毕设/movie-recommend-system",
+      "/Users/lym/毕设/.claude"
+    ]
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 /Users/lym/毕设/movie-recommend-system/.claude/hooks/check-uncommitted.py",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 /Users/lym/毕设/movie-recommend-system/.claude/hooks/check-uncommitted.py",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  }
 }

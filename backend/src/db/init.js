@@ -422,9 +422,15 @@ async function run() {
 
   // ============================================================
   // 演示评分/收藏数据：让推荐系统有行为数据可分析
+  // 仅当演示用户尚未产生评分时才注入（避免覆盖真实数据）
   // ============================================================
-  const ratingCount = (await db.prepare('SELECT COUNT(*) as n FROM ratings').get()).n;
-  if (ratingCount < 10) {
+  const demoRatingUsers = await db.prepare(
+    `SELECT COUNT(DISTINCT r.user_id) as n FROM ratings r
+     INNER JOIN users u ON r.user_id = u.id
+     WHERE u.username IN ('zhangwei','lina','wangqiang','xiaochen','seabreeze','muzi','moviefan_wang','popcorntime','filmgeek_liu','cinephile_chen','dapeng','xinyi','moviebuff_zhou','catlover_movie','directorcut')`
+  ).get();
+  const ratedDemoUsers = demoRatingUsers?.n || 0;
+  if (ratedDemoUsers < 2) {
     const allMovies = await db.prepare('SELECT id, title FROM movies').all();
     const allUsers = await db.prepare("SELECT id, username FROM users WHERE role != 'admin'").all();
     if (allMovies.length > 0 && allUsers.length >= 2) {
@@ -465,9 +471,14 @@ async function run() {
 
   // ============================================================
   // 丰富评论：为热门电影生成引用具体演员/导演/剧情的影评
+  // 如果还没有丰富评论（旧数据评论都是短评/种子模板），则插入
   // ============================================================
   const commentCount = (await db.prepare('SELECT COUNT(*) as n FROM comments').get()).n;
-  if (commentCount < 10) {
+  // 检查是否已有长影评（>40字），有则说明已种子化，避免重复
+  const longCommentCount = (await db.prepare(
+    "SELECT COUNT(*) as n FROM comments WHERE LENGTH(content) > 40"
+  ).get()).n;
+  if (longCommentCount < 5) {
     const movieReviews = [
       { kw: '肖申克', reviews: [
         "摩根·弗里曼的旁白像一壶陈年老酒，蒂姆·罗宾斯把安迪的隐忍和坚定演到了骨髓里。雨中张开双臂那一幕是影史永恒的经典。",

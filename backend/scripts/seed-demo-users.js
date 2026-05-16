@@ -28,23 +28,42 @@ const DEMO_USERS = [
 ];
 
 /**
+ * 生成本地 SVG 头像（彩色圆形 + 首字，兜底方案）
+ */
+function generateLocalAvatar(username) {
+  const colors = [
+    '#6366f1', '#0ea5e9', '#f59e0b', '#10b981', '#ec4899',
+    '#14b8a6', '#d946ef', '#f97316', '#22c55e', '#3b82f6',
+    '#a855f7', '#ef4444', '#8b5cf6', '#06b6d4', '#84cc16',
+  ];
+  const idx = username.length * 17 % colors.length;
+  const bg = colors[idx];
+  const letter = (username[0] || '?').toUpperCase();
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
+  <rect width="128" height="128" rx="64" fill="${bg}"/>
+  <text x="64" y="64" text-anchor="middle" dominant-baseline="central" font-family="sans-serif" font-size="56" font-weight="bold" fill="#fff">${letter}</text>
+</svg>`;
+  const b64 = Buffer.from(svg).toString('base64');
+  return `data:image/svg+xml;base64,${b64}`;
+}
+
+/**
  * 用 DiceBear API 生成 SVG 头像，转换为 Base64 data URI
- * DiceBear Bottts Neutral 风格：机器人风格头像，每个 seed 生成唯一图案
+ * 网络不可达时降级为本地生成的头像
  */
 async function fetchAvatarBase64(username) {
   const seed = encodeURIComponent(username);
-  const url = `https://api.dicebear.com/7.x/bottts-neutral/svg?seed=${seed}&size=128`;
   try {
-    const res = await fetch(url, {
-      signal: AbortSignal.timeout(10000),
+    const res = await fetch(`https://api.dicebear.com/9.x/bottts-neutral/svg?seed=${seed}&size=128`, {
+      signal: AbortSignal.timeout(8000),
     });
-    if (!res.ok) return null;
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const svg = await res.text();
     const b64 = Buffer.from(svg).toString('base64');
     return `data:image/svg+xml;base64,${b64}`;
   } catch (e) {
-    console.warn(`  ⚠️ 头像获取失败 (${username}): ${e.message}`);
-    return null;
+    console.warn(`  ⚠️ DiceBear 不可达 (${username})，使用本地头像: ${e.message}`);
+    return generateLocalAvatar(username);
   }
 }
 

@@ -364,12 +364,10 @@ async function run() {
 
   // ============================================================
   // 演示用户 + 头像（本地生成 SVG，无需外部 API）
+  // 始终检查每个演示用户是否存在，缺失时才创建
   // ============================================================
-  const demoUserCount = (await db.prepare(
-    "SELECT COUNT(*) as n FROM users WHERE role != 'admin'"
-  ).get()).n;
-
-  if (demoUserCount < 3) {
+  // 始终检查每个演示用户是否存在，缺失时才创建（不设门槛，每次启动都会补全）
+  await (async () => {
     const avatarColors = [
       '#6366f1', '#0ea5e9', '#f59e0b', '#10b981', '#ec4899',
       '#14b8a6', '#d946ef', '#f97316', '#22c55e', '#3b82f6',
@@ -402,9 +400,10 @@ async function run() {
     ];
 
     const demoPass = bcrypt.hashSync('user123', 10);
+    let created = 0, updated = 0;
     for (const u of demoUsers) {
       const exist = await db.prepare(
-        'SELECT id FROM users WHERE LOWER(username) = LOWER(?)'
+        'SELECT id, avatar_data FROM users WHERE LOWER(username) = LOWER(?)'
       ).get(u.username);
       if (!exist) {
         await db.prepare(
@@ -415,10 +414,17 @@ async function run() {
           genAvatar(u.username),
           Math.abs(u.username.length * 17 + u.age) % 12
         );
+        created += 1;
+      } else if (!exist.avatar_data) {
+        await db.prepare('UPDATE users SET nickname=?, gender=?, age=?, avatar_data=? WHERE id=?')
+          .run(u.nickname, u.gender, u.age, genAvatar(u.username), exist.id);
+        updated += 1;
       }
     }
-    console.log('已创建演示用户（含头像）');
-  }
+    if (created > 0 || updated > 0) {
+      console.log(`已创建 ${created} 个演示用户 + 更新 ${updated} 个头像`);
+    }
+  })();
 
   // ============================================================
   // 演示评分/收藏数据：让推荐系统有行为数据可分析

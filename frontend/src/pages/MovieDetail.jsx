@@ -7,6 +7,7 @@ import { normalizeMovieListResponse } from '../utils/recommendApi';
 import UserAvatar from '../components/UserAvatar';
 import DetailPageLoading from '../components/DetailPageLoading';
 import MovieDetailMedia from '../components/detail/MovieDetailMedia';
+import ChatOverlay from '../components/ChatOverlay';
 
 const SCENE_SIMILAR = 'similar';
 const MAX_COMMENT_IMAGES = 4;
@@ -79,6 +80,53 @@ export default function MovieDetail() {
   const [submitting, setSubmitting] = useState(false);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState('');
+
+  /** 聊天覆盖层 */
+  const [chatOpen, setChatOpen] = useState(false);
+  const [chatMsgs, setChatMsgs] = useState([]);
+  const chatMsgIdRef = useRef(0);
+
+  /** 模拟直播聊天消息（演示玻璃态效果） */
+  const mockChatMessages = [
+    { user_id: 1, username: '影迷阿杰', content: '这部电影真的太好看了！🎬', avatar: null, avatar_style: null },
+    { user_id: 2, username: 'MovieFan', content: 'The cinematography is stunning', avatar: null, avatar_style: null },
+    { user_id: 3, username: '小龙虾', content: '有人知道片尾曲叫什么吗', avatar: null, avatar_style: null },
+    { user_id: 4, username: 'CineLover', content: '导演的风格太独特了 👏', avatar: null, avatar_style: null },
+    { user_id: 1, username: '影迷阿杰', content: '二刷走起！', avatar: null, avatar_style: null },
+    { user_id: 5, username: 'Popcorn', content: 'best movie of the year imo', avatar: null, avatar_style: null },
+    { user_id: 3, username: '小龙虾', content: '配乐也超级棒 🎵', avatar: null, avatar_style: null },
+    { user_id: 2, username: 'MovieFan', content: 'the ending had me in tears', avatar: null, avatar_style: null },
+  ];
+
+  /** 打开聊天时灌入mock消息 */
+  const openChat = () => {
+    if (!chatOpen) {
+      setChatMsgs(mockChatMessages.map((m, i) => ({
+        ...m,
+        id: i + 1,
+        created_at: new Date(Date.now() - (mockChatMessages.length - i) * 30000).toISOString(),
+      })));
+      chatMsgIdRef.current = mockChatMessages.length;
+    }
+    setChatOpen((v) => !v);
+  };
+
+  /** 发送消息（本地模拟） */
+  const handleChatSend = async (content) => {
+    const id = ++chatMsgIdRef.current;
+    setChatMsgs((prev) => [
+      ...prev,
+      {
+        id,
+        user_id: user?.id || 0,
+        username: user?.username || '我',
+        content,
+        avatar: user?.avatar || null,
+        avatar_style: user?.avatar_style || null,
+        created_at: new Date().toISOString(),
+      },
+    ]);
+  };
 
   const scrollToRating = useCallback(() => {
     document.querySelector('.score-btns')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -324,6 +372,7 @@ export default function MovieDetail() {
       {/* TMDB 深色条：左侧实色 + 右侧半透明剧照（backdrop/封面随影片变化） */}
       <div
         className={`detail-hero detail-hero--cinematic${hasBackdrop ? '' : ' detail-hero--poster-fallback'}`}
+        style={{ position: 'relative' }}
       >
         <div
           className="detail-hero__bg"
@@ -462,6 +511,30 @@ export default function MovieDetail() {
             </div>
           </div>
         </div>
+
+        {/* 聊天切换按钮 · 浮动在hero右侧 */}
+        <button
+          type="button"
+          className={`detail-chat-toggle ${chatOpen ? 'detail-chat-toggle--active' : ''}`}
+          onClick={openChat}
+          title={chatOpen ? '关闭实时讨论' : '打开实时讨论'}
+          aria-label={chatOpen ? '关闭实时讨论' : '打开实时讨论'}
+        >
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+          </svg>
+          {!chatOpen && <span className="detail-chat-toggle__label">讨论</span>}
+        </button>
+
+        {/* 直播风格 · 玻璃态聊天覆盖层 */}
+        <ChatOverlay
+          visible={chatOpen}
+          onToggle={() => setChatOpen(false)}
+          messages={chatMsgs}
+          onSend={handleChatSend}
+          title="实时讨论"
+          position="right"
+        />
       </div>
 
       {/* 两栏布局：主内容 + 右侧栏 */}
